@@ -1,398 +1,174 @@
 <?php
 
 /*
- * ==========================================================
- * LOGIN SECURITY
- * ==========================================================
- */
+|--------------------------------------------------------------------------
+| LOGIN SECURITY
+|--------------------------------------------------------------------------
+*/
 
 session_start();
 
 if (!isset($_SESSION['username'])) {
+
     header("Location: login.php");
+
     exit;
 }
 
 
 /*
- * ==========================================================
- * DATABASE CONNECTION
- * ==========================================================
- *
- * db.php connects to PostgreSQL using Render environment
- * variables.
- *
- */
+|--------------------------------------------------------------------------
+| DATABASE CONNECTION
+|--------------------------------------------------------------------------
+*/
 
 require_once 'db.php';
+
+
+/*
+|--------------------------------------------------------------------------
+| DASHBOARD STATISTICS
+|--------------------------------------------------------------------------
+*/
+
+$totalPersonnel = 0;
+$totalCourses = 0;
+$totalBranches = 0;
+
+try {
+
+    /*
+     * Total military personnel
+     */
+
+    $stmt = $connection->query("
+        SELECT COUNT(*) 
+        FROM military_personnel
+    ");
+
+    $totalPersonnel = (int) $stmt->fetchColumn();
+
+
+    /*
+     * Total courses
+     *
+     * This counts different course values stored
+     * in the courses column.
+     */
+
+    $stmt = $connection->query("
+        SELECT COUNT(DISTINCT courses)
+        FROM military_personnel
+        WHERE courses IS NOT NULL
+        AND courses <> ''
+    ");
+
+    $totalCourses = (int) $stmt->fetchColumn();
+
+
+    /*
+     * Total branches of service
+     */
+
+    $stmt = $connection->query("
+        SELECT COUNT(DISTINCT branch_of_service)
+        FROM military_personnel
+        WHERE branch_of_service IS NOT NULL
+        AND branch_of_service <> ''
+    ");
+
+    $totalBranches = (int) $stmt->fetchColumn();
+
+} catch (PDOException $e) {
+
+    /*
+     * Keep dashboard working even if
+     * statistics cannot be loaded.
+     */
+
+    $totalPersonnel = 0;
+    $totalCourses = 0;
+    $totalBranches = 0;
+}
 
 ?>
 
 <!DOCTYPE html>
+
 <html lang="en">
 
 <head>
 
-  <meta charset="UTF-8">
+    <meta charset="UTF-8">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-  <title>Philippine Air Force - Personnel System</title>
+    <title>
+        CMO Training Squadron - Dashboard
+    </title>
 
 
-  <!-- ======================================================
-       BOOTSTRAP
-       ====================================================== -->
+    <!-- =====================================================
+         BOOTSTRAP
+    ====================================================== -->
 
-  <link
-    rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
-  >
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+    >
 
 
-  <!-- ======================================================
-       DATATABLES CSS
-       ====================================================== -->
+    <!-- =====================================================
+         BOOTSTRAP ICONS
+    ====================================================== -->
 
-  <link
-    rel="stylesheet"
-    href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css"
-  >
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+    >
 
 
-  <!-- ======================================================
-       DATATABLES BUTTONS CSS
-       ====================================================== -->
+    <!-- =====================================================
+         GOOGLE FONT
+    ====================================================== -->
 
-  <link
-    rel="stylesheet"
-    href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css"
-  >
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
 
 
-  <style>
+    <!-- =====================================================
+         DATATABLES
+    ====================================================== -->
 
-    /* ======================================================
-       BODY
-       ====================================================== */
+    <link
+        rel="stylesheet"
+        href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css"
+    >
 
-    body {
 
-      background:
-        linear-gradient(
-          135deg,
-          #0d1117,
-          #1b2838
-        );
+    <!-- =====================================================
+         DATATABLE BUTTONS
+    ====================================================== -->
 
-      color: #e0e0e0;
+    <link
+        rel="stylesheet"
+        href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css"
+    >
 
-      font-family: 'Poppins', sans-serif;
 
-      min-height: 100vh;
+    <!-- =====================================================
+         DASHBOARD CSS
+    ====================================================== -->
 
-      margin: 0;
-
-    }
-
-
-    /* ======================================================
-       PAF HEADER
-       ====================================================== */
-
-    .paf-topbar {
-
-      width: 100%;
-
-      padding: 15px 40px;
-
-      background:
-        rgba(0, 40, 90, 0.45);
-
-      backdrop-filter: blur(12px);
-
-      border-bottom:
-        2px solid #ffd700;
-
-      display: flex;
-
-      align-items: center;
-
-      justify-content: space-between;
-
-      box-shadow:
-        0 5px 20px rgba(0, 0, 0, 0.6);
-
-    }
-
-
-    .paf-brand {
-
-      display: flex;
-
-      align-items: center;
-
-      gap: 15px;
-
-    }
-
-
-    .paf-brand img {
-
-      height: 70px;
-
-      width: 70px;
-
-      object-fit: contain;
-
-      transition: 0.4s;
-
-    }
-
-
-    .paf-brand img:hover {
-
-      transform:
-        scale(1.15)
-        rotate(5deg);
-
-      filter:
-        drop-shadow(
-          0 0 12px #00b4d8
-        );
-
-    }
-
-
-    .paf-text h1 {
-
-      margin: 0;
-
-      font-size: 1.5rem;
-
-      font-weight: 700;
-
-      color: #ffffff;
-
-      letter-spacing: 1px;
-
-      text-transform: uppercase;
-
-    }
-
-
-    .paf-text span {
-
-      font-size: 0.9rem;
-
-      color: #ffd700;
-
-    }
-
-
-    /* ======================================================
-       LOGOUT BUTTON
-       ====================================================== */
-
-    .logout-btn {
-
-      font-size: 0.9rem;
-
-      padding: 6px 14px;
-
-      border-radius: 20px;
-
-    }
-
-
-    /* ======================================================
-       EXPORT MENU BUTTON
-       ====================================================== */
-
-    .export-menu-btn {
-
-      font-size: 18px;
-
-      padding: 6px 10px;
-
-      border-radius: 50%;
-
-      line-height: 1;
-
-    }
-
-
-    /* ======================================================
-       MAIN CONTAINER
-       ====================================================== */
-
-    .container-main {
-
-      background:
-        rgba(255, 255, 255, 0.05);
-
-      border-radius: 15px;
-
-      padding: 40px;
-
-      box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.3);
-
-      margin-top: 40px;
-
-    }
-
-
-    /* ======================================================
-       PAGE TITLE
-       ====================================================== */
-
-    h2 {
-
-      color: #58a6ff;
-
-      font-weight: 600;
-
-      margin-bottom: 25px;
-
-    }
-
-
-    /* ======================================================
-       PRIMARY BUTTON
-       ====================================================== */
-
-    .btn-primary {
-
-      background:
-        linear-gradient(
-          90deg,
-          #007bff,
-          #00b4d8
-        );
-
-      border: none;
-
-      transition: 0.3s;
-
-    }
-
-
-    .btn-primary:hover {
-
-      opacity: 0.9;
-
-    }
-
-
-    /* ======================================================
-       TABLE
-       ====================================================== */
-
-    .table {
-
-      color: #e0e0e0;
-
-      background-color:
-        rgba(255, 255, 255, 0.05);
-
-      border-radius: 10px;
-
-      overflow: hidden;
-
-    }
-
-
-    .table th {
-
-      background-color:
-        rgba(0, 123, 255, 0.2);
-
-      color: #58a6ff;
-
-      text-transform: uppercase;
-
-    }
-
-
-    .table td,
-    .table th {
-
-      text-align: center;
-
-      vertical-align: middle;
-
-    }
-
-
-    /* ======================================================
-       NAME COLUMN
-       ====================================================== */
-
-    .no-wrap {
-
-      white-space: nowrap;
-
-      min-width: 180px;
-
-    }
-
-
-    /* ======================================================
-       HIDE DEFAULT DATATABLES BUTTONS
-       ====================================================== */
-
-    .dt-buttons {
-
-      display: none !important;
-
-    }
-
-
-    /* ======================================================
-       SHOW ENTRIES LEFT
-       ====================================================== */
-
-    .dataTables_length {
-
-      float: left;
-
-      margin-bottom: 20px;
-
-    }
-
-
-    /* ======================================================
-       SEARCH RIGHT
-       ====================================================== */
-
-    .dataTables_filter {
-
-      float: right;
-
-      text-align: right;
-
-    }
-
-
-    /* ======================================================
-       FORCE SAME ROW
-       ====================================================== */
-
-    .dataTables_wrapper .row:nth-child(1) {
-
-      display: flex;
-
-      justify-content: space-between;
-
-      align-items: center;
-
-    }
-
-  </style>
+    <link
+        rel="stylesheet"
+        href="css/dashboard.css"
+    >
 
 </head>
 
@@ -400,722 +176,1124 @@ require_once 'db.php';
 <body>
 
 
-<!-- ======================================================
-     PHILIPPINE AIR FORCE HEADER
-     ====================================================== -->
-
-<div class="paf-topbar">
-
-
-  <!-- LEFT SIDE -->
-
-  <div class="paf-brand">
-
-    <img
-      src="cmo1.png"
-      alt="Philippine Air Force Logo"
-    >
-
-
-    <div class="paf-text">
-
-      <h1>
-        CMO Training Squadron
-      </h1>
-
-      <span>
-        Student Database Information System
-      </span>
-
-    </div>
-
-  </div>
-
-
-  <!-- ====================================================
-       RIGHT SIDE
-       ==================================================== -->
-
-  <div class="d-flex align-items-center gap-2">
-
-
-    <!-- ==================================================
-         EXPORT MENU
-         ================================================== -->
-
-    <div class="dropdown">
-
-      <button
-        class="btn btn-outline-info btn-sm export-menu-btn"
-        type="button"
-        id="exportMenuBtn"
-        data-bs-toggle="dropdown"
-        aria-expanded="false"
-      >
-
-        &#9776;
-
-      </button>
-
-
-      <ul
-        class="dropdown-menu dropdown-menu-end"
-        aria-labelledby="exportMenuBtn"
-      >
-
-
-        <li>
-
-          <a
-            class="dropdown-item"
-            href="#"
-            id="exportExcel"
-          >
-
-            Export to Excel
-
-          </a>
-
-        </li>
-
-
-        <li>
-
-          <a
-            class="dropdown-item"
-            href="#"
-            id="exportPDF"
-          >
-
-            Export to PDF
-
-          </a>
-
-        </li>
-
-
-        <li>
-
-          <a
-            class="dropdown-item"
-            href="#"
-            id="exportPrint"
-          >
-
-            Print Table
-
-          </a>
-
-        </li>
-
-
-      </ul>
-
-    </div>
-
-
-    <!-- ==================================================
-         CHANGE PASSWORD
-         ================================================== -->
-
-    <a
-      href="change_password.php"
-      class="btn btn-outline-warning btn-sm"
-    >
-
-      Change Password
-
-    </a>
-
-
-    <!-- ==================================================
-         LOGOUT
-         ================================================== -->
-
-    <a
-      href="logout.php"
-      class="btn btn-outline-light btn-sm logout-btn"
-    >
-
-      Logout
-
-    </a>
-
-
-  </div>
-
-</div>
-
-
-<!-- ======================================================
-     MAIN CONTENT
-     ====================================================== -->
-
-<div class="container container-main">
-
-
-  <!-- ====================================================
-       DELETE SUCCESS MESSAGE
-       ==================================================== -->
-
-  <?php if (isset($_GET['deleted'])): ?>
-
-    <div class="alert alert-success">
-
-      ✅ Record deleted successfully.
-
-    </div>
-
-  <?php endif; ?>
-
-
-  <!-- ====================================================
-       PAGE TITLE
-       ==================================================== -->
-
-  <h2>
-    Military Personnel Information
-  </h2>
-
-
-  <!-- ====================================================
-       ADD NEW PERSONNEL
-       ==================================================== -->
-
-  <a
-    class="btn btn-primary mb-3"
-    href="create.php"
-  >
-
-    Add New Military Personnel Information
-
-  </a>
-
-
-  <!-- ====================================================
-       PERSONNEL TABLE
-       ==================================================== -->
-
-  <div class="table-responsive">
-
-    <table
-      id="personnelTable"
-      class="table table-hover table-striped"
-    >
-
-
-      <!-- ==================================================
-           TABLE HEADER
-           ================================================== -->
-
-      <thead>
-
-        <tr>
-
-          <th>ID</th>
-
-          <th>Rank</th>
-
-          <th>Name</th>
-
-          <th>Serial Number</th>
-
-          <th>Branch of Service</th>
-
-          <th>Courses</th>
-
-          <th>Year Graduated</th>
-
-          <th>Standing</th>
-
-          <th>Created At</th>
-
-          <th>Updated At</th>
-
-          <th>Action</th>
-
-        </tr>
-
-      </thead>
-
-
-      <!-- ==================================================
-           TABLE BODY
-           ================================================== -->
-
-      <tbody>
-
-        <?php
-
-        /*
-         * ==================================================
-         * GET RECORDS FROM POSTGRESQL
-         * ==================================================
-         *
-         * db.php has already created:
-         *
-         * $connection
-         *
-         * using PDO.
-         *
-         * NO mysqli connection is used here.
-         */
-
-        try {
-
-
-          $sql = "
-
-            SELECT
-
-              id,
-
-              rank,
-
-              name,
-
-              serial_number,
-
-              branch_of_service,
-
-              courses,
-
-              year_graduated,
-
-              standing,
-
-              created_at,
-
-              updated_at
-
-            FROM military_personnel
-
-            ORDER BY id ASC
-
-          ";
-
-
-          $stmt = $connection->query($sql);
-
-
-          /*
-           * ==================================================
-           * DISPLAY EACH RECORD
-           * ==================================================
-           */
-
-          while ($row = $stmt->fetch(PDO::FETCH_ASSOC)):
-
-        ?>
-
-
-          <tr>
-
-
-            <!-- ============================================
-                 ID
-                 ============================================ -->
-
-            <td>
-
-              <?= htmlspecialchars(
-                $row['id']
-              ); ?>
-
-            </td>
-
-
-            <!-- ============================================
-                 RANK
-                 ============================================ -->
-
-            <td>
-
-              <?= htmlspecialchars(
-                $row['rank'] ?? ''
-              ); ?>
-
-            </td>
-
-
-            <!-- ============================================
-                 NAME
-                 ============================================ -->
-
-            <td class="no-wrap">
-
-              <?= htmlspecialchars(
-                $row['name'] ?? ''
-              ); ?>
-
-            </td>
-
-
-            <!-- ============================================
-                 SERIAL NUMBER
-                 ============================================ -->
-
-            <td>
-
-              <?= htmlspecialchars(
-                $row['serial_number'] ?? ''
-              ); ?>
-
-            </td>
-
-
-            <!-- ============================================
-                 BRANCH OF SERVICE
-                 ============================================ -->
-
-            <td>
-
-              <?= htmlspecialchars(
-                $row['branch_of_service'] ?? ''
-              ); ?>
-
-            </td>
-
-
-            <!-- ============================================
-                 COURSES
-                 ============================================ -->
-
-            <td>
-
-              <?= htmlspecialchars(
-                $row['courses'] ?? ''
-              ); ?>
-
-            </td>
-
-
-            <!-- ============================================
-                 YEAR GRADUATED
-                 ============================================ -->
-
-            <td>
-
-              <?= htmlspecialchars(
-                $row['year_graduated'] ?? ''
-              ); ?>
-
-            </td>
-
-
-            <!-- ============================================
-                 STANDING
-                 ============================================ -->
-
-            <td>
-
-              <?= htmlspecialchars(
-                $row['standing'] ?? ''
-              ); ?>
-
-            </td>
-
-
-            <!-- ============================================
-                 CREATED AT
-                 ============================================ -->
-
-            <td>
-
-              <?php
-
-              if (!empty($row['created_at'])) {
-
-                  echo htmlspecialchars(
-                      date(
-                          'F d, Y h:i A',
-                          strtotime($row['created_at'])
-                      )
-                  );
-
-              }
-
-              ?>
-
-            </td>
-
-
-            <!-- ============================================
-                 UPDATED AT
-                 ============================================ -->
-
-            <td>
-
-              <?php
-
-              if (!empty($row['updated_at'])) {
-
-                  echo htmlspecialchars(
-                      date(
-                          'F d, Y h:i A',
-                          strtotime($row['updated_at'])
-                      )
-                  );
-
-              }
-
-              ?>
-
-            </td>
-
-
-            <!-- ============================================
-                 ACTIONS
-                 ============================================ -->
-
-            <td>
-
-
-              <!-- UPDATE -->
-
-              <a
-                class="btn btn-primary btn-sm"
-                href="edit.php?id=<?= urlencode($row['id']); ?>"
-              >
-
-                Update
-
-              </a>
-
-
-              <!-- DELETE -->
-
-              <button
-                type="button"
-                class="btn btn-danger btn-sm btn-delete"
-                data-id="<?= htmlspecialchars(
-                  $row['id'],
-                  ENT_QUOTES
-                ); ?>"
-                data-name="<?= htmlspecialchars(
-                  $row['name'] ?? '',
-                  ENT_QUOTES
-                ); ?>"
-              >
-
-                Delete
-
-              </button>
-
-
-            </td>
-
-
-          </tr>
-
-
-        <?php
-
-          endwhile;
-
-
-        } catch (PDOException $e) {
-
-          /*
-           * ==================================================
-           * DATABASE ERROR
-           * ==================================================
-           *
-           * Do not expose database credentials or
-           * technical connection information.
-           */
-
-          echo '<tr>';
-
-          echo '<td colspan="11" class="text-danger">';
-
-          echo 'Unable to load personnel records from the database.';
-
-          echo '</td>';
-
-          echo '</tr>';
-
-        }
-
-        ?>
-
-
-      </tbody>
-
-    </table>
-
-  </div>
-
-</div>
-
-
-<!-- ======================================================
-     DELETE CONFIRMATION MODAL
-     ====================================================== -->
+<!-- =========================================================
+     MOBILE OVERLAY
+========================================================= -->
 
 <div
-  class="modal fade"
-  id="deleteModal"
-  tabindex="-1"
-  aria-hidden="true"
+    class="sidebar-overlay"
+    id="sidebarOverlay"
+>
+</div>
+
+
+<!-- =========================================================
+     SIDEBAR
+========================================================= -->
+
+<aside
+    class="sidebar"
+    id="sidebar"
 >
 
 
-  <div class="modal-dialog modal-dialog-centered">
+    <!-- =====================================================
+         SIDEBAR BRAND
+    ====================================================== -->
+
+    <div class="sidebar-brand">
 
 
-    <div
-      class="modal-content"
-      style="
-        background-color:#0f1724;
-        color:#e6edf3;
-        border:1px solid #1f3b63;
-      "
-    >
+        <div class="sidebar-logo">
+
+            <img
+                src="cmo1.png"
+                alt="CMO Training Squadron"
+            >
+
+        </div>
 
 
-      <!-- ==================================================
-           MODAL HEADER
-           ================================================== -->
+        <div class="sidebar-brand-text">
 
-      <div class="modal-header">
+            <strong>
+                CMO TRAINING
+            </strong>
 
+            <span>
+                SQUADRON
+            </span>
 
-        <h5 class="modal-title">
-
-          Confirm Deletion
-
-        </h5>
-
-
-        <button
-          type="button"
-          class="btn-close btn-close-white"
-          data-bs-dismiss="modal"
-          aria-label="Close"
-        >
-        </button>
+        </div>
 
 
-      </div>
+    </div>
 
 
-      <!-- ==================================================
-           MODAL BODY
-           ================================================== -->
+    <!-- =====================================================
+         NAVIGATION
+    ====================================================== -->
 
-      <div class="modal-body">
+    <div class="sidebar-section-title">
 
-        Are you sure you want to delete this record?
+        NAVIGATION
 
-        <br>
-
-        <strong
-          id="deletePersonName"
-          style="color:#ffd700;"
-        >
-        </strong>
-
-      </div>
+    </div>
 
 
-      <!-- ==================================================
-           MODAL FOOTER
-           ================================================== -->
-
-      <div class="modal-footer">
+    <nav class="sidebar-nav">
 
 
-        <button
-          type="button"
-          class="btn btn-secondary"
-          data-bs-dismiss="modal"
-        >
-
-          Cancel
-
-        </button>
-
+        <!-- DASHBOARD -->
 
         <a
-          id="confirmDeleteBtn"
-          class="btn btn-danger"
+            href="index.php"
+            class="nav-item active"
         >
 
-          Delete
+            <span class="nav-icon">
+                <i class="bi bi-grid-1x2-fill"></i>
+            </span>
+
+            <span>
+                Dashboard
+            </span>
 
         </a>
 
 
-      </div>
+        <!-- MILITARY PERSONNEL -->
+
+        <a
+            href="index.php#personnel"
+            class="nav-item"
+        >
+
+            <span class="nav-icon">
+                <i class="bi bi-person-badge-fill"></i>
+            </span>
+
+            <span>
+                Military Personnel
+            </span>
+
+        </a>
+
+
+        <!-- STATISTICS -->
+
+        <a
+            href="statistics.php"
+            class="nav-item"
+        >
+
+            <span class="nav-icon">
+                <i class="bi bi-bar-chart-fill"></i>
+            </span>
+
+            <span>
+                Statistics
+            </span>
+
+        </a>
+
+
+        <!-- COPY FILE -->
+
+        <div class="nav-dropdown">
+
+
+            <button
+                type="button"
+                class="nav-item nav-dropdown-toggle"
+                id="copyFileToggle"
+            >
+
+                <span class="nav-icon">
+                    <i class="bi bi-file-earmark-arrow-down-fill"></i>
+                </span>
+
+                <span>
+                    Copy File
+                </span>
+
+                <i class="bi bi-chevron-down nav-chevron"></i>
+
+            </button>
+
+
+            <div
+                class="nav-submenu"
+                id="copyFileMenu"
+            >
+
+                <a
+                    href="#"
+                    id="exportExcel"
+                >
+
+                    <i class="bi bi-file-earmark-excel"></i>
+
+                    Export to Excel
+
+                </a>
+
+
+                <a
+                    href="#"
+                    id="exportPDF"
+                >
+
+                    <i class="bi bi-file-earmark-pdf"></i>
+
+                    Export to PDF
+
+                </a>
+
+
+                <a
+                    href="#"
+                    id="exportPrint"
+                >
+
+                    <i class="bi bi-printer"></i>
+
+                    Print Table
+
+                </a>
+
+            </div>
+
+        </div>
+
+
+    </nav>
+
+
+    <!-- =====================================================
+         MANAGEMENT
+    ====================================================== -->
+
+    <div class="sidebar-section-title management-title">
+
+        MANAGEMENT
 
     </div>
 
-  </div>
+
+    <nav class="sidebar-nav">
+
+
+        <!-- ADD PERSONNEL -->
+
+        <a
+            href="create.php"
+            class="nav-item add-personnel-nav"
+        >
+
+            <span class="nav-icon">
+                <i class="bi bi-person-plus-fill"></i>
+            </span>
+
+            <span>
+                Add New Personnel
+            </span>
+
+        </a>
+
+
+        <!-- CHANGE PASSWORD -->
+
+        <a
+            href="change_password.php"
+            class="nav-item"
+        >
+
+            <span class="nav-icon">
+                <i class="bi bi-key-fill"></i>
+            </span>
+
+            <span>
+                Change Password
+            </span>
+
+        </a>
+
+
+    </nav>
+
+
+    <!-- =====================================================
+         SIDEBAR BOTTOM
+    ====================================================== -->
+
+    <div class="sidebar-bottom">
+
+
+        <div class="system-status">
+
+            <span class="status-dot"></span>
+
+            System Online
+
+        </div>
+
+
+        <a
+            href="logout.php"
+            class="logout-nav"
+        >
+
+            <i class="bi bi-box-arrow-right"></i>
+
+            Logout
+
+        </a>
+
+
+    </div>
+
+
+</aside>
+
+
+<!-- =========================================================
+     MAIN WRAPPER
+========================================================= -->
+
+<div class="main-wrapper">
+
+
+    <!-- =====================================================
+         TOP HEADER
+    ====================================================== -->
+
+    <header class="topbar">
+
+
+        <!-- MOBILE MENU -->
+
+        <button
+            type="button"
+            class="mobile-menu-btn"
+            id="mobileMenuBtn"
+        >
+
+            <i class="bi bi-list"></i>
+
+        </button>
+
+
+        <!-- HEADER TITLE -->
+
+        <div class="topbar-title">
+
+            <span>
+                CMO Training Squadron
+            </span>
+
+            <small>
+                Student Database Information System
+            </small>
+
+        </div>
+
+
+        <!-- HEADER RIGHT -->
+
+        <div class="topbar-right">
+
+
+            <!-- NOTIFICATION -->
+
+            <button
+                type="button"
+                class="header-icon-btn"
+                title="Notifications"
+            >
+
+                <i class="bi bi-bell"></i>
+
+            </button>
+
+
+            <!-- USER -->
+
+            <div class="user-menu">
+
+
+                <div class="user-avatar">
+
+                    <i class="bi bi-person-fill"></i>
+
+                </div>
+
+
+                <div class="user-info">
+
+                    <strong>
+                        <?= htmlspecialchars($_SESSION['username']); ?>
+                    </strong>
+
+                    <span>
+                        Administrator
+                    </span>
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+
+    </header>
+
+
+    <!-- =====================================================
+         PAGE CONTENT
+    ====================================================== -->
+
+    <main class="page-content">
+
+
+        <!-- =================================================
+             WELCOME
+        ================================================== -->
+
+        <div class="page-heading">
+
+
+            <div>
+
+                <div class="page-label">
+                    CMO INFORMATION SYSTEM
+                </div>
+
+
+                <h1>
+                    Dashboard
+                </h1>
+
+
+                <p>
+                    Welcome back,
+                    <strong>
+                        <?= htmlspecialchars($_SESSION['username']); ?>
+                    </strong>.
+                    Here's an overview of the personnel database.
+                </p>
+
+            </div>
+
+
+            <a
+                href="create.php"
+                class="add-button"
+            >
+
+                <i class="bi bi-plus-lg"></i>
+
+                Add New Personnel
+
+            </a>
+
+
+        </div>
+
+
+        <!-- =================================================
+             SUCCESS MESSAGE
+        ================================================== -->
+
+        <?php if (isset($_GET['deleted'])): ?>
+
+            <div class="success-message">
+
+                <i class="bi bi-check-circle-fill"></i>
+
+                Record deleted successfully.
+
+            </div>
+
+        <?php endif; ?>
+
+
+        <!-- =================================================
+             STATISTICS CARDS
+        ================================================== -->
+
+        <section class="stats-grid">
+
+
+            <!-- TOTAL PERSONNEL -->
+
+            <div class="stat-card">
+
+
+                <div class="stat-icon blue">
+
+                    <i class="bi bi-people-fill"></i>
+
+                </div>
+
+
+                <div class="stat-content">
+
+                    <span>
+                        TOTAL PERSONNEL
+                    </span>
+
+                    <strong>
+                        <?= number_format($totalPersonnel); ?>
+                    </strong>
+
+                    <small>
+                        Registered personnel
+                    </small>
+
+                </div>
+
+
+            </div>
+
+
+            <!-- TOTAL COURSES -->
+
+            <div class="stat-card">
+
+
+                <div class="stat-icon cyan">
+
+                    <i class="bi bi-mortarboard-fill"></i>
+
+                </div>
+
+
+                <div class="stat-content">
+
+                    <span>
+                        COURSES
+                    </span>
+
+                    <strong>
+                        <?= number_format($totalCourses); ?>
+                    </strong>
+
+                    <small>
+                        Registered courses
+                    </small>
+
+                </div>
+
+
+            </div>
+
+
+            <!-- BRANCHES -->
+
+            <div class="stat-card">
+
+
+                <div class="stat-icon purple">
+
+                    <i class="bi bi-diagram-3-fill"></i>
+
+                </div>
+
+
+                <div class="stat-content">
+
+                    <span>
+                        BRANCHES
+                    </span>
+
+                    <strong>
+                        <?= number_format($totalBranches); ?>
+                    </strong>
+
+                    <small>
+                        Branches represented
+                    </small>
+
+                </div>
+
+
+            </div>
+
+
+        </section>
+
+
+        <!-- =================================================
+             PERSONNEL SECTION
+        ================================================== -->
+
+        <section
+            class="content-card"
+            id="personnel"
+        >
+
+
+            <!-- CARD HEADER -->
+
+            <div class="content-card-header">
+
+
+                <div>
+
+                    <div class="section-label">
+                        DATABASE RECORDS
+                    </div>
+
+                    <h2>
+                        Military Personnel
+                    </h2>
+
+                    <p>
+                        View and manage registered military personnel information.
+                    </p>
+
+                </div>
+
+
+                <a
+                    href="create.php"
+                    class="secondary-add-button"
+                >
+
+                    <i class="bi bi-person-plus-fill"></i>
+
+                    Add Personnel
+
+                </a>
+
+
+            </div>
+
+
+            <!-- =================================================
+                 TABLE
+            ================================================== -->
+
+            <div class="table-container">
+
+
+                <table
+                    id="personnelTable"
+                    class="table personnel-table"
+                >
+
+
+                    <thead>
+
+                        <tr>
+
+                            <th>ID</th>
+
+                            <th>Rank</th>
+
+                            <th>Name</th>
+
+                            <th>Serial Number</th>
+
+                            <th>Branch of Service</th>
+
+                            <th>Courses</th>
+
+                            <th>Year Graduated</th>
+
+                            <th>Standing</th>
+
+                            <th>Created At</th>
+
+                            <th>Updated At</th>
+
+                            <th>Action</th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                    <?php
+
+                    /*
+                     * ==================================================
+                     * GET PERSONNEL RECORDS
+                     * ==================================================
+                     */
+
+                    try {
+
+                        $sql = "
+
+                            SELECT
+
+                                id,
+
+                                rank,
+
+                                name,
+
+                                serial_number,
+
+                                branch_of_service,
+
+                                courses,
+
+                                year_graduated,
+
+                                standing,
+
+                                created_at,
+
+                                updated_at
+
+                            FROM military_personnel
+
+                            ORDER BY id ASC
+
+                        ";
+
+
+                        $stmt =
+                            $connection->query($sql);
+
+
+                        while (
+                            $row =
+                            $stmt->fetch(
+                                PDO::FETCH_ASSOC
+                            )
+                        ):
+
+                    ?>
+
+
+                        <tr>
+
+
+                            <!-- ID -->
+
+                            <td>
+
+                                <span class="id-badge">
+
+                                    <?= htmlspecialchars(
+                                        $row['id']
+                                    ); ?>
+
+                                </span>
+
+                            </td>
+
+
+                            <!-- RANK -->
+
+                            <td>
+
+                                <span class="rank-text">
+
+                                    <?= htmlspecialchars(
+                                        $row['rank'] ?? ''
+                                    ); ?>
+
+                                </span>
+
+                            </td>
+
+
+                            <!-- NAME -->
+
+                            <td class="person-name">
+
+                                <?= htmlspecialchars(
+                                    $row['name'] ?? ''
+                                ); ?>
+
+                            </td>
+
+
+                            <!-- SERIAL -->
+
+                            <td>
+
+                                <?= htmlspecialchars(
+                                    $row['serial_number'] ?? ''
+                                ); ?>
+
+                            </td>
+
+
+                            <!-- BRANCH -->
+
+                            <td>
+
+                                <?= htmlspecialchars(
+                                    $row['branch_of_service'] ?? ''
+                                ); ?>
+
+                            </td>
+
+
+                            <!-- COURSE -->
+
+                            <td>
+
+                                <?= htmlspecialchars(
+                                    $row['courses'] ?? ''
+                                ); ?>
+
+                            </td>
+
+
+                            <!-- YEAR -->
+
+                            <td>
+
+                                <?= htmlspecialchars(
+                                    $row['year_graduated'] ?? ''
+                                ); ?>
+
+                            </td>
+
+
+                            <!-- STANDING -->
+
+                            <td>
+
+                                <?php
+
+                                $standing =
+                                    trim(
+                                        $row['standing'] ?? ''
+                                    );
+
+                                ?>
+
+                                <span
+                                    class="standing-badge
+                                    <?=
+                                    strtolower(
+                                        str_replace(
+                                            ' ',
+                                            '-',
+                                            $standing
+                                        )
+                                    );
+                                    ?>"
+                                >
+
+                                    <?= htmlspecialchars(
+                                        $standing
+                                    ); ?>
+
+                                </span>
+
+                            </td>
+
+
+                            <!-- CREATED -->
+
+                            <td class="date-cell">
+
+                                <?php
+
+                                if (
+                                    !empty(
+                                        $row['created_at']
+                                    )
+                                ) {
+
+                                    echo htmlspecialchars(
+                                        date(
+                                            'M d, Y',
+                                            strtotime(
+                                                $row['created_at']
+                                            )
+                                        )
+                                    );
+
+                                }
+
+                                ?>
+
+                            </td>
+
+
+                            <!-- UPDATED -->
+
+                            <td class="date-cell">
+
+                                <?php
+
+                                if (
+                                    !empty(
+                                        $row['updated_at']
+                                    )
+                                ) {
+
+                                    echo htmlspecialchars(
+                                        date(
+                                            'M d, Y',
+                                            strtotime(
+                                                $row['updated_at']
+                                            )
+                                        )
+                                    );
+
+                                }
+
+                                ?>
+
+                            </td>
+
+
+                            <!-- ACTION -->
+
+                            <td>
+
+                                <div class="action-buttons">
+
+
+                                    <!-- EDIT -->
+
+                                    <a
+                                        href="edit.php?id=<?= urlencode($row['id']); ?>"
+                                        class="action-btn edit"
+                                        title="Edit"
+                                    >
+
+                                        <i class="bi bi-pencil"></i>
+
+                                    </a>
+
+
+                                    <!-- DELETE -->
+
+                                    <button
+                                        type="button"
+                                        class="action-btn delete btn-delete"
+                                        data-id="<?= htmlspecialchars(
+                                            $row['id'],
+                                            ENT_QUOTES
+                                        ); ?>"
+                                        data-name="<?= htmlspecialchars(
+                                            $row['name'] ?? '',
+                                            ENT_QUOTES
+                                        ); ?>"
+                                        title="Delete"
+                                    >
+
+                                        <i class="bi bi-trash"></i>
+
+                                    </button>
+
+
+                                </div>
+
+                            </td>
+
+
+                        </tr>
+
+
+                    <?php
+
+                        endwhile;
+
+
+                    } catch (PDOException $e) {
+
+                        echo '<tr>';
+
+                        echo '<td colspan="11" class="database-error">';
+
+                        echo 'Unable to load personnel records from the database.';
+
+                        echo '</td>';
+
+                        echo '</tr>';
+
+                    }
+
+                    ?>
+
+                    </tbody>
+
+                </table>
+
+
+            </div>
+
+
+        </section>
+
+
+    </main>
+
 
 </div>
 
 
-<!-- ======================================================
+<!-- =========================================================
+     DELETE MODAL
+========================================================= -->
+
+<div
+    class="modal fade"
+    id="deleteModal"
+    tabindex="-1"
+    aria-hidden="true"
+>
+
+
+    <div class="modal-dialog modal-dialog-centered">
+
+
+        <div class="modal-content delete-modal">
+
+
+            <div class="modal-header">
+
+
+                <h5 class="modal-title">
+
+                    <i class="bi bi-exclamation-triangle-fill"></i>
+
+                    Confirm Deletion
+
+                </h5>
+
+
+                <button
+                    type="button"
+                    class="btn-close"
+                    data-bs-dismiss="modal"
+                    aria-label="Close"
+                >
+                </button>
+
+
+            </div>
+
+
+            <div class="modal-body">
+
+                <p>
+                    Are you sure you want to delete this personnel record?
+                </p>
+
+
+                <strong id="deletePersonName">
+                </strong>
+
+
+            </div>
+
+
+            <div class="modal-footer">
+
+
+                <button
+                    type="button"
+                    class="modal-cancel"
+                    data-bs-dismiss="modal"
+                >
+
+                    Cancel
+
+                </button>
+
+
+                <a
+                    id="confirmDeleteBtn"
+                    class="modal-delete"
+                >
+
+                    Delete Record
+
+                </a>
+
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
      JAVASCRIPT
-     ====================================================== -->
+========================================================= -->
 
 <script
-  src="https://code.jquery.com/jquery-3.7.1.min.js"
+    src="https://code.jquery.com/jquery-3.7.1.min.js"
 ></script>
 
 
 <script
-  src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+></script>
+
+
+<!-- =========================================================
+     DATATABLES
+========================================================= -->
+
+<script
+    src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"
 ></script>
 
 
 <script
-  src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"
+    src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"
+></script>
+
+
+<!-- =========================================================
+     DATATABLE BUTTONS
+========================================================= -->
+
+<script
+    src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"
 ></script>
 
 
 <script
-  src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"
-></script>
-
-
-<!-- ======================================================
-     DATATABLES BUTTONS
-     ====================================================== -->
-
-<script
-  src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"
+    src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"
 ></script>
 
 
 <script
-  src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"
+    src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
 ></script>
 
 
 <script
-  src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
+    src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"
 ></script>
 
 
 <script
-  src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"
+    src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"
 ></script>
 
 
 <script
-  src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"
+    src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"
 ></script>
 
 
 <script
-  src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"
-></script>
-
-
-<script
-  src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"
+    src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"
 ></script>
 
 
@@ -1124,183 +1302,224 @@ require_once 'db.php';
 $(document).ready(function () {
 
 
-  // ======================================================
-  // DATATABLE
-  // ======================================================
+    /*
+    |--------------------------------------------------------------------------
+    | DATATABLE
+    |--------------------------------------------------------------------------
+    */
 
-  var table =
-    $('#personnelTable').DataTable({
+    const table = $('#personnelTable').DataTable({
 
-      order: [
-        [0, 'asc']
-      ],
+        order: [
+            [0, 'asc']
+        ],
 
-      pageLength: 5,
+        pageLength: 5,
 
-      lengthMenu: [
-        5,
-        10,
-        25,
-        50
-      ],
+        lengthMenu: [
+            [5, 10, 25, 50],
+            [5, 10, 25, 50]
+        ],
 
-      dom: 'lBfrtip',
+        dom: 'lBfrtip',
 
-      buttons: [
+        buttons: [
 
-        {
-          extend: 'excelHtml5',
+            {
+                extend: 'excelHtml5',
 
-          title:
-            'Military Personnel Information'
-        },
+                title:
+                    'Military Personnel Information'
+            },
 
-        {
-          extend: 'pdfHtml5',
+            {
+                extend: 'pdfHtml5',
 
-          title:
-            'Military Personnel Information',
+                title:
+                    'Military Personnel Information',
 
-          orientation:
-            'landscape',
+                orientation:
+                    'landscape',
 
-          pageSize:
-            'A4'
-        },
+                pageSize:
+                    'A4'
+            },
 
-        {
-          extend: 'print',
+            {
+                extend: 'print',
 
-          title:
-            'Military Personnel Information'
-        }
+                title:
+                    'Military Personnel Information'
+            }
 
-      ]
+        ]
 
     });
 
 
-  // ======================================================
-  // EXPORT TO EXCEL
-  // ======================================================
+    /*
+    |--------------------------------------------------------------------------
+    | EXPORT EXCEL
+    |--------------------------------------------------------------------------
+    */
 
-  $('#exportExcel').on(
-    'click',
-    function (e) {
+    $('#exportExcel').on('click', function (e) {
 
-      e.preventDefault();
+        e.preventDefault();
 
-      table
-        .button('.buttons-excel')
-        .trigger();
+        table
+            .button('.buttons-excel')
+            .trigger();
 
-    }
-  );
-
-
-  // ======================================================
-  // EXPORT TO PDF
-  // ======================================================
-
-  $('#exportPDF').on(
-    'click',
-    function (e) {
-
-      e.preventDefault();
-
-      table
-        .button('.buttons-pdf')
-        .trigger();
-
-    }
-  );
+    });
 
 
-  // ======================================================
-  // PRINT
-  // ======================================================
+    /*
+    |--------------------------------------------------------------------------
+    | EXPORT PDF
+    |--------------------------------------------------------------------------
+    */
 
-  $('#exportPrint').on(
-    'click',
-    function (e) {
+    $('#exportPDF').on('click', function (e) {
 
-      e.preventDefault();
+        e.preventDefault();
 
-      table
-        .button('.buttons-print')
-        .trigger();
+        table
+            .button('.buttons-pdf')
+            .trigger();
 
-    }
-  );
+    });
 
 
-  // ======================================================
-  // DELETE MODAL
-  // ======================================================
+    /*
+    |--------------------------------------------------------------------------
+    | PRINT TABLE
+    |--------------------------------------------------------------------------
+    */
 
-  const deleteModalEl =
-    document.getElementById(
-      'deleteModal'
+    $('#exportPrint').on('click', function (e) {
+
+        e.preventDefault();
+
+        table
+            .button('.buttons-print')
+            .trigger();
+
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | COPY FILE DROPDOWN
+    |--------------------------------------------------------------------------
+    */
+
+    $('#copyFileToggle').on('click', function () {
+
+        $('#copyFileMenu').toggleClass('show');
+
+        $(this).toggleClass('open');
+
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | MOBILE SIDEBAR
+    |--------------------------------------------------------------------------
+    */
+
+    $('#mobileMenuBtn').on('click', function () {
+
+        $('#sidebar').toggleClass('show');
+
+        $('#sidebarOverlay').toggleClass('show');
+
+    });
+
+
+    $('#sidebarOverlay').on('click', function () {
+
+        $('#sidebar').removeClass('show');
+
+        $('#sidebarOverlay').removeClass('show');
+
+    });
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | DELETE MODAL
+    |--------------------------------------------------------------------------
+    */
+
+    const deleteModalElement =
+        document.getElementById('deleteModal');
+
+
+    const deleteModal =
+        new bootstrap.Modal(deleteModalElement);
+
+
+    const confirmDeleteBtn =
+        document.getElementById(
+            'confirmDeleteBtn'
+        );
+
+
+    const deletePersonName =
+        document.getElementById(
+            'deletePersonName'
+        );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | DELETE BUTTON
+    |--------------------------------------------------------------------------
+    */
+
+    $('#personnelTable').on(
+        'click',
+        '.btn-delete',
+        function () {
+
+
+            const id =
+                $(this).data('id');
+
+
+            const name =
+                $(this).data('name');
+
+
+            /*
+             * Show name in confirmation
+             */
+
+            deletePersonName.textContent =
+                name
+                    ? 'Personnel: ' + name
+                    : '';
+
+
+            /*
+             * Delete URL
+             */
+
+            confirmDeleteBtn.href =
+                'delete.php?id=' +
+                encodeURIComponent(id);
+
+
+            /*
+             * Show modal
+             */
+
+            deleteModal.show();
+
+        }
     );
-
-
-  const deleteModal =
-    new bootstrap.Modal(
-      deleteModalEl
-    );
-
-
-  const confirmDeleteBtn =
-    document.getElementById(
-      'confirmDeleteBtn'
-    );
-
-
-  const deletePersonName =
-    document.getElementById(
-      'deletePersonName'
-    );
-
-
-  // ======================================================
-  // DELETE BUTTON
-  // ======================================================
-
-  $('#personnelTable').on(
-    'click',
-    '.btn-delete',
-    function () {
-
-
-      const id =
-        $(this).data('id');
-
-
-      const name =
-        $(this).data('name');
-
-
-      // Display personnel name
-
-      deletePersonName.textContent =
-        name
-          ? 'Personnel: ' + name
-          : '';
-
-
-      // Set delete URL
-
-      confirmDeleteBtn.href =
-        'delete.php?id=' +
-        encodeURIComponent(id);
-
-
-      // Show confirmation modal
-
-      deleteModal.show();
-
-    }
-  );
 
 
 });
