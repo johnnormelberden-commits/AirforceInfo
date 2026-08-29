@@ -4,21 +4,29 @@ session_start();
 if (isset($_COOKIE['remember_user'])) {
     $_SESSION['logged_in'] = true;
     $_SESSION['username'] = $_COOKIE['remember_user'];
+
     header("Location: index.php");
     exit;
 }
-
-
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
+
 <meta charset="UTF-8">
+
 <title>PAF Personnel System - Login</title>
+
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<link
+  href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+  rel="stylesheet"
+>
 
 <style>
+
 body {
   margin: 0;
   background: linear-gradient(135deg, #021631, #05254d);
@@ -87,22 +95,21 @@ body {
   color: #00204a;
 }
 
- input.form-control,
+input.form-control,
 select.form-select,
 textarea.form-control {
-  color: #ffffff !important;          
-  background-color: rgba(0, 0, 0, 0.35) !important; 
-
+  color: #ffffff !important;
+  background-color: rgba(0, 0, 0, 0.35) !important;
 }
+
 input::placeholder,
 textarea::placeholder {
-  color: rgba(255, 255, 255, 0.6) !important;  
-
+  color: rgba(255, 255, 255, 0.6) !important;
 }
+
 select.form-select option {
-  color: #000 !important;  
+  color: #000 !important;
 }
-
 
 input.form-control:focus,
 select.form-select:focus {
@@ -116,50 +123,84 @@ select.form-select {
   border: 1px solid #ffd700 !important;
 }
 
-
 select.form-select option {
-  background-color: #1c2942 !important;  
-  color: #ffffff !important;             
+  background-color: #1c2942 !important;
+  color: #ffffff !important;
 }
 
 select.form-select option:checked,
 select.form-select option:hover {
-  background-color: #324a78 !important; 
+  background-color: #324a78 !important;
   color: #ffffff !important;
 }
 
-
-
 </style>
+
 </head>
+
 <body>
 
 <div class="login-container">
+
   <div class="login-card">
-    <img src="cmo1.png">
+
+    <img src="cmo1.png" alt="Philippine Air Force Logo">
+
     <h3>CMO Training Squadron</h3>
+
     <span>Personnel System Login</span>
 
-    <form action="auth.php" method="POST" class="mt-4">
+    <form
+      action="auth.php"
+      method="POST"
+      class="mt-4"
+    >
+
       <div class="mb-3">
-        <input type="text" name="username" class="form-control" placeholder="Username" required>
+
+        <input
+          type="text"
+          name="username"
+          class="form-control"
+          placeholder="Username"
+          required
+          autocomplete="username"
+        >
+
       </div>
 
       <div class="mb-4">
-        <input type="password" name="password" class="form-control" placeholder="Password" required>
-      </div>
-      
 
-      <button type="submit" class="btn btn-login w-100">Login</button>
+        <input
+          type="password"
+          name="password"
+          class="form-control"
+          placeholder="Password"
+          required
+          autocomplete="current-password"
+        >
+
+      </div>
+
+      <button
+        type="submit"
+        class="btn btn-login w-100"
+      >
+        Login
+      </button>
+
     </form>
 
-    <?php if(isset($_GET['error'])): ?>
+    <?php if (isset($_GET['error'])): ?>
+
       <div class="mt-3 text-danger">
         Invalid username or password
       </div>
+
     <?php endif; ?>
 
-  </div> 
+  </div>
+
 </div>
 
 </body>

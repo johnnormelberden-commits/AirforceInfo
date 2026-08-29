@@ -4,7 +4,7 @@ WORKDIR /var/www/html
 
 COPY . /var/www/html/
 
-RUN docker-php-ext-install mysqli pdo pdo_mysql
+RUN docker-php-ext-install pdo pdo_pgsql
 
 RUN chown -R www-data:www-data /var/www/html
 

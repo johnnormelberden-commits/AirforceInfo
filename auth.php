@@ -1,38 +1,126 @@
 <?php
-session_start();
-$conn = new mysqli("localhost", "root", "", "airforce_info");
 
-$username = $_POST['username'] ?? '';
+session_start();
+
+/*
+ * ==========================================================
+ * DATABASE CONNECTION
+ * ==========================================================
+ *
+ * The PostgreSQL connection is handled by db.php.
+ *
+ * db.php uses these Render Environment Variables:
+ *
+ * DB_HOST
+ * DB_PORT
+ * DB_NAME
+ * DB_USER
+ * DB_PASSWORD
+ *
+ * ==========================================================
+ */
+
+require_once 'db.php';
+
+
+/*
+ * ==========================================================
+ * GET LOGIN FORM VALUES
+ * ==========================================================
+ */
+
+$username = trim($_POST['username'] ?? '');
 $password = $_POST['password'] ?? '';
+
 $remember = isset($_POST['remember']);
 
-$stmt = $conn->prepare("SELECT * FROM users WHERE username = ?");
-$stmt->bind_param("s", $username);
-$stmt->execute();
-$result = $stmt->get_result();
 
-if ($user = $result->fetch_assoc()) {
+/*
+ * ==========================================================
+ * CHECK USERNAME
+ * ==========================================================
+ */
 
-    if (password_verify($password, $user['password'])) {
+try {
+
+    $stmt = $connection->prepare(
+        "SELECT id, username, password
+         FROM users
+         WHERE username = :username
+         LIMIT 1"
+    );
+
+    $stmt->execute([
+        ':username' => $username
+    ]);
+
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 
+    /*
+     * ======================================================
+     * VERIFY PASSWORD
+     * ======================================================
+     */
+
+    if ($user && password_verify($password, $user['password'])) {
+
+        /*
+         * Login successful
+         */
         $_SESSION['logged_in'] = true;
-        $_SESSION['username'] = $username;
+        $_SESSION['username'] = $user['username'];
 
-        // ✅ Remember Me feature
+
+        /*
+         * ==================================================
+         * REMEMBER ME
+         * ==================================================
+         */
+
         if ($remember) {
-            setcookie("remember_user", $username, time() + (86400 * 30), "/");
+
+            setcookie(
+                "remember_user",
+                $user['username'],
+                [
+                    'expires' => time() + (86400 * 30),
+                    'path' => '/',
+                    'httponly' => true,
+                    'samesite' => 'Lax'
+                ]
+            );
+
         }
 
-        // ✅ Log activity
-       // $log = $conn->prepare("INSERT INTO login_logs (username, action) VALUES (?, 'LOGIN')");
-       // $log->bind_param("s", $username);
-     //   $log->execute();
+
+        /*
+         * ==================================================
+         * REDIRECT AFTER SUCCESSFUL LOGIN
+         * ==================================================
+         */
 
         header("Location: index.php");
         exit;
-    }
-}
 
-header("Location: login.php?error=1");
-exit;
+    }
+
+
+    /*
+     * ======================================================
+     * INVALID USERNAME OR PASSWORD
+     * ======================================================
+     */
+
+    header("Location: login.php?error=1");
+    exit;
+
+
+} catch (PDOException $e) {
+
+    /*
+     * Do not expose database error details.
+     */
+    die("Unable to process login.");
+
+}
