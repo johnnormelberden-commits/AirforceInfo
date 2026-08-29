@@ -1,831 +1,652 @@
-/* =========================================================
-   CMO TRAINING SQUADRON
-   STATISTICS PAGE
-   ========================================================= */
+/*
+|--------------------------------------------------------------------------
+| STATISTICS PAGE
+|--------------------------------------------------------------------------
+*/
 
+.statistics-content {
 
-/* =========================================================
-   PAGE
-   ========================================================= */
+    background: #f4f7fb;
 
-.statistics-page {
-    max-width: 1500px;
+    min-height: calc(100vh - 72px);
 
-    margin: 0 auto;
-
-    padding: 32px 40px 50px;
-
-    color: #dce7f2;
 }
 
 
-/* =========================================================
-   DATABASE ERROR
-   ========================================================= */
+/*
+|--------------------------------------------------------------------------
+| PAGE HEADING
+|--------------------------------------------------------------------------
+*/
 
-.database-error {
+.statistics-heading {
+
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: flex-end;
+
+    gap: 30px;
+
+    margin-bottom: 30px;
+
+}
+
+
+.statistics-heading h1 {
+
+    margin: 6px 0 8px;
+
+    color: #172033;
+
+    font-size: 30px;
+
+    font-weight: 800;
+
+    letter-spacing: -0.5px;
+
+}
+
+
+.statistics-heading p {
+
+    margin: 0;
+
+    color: #738095;
+
+    font-size: 14px;
+
+    line-height: 1.6;
+
+}
+
+
+.statistics-date {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 9px;
+
+    padding: 10px 15px;
+
+    background: #ffffff;
+
+    border: 1px solid #e4eaf1;
+
+    border-radius: 8px;
+
+    color: #607087;
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    white-space: nowrap;
+
+    box-shadow: 0 2px 8px rgba(23, 32, 51, 0.04);
+
+}
+
+
+.statistics-date i {
+
+    color: #2d7fc1;
+
+    font-size: 15px;
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| ERROR
+|--------------------------------------------------------------------------
+*/
+
+.statistics-error {
+
     display: flex;
 
     align-items: center;
 
     gap: 10px;
 
+    padding: 13px 16px;
+
     margin-bottom: 25px;
 
-    padding: 14px 18px;
+    background: #fff4f4;
 
-    border-radius: 10px;
+    border: 1px solid #f2cccc;
 
-    background: rgba(220, 53, 69, 0.12);
+    border-radius: 8px;
 
-    border: 1px solid rgba(220, 53, 69, 0.35);
-
-    color: #ff8f99;
+    color: #b84242;
 
     font-size: 13px;
 
-    box-shadow:
-        0 5px 18px rgba(0, 0, 0, 0.20);
-}
+    font-weight: 600;
 
-.database-error i {
-    font-size: 17px;
 }
 
 
-/* =========================================================
-   PAGE HEADER
-   ========================================================= */
+/*
+|--------------------------------------------------------------------------
+| SUMMARY CARDS
+|--------------------------------------------------------------------------
+*/
 
-.statistics-header {
-    margin-bottom: 28px;
+.statistics-summary {
 
-    padding-bottom: 20px;
+    display: grid;
 
-    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+    grid-template-columns:
+        repeat(4, minmax(0, 1fr));
+
+    gap: 18px;
+
+    margin-bottom: 24px;
+
 }
 
 
-.statistics-header h2 {
-    margin: 0 0 7px;
+.statistics-card {
 
-    color: #ffffff;
-
-    font-size: 27px;
-
-    font-weight: 700;
-
-    letter-spacing: -0.5px;
-}
-
-
-.statistics-header p {
-    margin: 0;
-
-    color: #8495a8;
-
-    font-size: 12px;
-
-    line-height: 1.6;
-}
-
-
-/* =========================================================
-   SUMMARY CARDS
-   ========================================================= */
-
-.summary-card {
     position: relative;
-
-    min-height: 145px;
-
-    padding: 22px 24px;
-
-    overflow: hidden;
-
-    border-radius: 14px;
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(20, 35, 53, 0.98),
-            rgba(14, 27, 43, 0.98)
-        );
-
-    border: 1px solid rgba(105, 159, 207, 0.12);
-
-    box-shadow:
-        0 10px 30px rgba(0, 0, 0, 0.25);
-
-    transition:
-        transform 0.25s ease,
-        border-color 0.25s ease,
-        box-shadow 0.25s ease;
-}
-
-
-.summary-card:hover {
-    transform: translateY(-3px);
-
-    border-color:
-        rgba(70, 153, 219, 0.35);
-
-    box-shadow:
-        0 14px 35px rgba(0, 0, 0, 0.35);
-}
-
-
-/* Decorative blue glow */
-
-.summary-card::after {
-    content: "";
-
-    position: absolute;
-
-    width: 110px;
-    height: 110px;
-
-    right: -45px;
-    bottom: -45px;
-
-    border-radius: 50%;
-
-    background:
-        rgba(18, 98, 162, 0.10);
-
-    pointer-events: none;
-}
-
-
-/* =========================================================
-   SUMMARY ICON
-   ========================================================= */
-
-.summary-icon {
-    width: 42px;
-    height: 42px;
 
     display: flex;
 
     align-items: center;
-    justify-content: center;
 
-    margin-bottom: 14px;
+    gap: 16px;
+
+    min-height: 125px;
+
+    padding: 22px;
+
+    background: #ffffff;
+
+    border: 1px solid #e3e9f0;
 
     border-radius: 10px;
 
-    background:
-        rgba(18, 98, 162, 0.16);
-
-    border:
-        1px solid rgba(64, 145, 205, 0.20);
-
-    color: #55a9e8;
-
-    font-size: 18px;
-}
-
-
-.summary-icon i {
-    line-height: 1;
-}
-
-
-/* =========================================================
-   SUMMARY NUMBER
-   ========================================================= */
-
-.summary-number {
-    margin-bottom: 3px;
-
-    color: #ffffff;
-
-    font-size: 27px;
-
-    font-weight: 800;
-
-    line-height: 1.1;
-
-    letter-spacing: -0.5px;
-}
-
-
-/* =========================================================
-   SUMMARY LABEL
-   ========================================================= */
-
-.summary-label {
-    color: #8798aa;
-
-    font-size: 11px;
-
-    font-weight: 500;
-
-    text-transform: uppercase;
-
-    letter-spacing: 0.6px;
-}
-
-
-/* =========================================================
-   CHART CARD
-   ========================================================= */
-
-.chart-card {
-    width: 100%;
-
-    padding: 24px 25px 22px;
-
-    border-radius: 14px;
-
-    background:
-        linear-gradient(
-            145deg,
-            rgba(20, 35, 53, 0.98),
-            rgba(14, 27, 43, 0.98)
-        );
-
-    border:
-        1px solid rgba(105, 159, 207, 0.12);
+    overflow: hidden;
 
     box-shadow:
-        0 10px 30px rgba(0, 0, 0, 0.25);
+        0 3px 12px rgba(25, 45, 70, 0.05);
 
     transition:
-        border-color 0.25s ease,
-        box-shadow 0.25s ease;
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
+
 }
 
 
-.chart-card:hover {
-    border-color:
-        rgba(70, 153, 219, 0.22);
+.statistics-card:hover {
+
+    transform: translateY(-2px);
 
     box-shadow:
-        0 13px 34px rgba(0, 0, 0, 0.30);
+        0 7px 20px rgba(25, 45, 70, 0.09);
+
 }
 
 
-/* =========================================================
-   CHART TITLE
-   ========================================================= */
+.statistics-card::after {
 
-.chart-title {
-    margin-bottom: 5px;
+    content: "";
 
-    color: #f2f7fb;
+    position: absolute;
 
-    font-size: 14px;
+    right: 0;
 
-    font-weight: 700;
+    top: 0;
 
-    letter-spacing: 0.1px;
+    width: 4px;
+
+    height: 100%;
+
 }
 
 
-/* =========================================================
-   CHART SUBTITLE
-   ========================================================= */
+.blue-card::after {
+    background: #2d7fc1;
+}
 
-.chart-subtitle {
-    margin-bottom: 18px;
 
-    color: #788a9d;
+.cyan-card::after {
+    background: #42a5d5;
+}
+
+
+.purple-card::after {
+    background: #7c6dcc;
+}
+
+
+.green-card::after {
+    background: #3baf86;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| STATISTICS ICON
+|--------------------------------------------------------------------------
+*/
+
+.statistics-card-icon {
+
+    width: 50px;
+
+    height: 50px;
+
+    flex: 0 0 50px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 9px;
+
+    font-size: 21px;
+
+}
+
+
+.blue-card
+.statistics-card-icon {
+
+    background: #eaf4fc;
+
+    color: #2d7fc1;
+
+}
+
+
+.cyan-card
+.statistics-card-icon {
+
+    background: #eaf8fc;
+
+    color: #2797c5;
+
+}
+
+
+.purple-card
+.statistics-card-icon {
+
+    background: #f0edfb;
+
+    color: #7565c2;
+
+}
+
+
+.green-card
+.statistics-card-icon {
+
+    background: #eaf8f2;
+
+    color: #329b76;
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| CARD CONTENT
+|--------------------------------------------------------------------------
+*/
+
+.statistics-card-content {
+
+    min-width: 0;
+
+}
+
+
+.statistics-card-content span {
+
+    display: block;
+
+    margin-bottom: 4px;
+
+    color: #7b8899;
 
     font-size: 10px;
 
-    line-height: 1.5;
+    font-weight: 700;
+
+    letter-spacing: 0.8px;
+
 }
 
 
-/* =========================================================
-   CHART CONTAINER
-   ========================================================= */
+.statistics-card-content strong {
 
-.chart-container {
+    display: block;
+
+    margin-bottom: 2px;
+
+    color: #182235;
+
+    font-size: 27px;
+
+    line-height: 1.1;
+
+    font-weight: 800;
+
+}
+
+
+.statistics-card-content small {
+
+    color: #8b97a7;
+
+    font-size: 11px;
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| CHART GRID
+|--------------------------------------------------------------------------
+*/
+
+.statistics-grid {
+
+    display: grid;
+
+    grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
+    gap: 20px;
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| CHART PANEL
+|--------------------------------------------------------------------------
+*/
+
+.chart-panel {
+
+    min-width: 0;
+
+    background: #ffffff;
+
+    border: 1px solid #e2e8ef;
+
+    border-radius: 10px;
+
+    padding: 22px;
+
+    box-shadow:
+        0 3px 12px rgba(25, 45, 70, 0.045);
+
+}
+
+
+.chart-panel-wide {
+
+    grid-column: 1 / -1;
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| CHART HEADER
+|--------------------------------------------------------------------------
+*/
+
+.chart-panel-header {
+
+    display: flex;
+
+    align-items: flex-start;
+
+    justify-content: space-between;
+
+    gap: 15px;
+
+    margin-bottom: 20px;
+
+}
+
+
+.chart-label {
+
+    display: block;
+
+    margin-bottom: 5px;
+
+    color: #8793a3;
+
+    font-size: 9px;
+
+    font-weight: 700;
+
+    letter-spacing: 1px;
+
+}
+
+
+.chart-panel h2 {
+
+    margin: 0;
+
+    color: #202b3d;
+
+    font-size: 16px;
+
+    font-weight: 700;
+
+}
+
+
+.chart-icon {
+
+    width: 34px;
+
+    height: 34px;
+
+    flex: 0 0 34px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 7px;
+
+    background: #edf5fb;
+
+    color: #2d7fc1;
+
+    font-size: 14px;
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| CHART WRAPPER
+|--------------------------------------------------------------------------
+*/
+
+.chart-wrapper {
+
     position: relative;
 
     width: 100%;
 
-    height: 300px;
-}
-
-
-/* =========================================================
-   LARGE COURSE CHART
-   ========================================================= */
-
-#courseChart {
-    max-height: 350px;
-}
-
-
-/* =========================================================
-   CANVAS
-   ========================================================= */
-
-.chart-container canvas {
-    display: block;
-
-    width: 100% !important;
-
-    height: 100% !important;
-}
-
-
-/* =========================================================
-   CHART ROW SPACING
-   ========================================================= */
-
-.statistics-page .row {
-    margin-left: -10px;
-
-    margin-right: -10px;
-}
-
-
-.statistics-page .row > * {
-    padding-left: 10px;
-
-    padding-right: 10px;
-}
-
-
-/* =========================================================
-   BOOTSTRAP ROW BOTTOM SPACING
-   ========================================================= */
-
-.statistics-page .mb-4 {
-    margin-bottom: 20px !important;
-}
-
-
-/* =========================================================
-   CHART LEGEND
-   ========================================================= */
-
-.chart-card .chartjs-legend {
-
-    font-size: 10px;
+    height: 285px;
 
 }
 
 
-/* =========================================================
-   CHART CARD - DOUGHNUT / PIE
-   ========================================================= */
-
-.chart-card:has(#branchChart) .chart-container,
-.chart-card:has(#standingChart) .chart-container {
-
-    height: 310px;
-
-}
-
-
-/* =========================================================
-   CHART CARD - LINE
-   ========================================================= */
-
-.chart-card:has(#yearChart) .chart-container {
+.doughnut-wrapper {
 
     height: 300px;
 
 }
 
 
-/* =========================================================
-   CHART CARD - COURSE
-   ========================================================= */
-
-.chart-card:has(#courseChart) .chart-container {
+.course-chart-wrapper {
 
     height: 350px;
 
 }
 
 
-/* =========================================================
-   CHART CARD - BAR
-   ========================================================= */
+/*
+|--------------------------------------------------------------------------
+| CANVAS
+|--------------------------------------------------------------------------
+*/
 
-.chart-card:has(#rankChart) .chart-container {
+.chart-wrapper canvas {
 
-    height: 300px;
+    max-width: 100%;
 
 }
 
-
-/* =========================================================
-   DARK SCROLLBAR
-   ========================================================= */
-
-.statistics-page::-webkit-scrollbar {
-    width: 8px;
-}
-
-.statistics-page::-webkit-scrollbar-track {
-    background: #0b1522;
-}
-
-.statistics-page::-webkit-scrollbar-thumb {
-    background: #234767;
-
-    border-radius: 10px;
-}
-
-.statistics-page::-webkit-scrollbar-thumb:hover {
-    background: #32658f;
-}
-
-
-/* =========================================================
-   HEADER COMPATIBILITY
-   ========================================================= */
 
 /*
- * These rules make sure the statistics page header
- * stays visually consistent with the dashboard.
- */
-
-.paf-topbar {
-    position: relative;
-
-    z-index: 100;
-
-    min-height: 82px;
-}
-
-
-.paf-brand {
-    min-width: 0;
-}
-
-
-.paf-brand img {
-    flex-shrink: 0;
-}
-
-
-.paf-text {
-    min-width: 0;
-}
-
-
-.paf-text h1 {
-    white-space: nowrap;
-
-    overflow: hidden;
-
-    text-overflow: ellipsis;
-}
-
-
-.paf-text span {
-    display: block;
-
-    margin-top: 2px;
-}
-
-
-/* =========================================================
-   HEADER BUTTONS
-   ========================================================= */
-
-.paf-topbar .btn {
-    white-space: nowrap;
-
-    font-size: 11px;
-
-    font-weight: 500;
-
-    transition:
-        background-color 0.2s ease,
-        border-color 0.2s ease,
-        transform 0.2s ease;
-}
-
-
-.paf-topbar .btn:hover {
-    transform: translateY(-1px);
-}
-
-
-/* =========================================================
-   USERNAME
-   ========================================================= */
-
-.paf-topbar .text-light {
-    color: #aebdcc !important;
-
-    font-size: 11px !important;
-
-    padding-right: 4px;
-}
-
-
-/* =========================================================
-   CHANGE PASSWORD
-   ========================================================= */
-
-.paf-topbar .btn-outline-warning {
-    color: #ffd45a;
-
-    border-color:
-        rgba(255, 212, 90, 0.45);
-}
-
-
-.paf-topbar .btn-outline-warning:hover {
-    color: #162335;
-
-    background: #ffd45a;
-
-    border-color: #ffd45a;
-}
-
-
-/* =========================================================
-   LOGOUT
-   ========================================================= */
-
-.paf-topbar .logout-btn {
-    border-color:
-        rgba(255, 255, 255, 0.25);
-
-    color: #d8e1ea;
-}
-
-
-.paf-topbar .logout-btn:hover {
-    color: #182534;
-
-    background: #ffffff;
-
-    border-color: #ffffff;
-}
-
-
-/* =========================================================
-   RESPONSIVE - TABLET
-   ========================================================= */
+|--------------------------------------------------------------------------
+| RESPONSIVE - TABLET
+|--------------------------------------------------------------------------
+*/
 
 @media (max-width: 1100px) {
 
-    .statistics-page {
-        padding:
-            28px 25px 45px;
-    }
+    .statistics-summary {
 
+        grid-template-columns:
+            repeat(2, minmax(0, 1fr));
 
-    .summary-card {
-        min-height: 135px;
-
-        padding: 20px;
-    }
-
-
-    .chart-card {
-        padding: 21px;
-    }
-
-
-    .chart-container {
-        height: 280px;
     }
 
 }
 
 
-/* =========================================================
-   RESPONSIVE - MOBILE HEADER
-   ========================================================= */
+/*
+|--------------------------------------------------------------------------
+| RESPONSIVE - MOBILE
+|--------------------------------------------------------------------------
+*/
 
-@media (max-width: 800px) {
+@media (max-width: 850px) {
 
-    .statistics-page {
-        padding:
-            25px 18px 40px;
+    .statistics-heading {
+
+        align-items: flex-start;
+
+        flex-direction: column;
+
+        gap: 15px;
+
     }
 
 
-    .paf-topbar {
-        padding:
-            12px 18px;
+    .statistics-date {
 
-        flex-wrap: wrap;
+        align-self: flex-start;
 
-        gap: 12px;
     }
 
 
-    .paf-brand {
-        width: 100%;
+    .statistics-grid {
+
+        grid-template-columns: 1fr;
+
     }
 
 
-    .paf-brand img {
-        width: 55px;
+    .chart-panel-wide {
 
-        height: 55px;
-    }
+        grid-column: auto;
 
-
-    .paf-text h1 {
-        font-size: 1.15rem;
-    }
-
-
-    .paf-text span {
-        font-size: 0.72rem;
-    }
-
-
-    .paf-topbar > .d-flex {
-        width: 100%;
-
-        justify-content: flex-end;
-
-        padding-bottom: 3px;
-    }
-
-
-    .statistics-header {
-        margin-bottom: 22px;
-    }
-
-
-    .statistics-header h2 {
-        font-size: 23px;
-    }
-
-
-    .statistics-header p {
-        font-size: 11px;
-    }
-
-
-    .chart-container {
-        height: 270px;
-    }
-
-
-    .chart-card:has(#courseChart) .chart-container {
-        height: 320px;
     }
 
 }
 
 
-/* =========================================================
-   RESPONSIVE - SMALL MOBILE
-   ========================================================= */
+/*
+|--------------------------------------------------------------------------
+| SMALL MOBILE
+|--------------------------------------------------------------------------
+*/
 
-@media (max-width: 500px) {
+@media (max-width: 560px) {
 
-    .statistics-page {
-        padding:
-            20px 12px 35px;
+    .statistics-summary {
+
+        grid-template-columns: 1fr;
+
     }
 
 
-    .paf-topbar {
-        padding:
-            12px 14px;
+    .statistics-heading h1 {
+
+        font-size: 25px;
+
     }
 
 
-    .paf-brand img {
-        width: 48px;
+    .statistics-card {
 
-        height: 48px;
-    }
-
-
-    .paf-text h1 {
-        font-size: 0.95rem;
-
-        letter-spacing: 0.5px;
-    }
-
-
-    .paf-text span {
-        font-size: 0.65rem;
-    }
-
-
-    .paf-topbar > .d-flex {
-        gap: 6px !important;
-    }
-
-
-    .paf-topbar .btn {
-        padding:
-            5px 9px;
-
-        font-size: 10px;
-    }
-
-
-    .statistics-header h2 {
-        font-size: 21px;
-    }
-
-
-    .summary-card {
-        min-height: 125px;
+        min-height: 110px;
 
         padding: 18px;
+
     }
 
 
-    .summary-icon {
-        width: 38px;
-        height: 38px;
+    .statistics-card-content strong {
 
-        margin-bottom: 11px;
-
-        font-size: 16px;
-    }
-
-
-    .summary-number {
         font-size: 24px;
+
     }
 
 
-    .summary-label {
-        font-size: 9px;
+    .chart-panel {
+
+        padding: 17px;
+
     }
 
 
-    .chart-card {
-        padding:
-            19px 16px;
-    }
+    .chart-wrapper {
 
-
-    .chart-title {
-        font-size: 13px;
-    }
-
-
-    .chart-subtitle {
-        font-size: 9px;
-
-        margin-bottom: 14px;
-    }
-
-
-    .chart-container {
         height: 250px;
+
     }
 
 
-    .chart-card:has(#branchChart) .chart-container,
-    .chart-card:has(#standingChart) .chart-container {
-        height: 260px;
+    .doughnut-wrapper {
+
+        height: 270px;
+
     }
 
 
-    .chart-card:has(#courseChart) .chart-container {
-        height: 300px;
-    }
+    .course-chart-wrapper {
 
-}
+        height: 320px;
 
-
-/* =========================================================
-   VERY SMALL SCREEN
-   ========================================================= */
-
-@media (max-width: 360px) {
-
-    .paf-text h1 {
-        font-size: 0.85rem;
-    }
-
-
-    .paf-text span {
-        font-size: 0.58rem;
-    }
-
-
-    .paf-topbar > .d-flex {
-        justify-content: space-between;
-    }
-
-
-    .paf-topbar .btn {
-        font-size: 9px;
-
-        padding:
-            5px 7px;
-    }
-
-
-    .statistics-header h2 {
-        font-size: 19px;
     }
 
 }

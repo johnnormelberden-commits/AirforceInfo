@@ -1,10 +1,10 @@
 <?php
 
 /*
- * ==========================================================
- * LOGIN SECURITY
- * ==========================================================
- */
+|--------------------------------------------------------------------------
+| LOGIN SECURITY
+|--------------------------------------------------------------------------
+*/
 
 session_start();
 
@@ -17,21 +17,24 @@ if (!isset($_SESSION['username'])) {
 
 
 /*
- * ==========================================================
- * DATABASE CONNECTION
- * ==========================================================
- */
+|--------------------------------------------------------------------------
+| DATABASE CONNECTION
+|--------------------------------------------------------------------------
+*/
 
 require_once 'db.php';
 
 
 /*
- * ==========================================================
- * DEFAULT VALUES
- * ==========================================================
- */
+|--------------------------------------------------------------------------
+| DEFAULT VALUES
+|--------------------------------------------------------------------------
+*/
 
 $totalPersonnel = 0;
+$totalRanks = 0;
+$totalBranches = 0;
+$totalCourses = 0;
 
 $rankStatistics = [];
 $branchStatistics = [];
@@ -43,18 +46,15 @@ $databaseError = false;
 
 
 /*
- * ==========================================================
- * GET STATISTICS
- * ==========================================================
- */
+|--------------------------------------------------------------------------
+| GET STATISTICS
+|--------------------------------------------------------------------------
+*/
 
 try {
 
-
     /*
-     * ------------------------------------------------------
      * TOTAL PERSONNEL
-     * ------------------------------------------------------
      */
 
     $stmt = $connection->query("
@@ -66,157 +66,142 @@ try {
 
 
     /*
-     * ------------------------------------------------------
+     * TOTAL RANKS
+     */
+
+    $stmt = $connection->query("
+        SELECT COUNT(DISTINCT NULLIF(TRIM(rank), ''))
+        FROM military_personnel
+    ");
+
+    $totalRanks = (int) $stmt->fetchColumn();
+
+
+    /*
+     * TOTAL BRANCHES
+     */
+
+    $stmt = $connection->query("
+        SELECT COUNT(DISTINCT NULLIF(TRIM(branch_of_service), ''))
+        FROM military_personnel
+    ");
+
+    $totalBranches = (int) $stmt->fetchColumn();
+
+
+    /*
+     * TOTAL COURSES
+     */
+
+    $stmt = $connection->query("
+        SELECT COUNT(DISTINCT NULLIF(TRIM(courses), ''))
+        FROM military_personnel
+    ");
+
+    $totalCourses = (int) $stmt->fetchColumn();
+
+
+    /*
      * PERSONNEL BY RANK
-     * ------------------------------------------------------
      */
 
     $stmt = $connection->query("
         SELECT
-
             COALESCE(
-                NULLIF(
-                    TRIM(rank),
-                    ''
-                ),
+                NULLIF(TRIM(rank), ''),
                 'Not Specified'
             ) AS label,
-
             COUNT(*) AS total
-
         FROM military_personnel
-
         GROUP BY label
-
         ORDER BY total DESC
     ");
 
-    $rankStatistics =
-        $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $rankStatistics = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
     /*
-     * ------------------------------------------------------
-     * PERSONNEL BY BRANCH OF SERVICE
-     * ------------------------------------------------------
+     * PERSONNEL BY BRANCH
      */
 
     $stmt = $connection->query("
         SELECT
-
             COALESCE(
-                NULLIF(
-                    TRIM(branch_of_service),
-                    ''
-                ),
+                NULLIF(TRIM(branch_of_service), ''),
                 'Not Specified'
             ) AS label,
-
             COUNT(*) AS total
-
         FROM military_personnel
-
         GROUP BY label
-
         ORDER BY total DESC
     ");
 
-    $branchStatistics =
-        $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $branchStatistics = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
     /*
-     * ------------------------------------------------------
      * PERSONNEL BY STANDING
-     * ------------------------------------------------------
      */
 
     $stmt = $connection->query("
         SELECT
-
             COALESCE(
-                NULLIF(
-                    TRIM(standing),
-                    ''
-                ),
+                NULLIF(TRIM(standing), ''),
                 'Not Specified'
             ) AS label,
-
             COUNT(*) AS total
-
         FROM military_personnel
-
         GROUP BY label
-
         ORDER BY total DESC
     ");
 
-    $standingStatistics =
-        $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $standingStatistics = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
     /*
-     * ------------------------------------------------------
      * PERSONNEL BY COURSE
-     * ------------------------------------------------------
      */
 
     $stmt = $connection->query("
         SELECT
-
             COALESCE(
-                NULLIF(
-                    TRIM(courses),
-                    ''
-                ),
+                NULLIF(TRIM(courses), ''),
                 'Not Specified'
             ) AS label,
-
             COUNT(*) AS total
-
         FROM military_personnel
-
         GROUP BY label
-
         ORDER BY total DESC
     ");
 
-    $courseStatistics =
-        $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $courseStatistics = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
     /*
-     * ------------------------------------------------------
-     * PERSONNEL BY YEAR GRADUATED
-     * ------------------------------------------------------
+     * PERSONNEL BY YEAR
      */
 
     $stmt = $connection->query("
         SELECT
-
             COALESCE(
                 CAST(year_graduated AS TEXT),
                 'Not Specified'
             ) AS label,
-
             COUNT(*) AS total
-
         FROM military_personnel
-
         GROUP BY label
-
-        ORDER BY label ASC
+        ORDER BY
+            CASE
+                WHEN label = 'Not Specified' THEN 1
+                ELSE 0
+            END,
+            label ASC
     ");
 
-    $yearStatistics =
-        $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $yearStatistics = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
 
 } catch (PDOException $e) {
-
-    /*
-     * Do not expose database information.
-     */
 
     $databaseError = true;
 
@@ -224,106 +209,66 @@ try {
 
 
 /*
- * ==========================================================
- * PREPARE RANK CHART DATA
- * ==========================================================
- */
+|--------------------------------------------------------------------------
+| CHART DATA
+|--------------------------------------------------------------------------
+*/
 
 $rankLabels = [];
 $rankData = [];
 
 foreach ($rankStatistics as $row) {
 
-    $rankLabels[] =
-        $row['label'];
-
-    $rankData[] =
-        (int) $row['total'];
+    $rankLabels[] = $row['label'];
+    $rankData[] = (int) $row['total'];
 
 }
 
-
-/*
- * ==========================================================
- * PREPARE BRANCH CHART DATA
- * ==========================================================
- */
 
 $branchLabels = [];
 $branchData = [];
 
 foreach ($branchStatistics as $row) {
 
-    $branchLabels[] =
-        $row['label'];
-
-    $branchData[] =
-        (int) $row['total'];
+    $branchLabels[] = $row['label'];
+    $branchData[] = (int) $row['total'];
 
 }
 
-
-/*
- * ==========================================================
- * PREPARE STANDING CHART DATA
- * ==========================================================
- */
 
 $standingLabels = [];
 $standingData = [];
 
 foreach ($standingStatistics as $row) {
 
-    $standingLabels[] =
-        $row['label'];
-
-    $standingData[] =
-        (int) $row['total'];
+    $standingLabels[] = $row['label'];
+    $standingData[] = (int) $row['total'];
 
 }
 
-
-/*
- * ==========================================================
- * PREPARE COURSE CHART DATA
- * ==========================================================
- */
 
 $courseLabels = [];
 $courseData = [];
 
 foreach ($courseStatistics as $row) {
 
-    $courseLabels[] =
-        $row['label'];
-
-    $courseData[] =
-        (int) $row['total'];
+    $courseLabels[] = $row['label'];
+    $courseData[] = (int) $row['total'];
 
 }
 
-
-/*
- * ==========================================================
- * PREPARE YEAR CHART DATA
- * ==========================================================
- */
 
 $yearLabels = [];
 $yearData = [];
 
 foreach ($yearStatistics as $row) {
 
-    $yearLabels[] =
-        $row['label'];
-
-    $yearData[] =
-        (int) $row['total'];
+    $yearLabels[] = $row['label'];
+    $yearData[] = (int) $row['total'];
 
 }
 
 ?>
-
 
 <!DOCTYPE html>
 
@@ -339,13 +284,11 @@ foreach ($yearStatistics as $row) {
     >
 
     <title>
-        Statistics | CMO Training Squadron
+        Statistics - CMO Training Squadron
     </title>
 
 
-    <!-- ==================================================
-         BOOTSTRAP
-         ================================================== -->
+    <!-- Bootstrap -->
 
     <link
         rel="stylesheet"
@@ -353,9 +296,7 @@ foreach ($yearStatistics as $row) {
     >
 
 
-    <!-- ==================================================
-         BOOTSTRAP ICONS
-         ================================================== -->
+    <!-- Bootstrap Icons -->
 
     <link
         rel="stylesheet"
@@ -363,9 +304,7 @@ foreach ($yearStatistics as $row) {
     >
 
 
-    <!-- ==================================================
-         GOOGLE FONT
-         ================================================== -->
+    <!-- Google Font -->
 
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
@@ -373,9 +312,7 @@ foreach ($yearStatistics as $row) {
     >
 
 
-    <!-- ==================================================
-         SHARED DASHBOARD CSS
-         ================================================== -->
+    <!-- Shared Dashboard CSS -->
 
     <link
         rel="stylesheet"
@@ -383,9 +320,7 @@ foreach ($yearStatistics as $row) {
     >
 
 
-    <!-- ==================================================
-         STATISTICS CSS
-         ================================================== -->
+    <!-- Statistics CSS -->
 
     <link
         rel="stylesheet"
@@ -393,9 +328,7 @@ foreach ($yearStatistics as $row) {
     >
 
 
-    <!-- ==================================================
-         CHART.JS
-         ================================================== -->
+    <!-- Chart.js -->
 
     <script
         src="https://cdn.jsdelivr.net/npm/chart.js"
@@ -407,38 +340,49 @@ foreach ($yearStatistics as $row) {
 <body>
 
 
-<!-- ======================================================
-     TOP HEADER
-     ====================================================== -->
+<!-- =========================================================
+     MOBILE OVERLAY
+========================================================= -->
 
-<header class="paf-topbar">
-
-
-    <!-- ==================================================
-         LEFT BRAND
-         ================================================== -->
-
-    <div class="paf-brand">
+<div
+    class="sidebar-overlay"
+    id="sidebarOverlay"
+>
+</div>
 
 
-        <div class="logo-wrapper">
+<!-- =========================================================
+     SIDEBAR
+========================================================= -->
+
+<aside
+    class="sidebar"
+    id="sidebar"
+>
+
+
+    <!-- BRAND -->
+
+    <div class="sidebar-brand">
+
+        <div class="sidebar-logo">
 
             <img
                 src="cmo1.png"
-                alt="CMO Training Squadron Logo"
+                alt="CMO Training Squadron"
             >
 
         </div>
 
 
-        <div class="paf-text">
+        <div class="sidebar-brand-text">
 
-            <h1>
-                CMO Training Squadron
-            </h1>
+            <strong>
+                CMO TRAINING
+            </strong>
 
             <span>
-                Student Database Information System
+                SQUADRON
             </span>
 
         </div>
@@ -446,70 +390,30 @@ foreach ($yearStatistics as $row) {
     </div>
 
 
-    <!-- ==================================================
-         RIGHT USER AREA
-         ================================================== -->
+    <!-- NAVIGATION -->
 
-    <div class="header-user">
+    <div class="sidebar-section-title">
 
-
-        <i class="bi bi-person-circle"></i>
-
-
-        <span>
-
-            <?= htmlspecialchars(
-                $_SESSION['username']
-            ); ?>
-
-        </span>
-
+        NAVIGATION
 
     </div>
 
 
-</header>
+    <nav class="sidebar-nav">
 
 
-<!-- ======================================================
-     APPLICATION LAYOUT
-     ====================================================== -->
-
-<div class="app-layout">
-
-
-    <!-- ==================================================
-         SIDEBAR
-         ================================================== -->
-
-    <aside class="sidebar">
-
-
-        <!-- ==================================================
-             SIDEBAR BRAND
-             ================================================== -->
-
-        <div class="sidebar-heading">
-
-            <i class="bi bi-grid-1x2-fill"></i>
-
-            <span>
-                MAIN MENU
-            </span>
-
-        </div>
-
-
-        <!-- ==================================================
-             DASHBOARD
-             ================================================== -->
+        <!-- DASHBOARD -->
 
         <a
             href="index.php"
             class="nav-item"
         >
 
-            <i class="bi bi-speedometer2"></i>
+            <span class="nav-icon">
+
+                <i class="bi bi-grid-1x2-fill"></i>
+
+            </span>
 
             <span>
                 Dashboard
@@ -518,16 +422,18 @@ foreach ($yearStatistics as $row) {
         </a>
 
 
-        <!-- ==================================================
-             MILITARY PERSONNEL
-             ================================================== -->
+        <!-- MILITARY PERSONNEL -->
 
         <a
-            href="index.php"
+            href="index.php#personnel"
             class="nav-item"
         >
 
-            <i class="bi bi-people-fill"></i>
+            <span class="nav-icon">
+
+                <i class="bi bi-person-badge-fill"></i>
+
+            </span>
 
             <span>
                 Military Personnel
@@ -536,16 +442,18 @@ foreach ($yearStatistics as $row) {
         </a>
 
 
-        <!-- ==================================================
-             STATISTICS
-             ================================================== -->
+        <!-- STATISTICS -->
 
         <a
             href="statistics.php"
             class="nav-item active"
         >
 
-            <i class="bi bi-bar-chart-fill"></i>
+            <span class="nav-icon">
+
+                <i class="bi bi-bar-chart-fill"></i>
+
+            </span>
 
             <span>
                 Statistics
@@ -554,11 +462,9 @@ foreach ($yearStatistics as $row) {
         </a>
 
 
-        <!-- ==================================================
-             COPY FILE
-             ================================================== -->
+        <!-- COPY FILE -->
 
-        <div class="nav-group">
+        <div class="nav-dropdown">
 
 
             <button
@@ -567,53 +473,33 @@ foreach ($yearStatistics as $row) {
                 id="copyFileToggle"
             >
 
-                <i class="bi bi-file-earmark-arrow-down-fill"></i>
+                <span class="nav-icon">
+
+                    <i class="bi bi-file-earmark-arrow-down-fill"></i>
+
+                </span>
 
                 <span>
                     Copy File
                 </span>
 
-                <i
-                    class="bi bi-chevron-down nav-arrow"
-                ></i>
+                <i class="bi bi-chevron-down nav-chevron"></i>
 
             </button>
 
 
             <div
-                class="submenu"
+                class="nav-submenu"
                 id="copyFileMenu"
             >
 
-                <a href="index.php">
+                <a
+                    href="index.php"
+                >
 
-                    <i class="bi bi-file-earmark-excel"></i>
+                    <i class="bi bi-table"></i>
 
-                    <span>
-                        Export to Excel
-                    </span>
-
-                </a>
-
-
-                <a href="index.php">
-
-                    <i class="bi bi-file-earmark-pdf"></i>
-
-                    <span>
-                        Export to PDF
-                    </span>
-
-                </a>
-
-
-                <a href="index.php">
-
-                    <i class="bi bi-printer"></i>
-
-                    <span>
-                        Print / Table
-                    </span>
+                    Go to Personnel Table
 
                 </a>
 
@@ -621,42 +507,53 @@ foreach ($yearStatistics as $row) {
 
         </div>
 
+    </nav>
 
-        <!-- ==================================================
-             ADD PERSONNEL
-             ================================================== -->
+
+    <!-- MANAGEMENT -->
+
+    <div class="sidebar-section-title management-title">
+
+        MANAGEMENT
+
+    </div>
+
+
+    <nav class="sidebar-nav">
+
+
+        <!-- ADD PERSONNEL -->
 
         <a
             href="create.php"
-            class="nav-item"
+            class="nav-item add-personnel-nav"
         >
 
-            <i class="bi bi-person-plus-fill"></i>
+            <span class="nav-icon">
+
+                <i class="bi bi-person-plus-fill"></i>
+
+            </span>
 
             <span>
-                Add Military Personnel
+                Add New Personnel
             </span>
 
         </a>
 
 
-        <!-- ==================================================
-             DIVIDER
-             ================================================== -->
-
-        <div class="sidebar-divider"></div>
-
-
-        <!-- ==================================================
-             CHANGE PASSWORD
-             ================================================== -->
+        <!-- CHANGE PASSWORD -->
 
         <a
             href="change_password.php"
             class="nav-item"
         >
 
-            <i class="bi bi-key-fill"></i>
+            <span class="nav-icon">
+
+                <i class="bi bi-key-fill"></i>
+
+            </span>
 
             <span>
                 Change Password
@@ -664,88 +561,162 @@ foreach ($yearStatistics as $row) {
 
         </a>
 
-
-        <!-- ==================================================
-             LOGOUT
-             ================================================== -->
-
-        <a
-            href="logout.php"
-            class="nav-item logout-item"
-        >
-
-            <i class="bi bi-box-arrow-right"></i>
-
-            <span>
-                Logout
-            </span>
-
-        </a>
+    </nav>
 
 
-    </aside>
+    <!-- SIDEBAR BOTTOM -->
+
+    <div class="sidebar-bottom">
 
 
-    <!-- ==================================================
-         MAIN CONTENT
-         ================================================== -->
+        <div class="system-status">
 
-    <main class="main-content">
+            <span class="status-dot"></span>
 
-
-        <!-- ==================================================
-             MOBILE PAGE HEADER
-             ================================================== -->
-
-        <div class="mobile-page-header">
-
-            <button
-                type="button"
-                class="sidebar-toggle"
-                id="sidebarToggle"
-            >
-
-                <i class="bi bi-list"></i>
-
-            </button>
-
-
-            <span>
-                Personnel Statistics
-            </span>
+            System Online
 
         </div>
 
 
-        <!-- ==================================================
-             PAGE HEADER
-             ================================================== -->
+        <a
+            href="logout.php"
+            class="logout-nav"
+        >
 
-        <div class="statistics-header">
+            <i class="bi bi-box-arrow-right"></i>
+
+            Logout
+
+        </a>
+
+    </div>
 
 
-            <div>
+</aside>
 
-                <div class="page-eyebrow">
 
-                    <i class="bi bi-bar-chart-line-fill"></i>
+<!-- =========================================================
+     MAIN WRAPPER
+========================================================= -->
 
-                    INFORMATION ANALYTICS
+<div class="main-wrapper">
+
+
+    <!-- =====================================================
+         TOPBAR
+    ====================================================== -->
+
+    <header class="topbar">
+
+
+        <!-- MOBILE MENU -->
+
+        <button
+            type="button"
+            class="mobile-menu-btn"
+            id="mobileMenuBtn"
+        >
+
+            <i class="bi bi-list"></i>
+
+        </button>
+
+
+        <!-- TITLE -->
+
+        <div class="topbar-title">
+
+            <span>
+                CMO Training Squadron
+            </span>
+
+            <small>
+                Student Database Information System
+            </small>
+
+        </div>
+
+
+        <!-- USER -->
+
+        <div class="topbar-right">
+
+
+            <button
+                type="button"
+                class="header-icon-btn"
+                title="Statistics"
+            >
+
+                <i class="bi bi-bar-chart"></i>
+
+            </button>
+
+
+            <div class="user-menu">
+
+
+                <div class="user-avatar">
+
+                    <i class="bi bi-person-fill"></i>
 
                 </div>
 
 
-                <h2>
+                <div class="user-info">
+
+                    <strong>
+
+                        <?= htmlspecialchars(
+                            $_SESSION['username']
+                        ); ?>
+
+                    </strong>
+
+                    <span>
+                        Administrator
+                    </span>
+
+                </div>
+
+
+            </div>
+
+        </div>
+
+
+    </header>
+
+
+    <!-- =====================================================
+         PAGE CONTENT
+    ====================================================== -->
+
+    <main class="page-content statistics-content">
+
+
+        <!-- =================================================
+             PAGE HEADING
+        ================================================== -->
+
+        <div class="statistics-heading">
+
+
+            <div>
+
+                <div class="page-label">
+                    CMO INFORMATION SYSTEM
+                </div>
+
+
+                <h1>
                     Personnel Statistics
-                </h2>
+                </h1>
 
 
                 <p>
-
-                    Overview of military personnel
-                    information recorded in the
-                    CMO Training Squadron database.
-
+                    Overview and analysis of military personnel
+                    information in the database.
                 </p>
 
             </div>
@@ -753,9 +724,9 @@ foreach ($yearStatistics as $row) {
 
             <div class="statistics-date">
 
-                <i class="bi bi-calendar3"></i>
+                <i class="bi bi-bar-chart-line-fill"></i>
 
-                Personnel Overview
+                Database Overview
 
             </div>
 
@@ -763,435 +734,331 @@ foreach ($yearStatistics as $row) {
         </div>
 
 
-        <!-- ==================================================
-             DATABASE ERROR
-             ================================================== -->
+        <!-- =================================================
+             ERROR
+        ================================================== -->
 
         <?php if ($databaseError): ?>
 
-            <div class="database-error">
+            <div class="statistics-error">
 
                 <i class="bi bi-exclamation-triangle-fill"></i>
 
-                <div>
-
-                    <strong>
-                        Unable to load statistics
-                    </strong>
-
-                    <span>
-                        Please check the database connection
-                        and try again.
-                    </span>
-
-                </div>
+                Unable to load personnel statistics.
 
             </div>
 
         <?php endif; ?>
 
 
-        <!-- ==================================================
+        <!-- =================================================
              SUMMARY CARDS
-             ================================================== -->
+        ================================================== -->
 
-        <div class="summary-grid">
+        <section class="statistics-summary">
 
 
             <!-- TOTAL PERSONNEL -->
 
-            <div class="summary-card">
+            <div class="statistics-card blue-card">
+
+                <div class="statistics-card-icon">
+
+                    <i class="bi bi-people-fill"></i>
+
+                </div>
 
 
-                <div class="summary-card-top">
+                <div class="statistics-card-content">
 
-                    <div class="summary-icon personnel-icon">
-
-                        <i class="bi bi-people-fill"></i>
-
-                    </div>
-
-
-                    <span class="summary-card-label">
-
-                        TOTAL
-
+                    <span>
+                        TOTAL PERSONNEL
                     </span>
 
-                </div>
+                    <strong>
+                        <?= number_format($totalPersonnel); ?>
+                    </strong>
 
-
-                <div class="summary-number">
-
-                    <?= number_format(
-                        $totalPersonnel
-                    ); ?>
-
-                </div>
-
-
-                <div class="summary-label">
-
-                    Military Personnel
+                    <small>
+                        Registered personnel
+                    </small>
 
                 </div>
-
 
             </div>
 
 
             <!-- RANKS -->
 
-            <div class="summary-card">
+            <div class="statistics-card cyan-card">
+
+                <div class="statistics-card-icon">
+
+                    <i class="bi bi-person-badge-fill"></i>
+
+                </div>
 
 
-                <div class="summary-card-top">
+                <div class="statistics-card-content">
 
-                    <div class="summary-icon rank-icon">
-
-                        <i class="bi bi-person-badge-fill"></i>
-
-                    </div>
-
-
-                    <span class="summary-card-label">
-
-                        CATEGORIES
-
+                    <span>
+                        RANKS
                     </span>
 
-                </div>
+                    <strong>
+                        <?= number_format($totalRanks); ?>
+                    </strong>
 
-
-                <div class="summary-number">
-
-                    <?= number_format(
-                        count($rankStatistics)
-                    ); ?>
-
-                </div>
-
-
-                <div class="summary-label">
-
-                    Different Ranks
+                    <small>
+                        Different ranks
+                    </small>
 
                 </div>
-
 
             </div>
 
 
             <!-- BRANCHES -->
 
-            <div class="summary-card">
+            <div class="statistics-card purple-card">
+
+                <div class="statistics-card-icon">
+
+                    <i class="bi bi-diagram-3-fill"></i>
+
+                </div>
 
 
-                <div class="summary-card-top">
+                <div class="statistics-card-content">
 
-                    <div class="summary-icon branch-icon">
-
-                        <i class="bi bi-shield-fill"></i>
-
-                    </div>
-
-
-                    <span class="summary-card-label">
-
-                        SERVICE
-
+                    <span>
+                        BRANCHES
                     </span>
 
-                </div>
+                    <strong>
+                        <?= number_format($totalBranches); ?>
+                    </strong>
 
-
-                <div class="summary-number">
-
-                    <?= number_format(
-                        count($branchStatistics)
-                    ); ?>
-
-                </div>
-
-
-                <div class="summary-label">
-
-                    Branches of Service
+                    <small>
+                        Branches represented
+                    </small>
 
                 </div>
-
 
             </div>
 
 
             <!-- COURSES -->
 
-            <div class="summary-card">
+            <div class="statistics-card green-card">
+
+                <div class="statistics-card-icon">
+
+                    <i class="bi bi-mortarboard-fill"></i>
+
+                </div>
 
 
-                <div class="summary-card-top">
+                <div class="statistics-card-content">
 
-                    <div class="summary-icon course-icon">
-
-                        <i class="bi bi-mortarboard-fill"></i>
-
-                    </div>
-
-
-                    <span class="summary-card-label">
-
-                        TRAINING
-
+                    <span>
+                        COURSES
                     </span>
 
-                </div>
+                    <strong>
+                        <?= number_format($totalCourses); ?>
+                    </strong>
 
-
-                <div class="summary-number">
-
-                    <?= number_format(
-                        count($courseStatistics)
-                    ); ?>
-
-                </div>
-
-
-                <div class="summary-label">
-
-                    Recorded Courses
+                    <small>
+                        Registered courses
+                    </small>
 
                 </div>
-
 
             </div>
 
 
-        </div>
+        </section>
 
 
-        <!-- ==================================================
-             FIRST CHART ROW
-             ================================================== -->
+        <!-- =================================================
+             CHART GRID
+        ================================================== -->
 
-        <div class="statistics-grid">
-
-
-            <!-- ==================================================
-                 RANK CHART
-                 ================================================== -->
-
-            <section class="chart-card">
+        <section class="statistics-grid">
 
 
-                <div class="chart-card-header">
+            <!-- RANK -->
 
+            <div class="chart-panel">
+
+
+                <div class="chart-panel-header">
 
                     <div>
 
-                        <div class="chart-icon">
+                        <span class="chart-label">
+                            PERSONNEL DISTRIBUTION
+                        </span>
 
-                            <i class="bi bi-person-badge"></i>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="chart-heading">
-
-                        <h3>
+                        <h2>
                             Personnel by Rank
-                        </h3>
-
-                        <p>
-                            Distribution of personnel
-                            according to rank.
-                        </p>
+                        </h2>
 
                     </div>
 
+
+                    <div class="chart-icon">
+
+                        <i class="bi bi-bar-chart-fill"></i>
+
+                    </div>
 
                 </div>
 
 
-                <div class="chart-container">
+                <div class="chart-wrapper">
 
                     <canvas id="rankChart"></canvas>
 
                 </div>
 
-
-            </section>
-
-
-            <!-- ==================================================
-                 BRANCH CHART
-                 ================================================== -->
-
-            <section class="chart-card">
+            </div>
 
 
-                <div class="chart-card-header">
+            <!-- BRANCH -->
 
+            <div class="chart-panel">
+
+
+                <div class="chart-panel-header">
 
                     <div>
 
-                        <div class="chart-icon">
+                        <span class="chart-label">
+                            SERVICE DISTRIBUTION
+                        </span>
 
-                            <i class="bi bi-shield-check"></i>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="chart-heading">
-
-                        <h3>
+                        <h2>
                             Branch of Service
-                        </h3>
-
-                        <p>
-                            Personnel distribution
-                            by service branch.
-                        </p>
+                        </h2>
 
                     </div>
 
+
+                    <div class="chart-icon">
+
+                        <i class="bi bi-diagram-3-fill"></i>
+
+                    </div>
 
                 </div>
 
 
-                <div class="chart-container doughnut-container">
+                <div class="chart-wrapper doughnut-wrapper">
 
                     <canvas id="branchChart"></canvas>
 
                 </div>
 
-
-            </section>
-
-
-        </div>
+            </div>
 
 
-        <!-- ==================================================
-             SECOND CHART ROW
-             ================================================== -->
+            <!-- STANDING -->
 
-        <div class="statistics-grid">
+            <div class="chart-panel">
 
 
-            <!-- ==================================================
-                 STANDING CHART
-                 ================================================== -->
-
-            <section class="chart-card">
-
-
-                <div class="chart-card-header">
-
+                <div class="chart-panel-header">
 
                     <div>
 
-                        <div class="chart-icon">
+                        <span class="chart-label">
+                            PERFORMANCE
+                        </span>
 
-                            <i class="bi bi-award-fill"></i>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="chart-heading">
-
-                        <h3>
+                        <h2>
                             Personnel by Standing
-                        </h3>
-
-                        <p>
-                            Distribution according
-                            to personnel standing.
-                        </p>
+                        </h2>
 
                     </div>
 
+
+                    <div class="chart-icon">
+
+                        <i class="bi bi-award-fill"></i>
+
+                    </div>
 
                 </div>
 
 
-                <div class="chart-container doughnut-container">
+                <div class="chart-wrapper doughnut-wrapper">
 
                     <canvas id="standingChart"></canvas>
 
                 </div>
 
-
-            </section>
-
-
-            <!-- ==================================================
-                 YEAR CHART
-                 ================================================== -->
-
-            <section class="chart-card">
+            </div>
 
 
-                <div class="chart-card-header">
+            <!-- YEAR -->
 
+            <div class="chart-panel">
+
+
+                <div class="chart-panel-header">
 
                     <div>
 
-                        <div class="chart-icon">
+                        <span class="chart-label">
+                            GRADUATION HISTORY
+                        </span>
 
-                            <i class="bi bi-calendar3"></i>
-
-                        </div>
-
-                    </div>
-
-
-                    <div class="chart-heading">
-
-                        <h3>
+                        <h2>
                             Year Graduated
-                        </h3>
-
-                        <p>
-                            Personnel recorded according
-                            to graduation year.
-                        </p>
+                        </h2>
 
                     </div>
 
+
+                    <div class="chart-icon">
+
+                        <i class="bi bi-calendar3"></i>
+
+                    </div>
 
                 </div>
 
 
-                <div class="chart-container">
+                <div class="chart-wrapper">
 
                     <canvas id="yearChart"></canvas>
 
                 </div>
 
-
-            </section>
-
-
-        </div>
+            </div>
 
 
-        <!-- ==================================================
-             COURSE CHART
-             ================================================== -->
+            <!-- COURSE -->
 
-        <section class="chart-card course-chart-card">
+            <div class="chart-panel chart-panel-wide">
 
 
-            <div class="chart-card-header">
+                <div class="chart-panel-header">
 
+                    <div>
 
-                <div>
+                        <span class="chart-label">
+                            TRAINING DISTRIBUTION
+                        </span>
+
+                        <h2>
+                            Personnel by Course
+                        </h2>
+
+                    </div>
+
 
                     <div class="chart-icon">
 
@@ -1202,26 +1069,11 @@ foreach ($yearStatistics as $row) {
                 </div>
 
 
-                <div class="chart-heading">
+                <div class="chart-wrapper course-chart-wrapper">
 
-                    <h3>
-                        Personnel by Course
-                    </h3>
-
-                    <p>
-                        Number of personnel associated
-                        with each recorded course.
-                    </p>
+                    <canvas id="courseChart"></canvas>
 
                 </div>
-
-
-            </div>
-
-
-            <div class="chart-container course-container">
-
-                <canvas id="courseChart"></canvas>
 
             </div>
 
@@ -1229,39 +1081,14 @@ foreach ($yearStatistics as $row) {
         </section>
 
 
-        <!-- ==================================================
-             FOOTER
-             ================================================== -->
-
-        <div class="statistics-footer">
-
-            <span>
-
-                <i class="bi bi-database-check"></i>
-
-                Data source: Military Personnel Database
-
-            </span>
-
-
-            <span>
-
-                CMO Training Squadron
-
-            </span>
-
-        </div>
-
-
     </main>
-
 
 </div>
 
 
-<!-- ======================================================
-     BOOTSTRAP JAVASCRIPT
-     ====================================================== -->
+<!-- =========================================================
+     JAVASCRIPT
+========================================================= -->
 
 <script
     src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
@@ -1271,10 +1098,10 @@ foreach ($yearStatistics as $row) {
 <script>
 
 /*
- * ==========================================================
- * PHP CHART DATA
- * ==========================================================
- */
+|--------------------------------------------------------------------------
+| PHP DATA
+|--------------------------------------------------------------------------
+*/
 
 const rankLabels =
     <?= json_encode($rankLabels); ?>;
@@ -1312,47 +1139,47 @@ const yearData =
 
 
 /*
- * ==========================================================
- * CHART COLORS
- * ==========================================================
- */
+|--------------------------------------------------------------------------
+| COLORS
+|--------------------------------------------------------------------------
+*/
 
-const chartColors = [
+const colors = [
 
-    '#1d6fa5',
-    '#2583bd',
-    '#3198ce',
-    '#45a9d7',
-    '#65b8df',
-    '#83c8e7',
-    '#3d82ad',
-    '#24638d',
-    '#174e73',
-    '#528eaf'
+    '#2d7fc1',
+    '#42a5d5',
+    '#6c8fd8',
+    '#7c6dcc',
+    '#3baf86',
+    '#e2a83b',
+    '#d46b6b',
+    '#527fa8',
+    '#365f86',
+    '#86a9c7'
 
 ];
 
 
 /*
- * ==========================================================
- * CHART DEFAULTS
- * ==========================================================
- */
+|--------------------------------------------------------------------------
+| DEFAULT CHART SETTINGS
+|--------------------------------------------------------------------------
+*/
 
 Chart.defaults.font.family =
     'Inter, Arial, sans-serif';
 
-Chart.defaults.font.size = 11;
-
 Chart.defaults.color =
-    '#8b9aaa';
+    '#728096';
+
+Chart.defaults.font.size = 11;
 
 
 /*
- * ==========================================================
- * RANK CHART
- * ==========================================================
- */
+|--------------------------------------------------------------------------
+| RANK CHART
+|--------------------------------------------------------------------------
+*/
 
 new Chart(
 
@@ -1368,17 +1195,15 @@ new Chart(
 
             datasets: [{
 
-                label: 'Personnel',
-
                 data: rankData,
 
-                backgroundColor: '#1d6fa5',
+                backgroundColor: '#2d7fc1',
 
-                borderRadius: 6,
+                borderRadius: 5,
 
                 borderSkipped: false,
 
-                barThickness: 28
+                maxBarThickness: 42
 
             }]
 
@@ -1393,9 +1218,7 @@ new Chart(
             plugins: {
 
                 legend: {
-
                     display: false
-
                 }
 
             },
@@ -1407,34 +1230,19 @@ new Chart(
                     beginAtZero: true,
 
                     ticks: {
-
-                        precision: 0,
-
-                        color: '#8b9aaa'
-
+                        precision: 0
                     },
 
                     grid: {
-
-                        color:
-                            'rgba(255,255,255,0.06)'
-
+                        color: '#e9eef4'
                     }
 
                 },
 
                 x: {
 
-                    ticks: {
-
-                        color: '#8b9aaa'
-
-                    },
-
                     grid: {
-
                         display: false
-
                     }
 
                 }
@@ -1449,10 +1257,10 @@ new Chart(
 
 
 /*
- * ==========================================================
- * BRANCH CHART
- * ==========================================================
- */
+|--------------------------------------------------------------------------
+| BRANCH CHART
+|--------------------------------------------------------------------------
+*/
 
 new Chart(
 
@@ -1470,13 +1278,11 @@ new Chart(
 
                 data: branchData,
 
-                backgroundColor: chartColors,
+                backgroundColor: colors,
 
-                borderWidth: 3,
+                borderColor: '#ffffff',
 
-                borderColor: '#101923',
-
-                hoverOffset: 6
+                borderWidth: 3
 
             }]
 
@@ -1498,13 +1304,11 @@ new Chart(
 
                     labels: {
 
-                        color: '#9aa8b6',
-
                         padding: 16,
 
                         usePointStyle: true,
 
-                        pointStyle: 'circle'
+                        boxWidth: 8
 
                     }
 
@@ -1520,10 +1324,10 @@ new Chart(
 
 
 /*
- * ==========================================================
- * STANDING CHART
- * ==========================================================
- */
+|--------------------------------------------------------------------------
+| STANDING CHART
+|--------------------------------------------------------------------------
+*/
 
 new Chart(
 
@@ -1543,20 +1347,18 @@ new Chart(
 
                 backgroundColor: [
 
-                    '#1d6fa5',
-                    '#20a464',
-                    '#d9a52e',
-                    '#d94a4a',
-                    '#8066b3',
-                    '#607d8b'
+                    '#2d7fc1',
+                    '#3baf86',
+                    '#e2a83b',
+                    '#d46b6b',
+                    '#7c6dcc',
+                    '#527fa8'
 
                 ],
 
-                borderWidth: 3,
+                borderColor: '#ffffff',
 
-                borderColor: '#101923',
-
-                hoverOffset: 6
+                borderWidth: 3
 
             }]
 
@@ -1568,7 +1370,7 @@ new Chart(
 
             maintainAspectRatio: false,
 
-            cutout: '58%',
+            cutout: '66%',
 
             plugins: {
 
@@ -1578,13 +1380,11 @@ new Chart(
 
                     labels: {
 
-                        color: '#9aa8b6',
-
                         padding: 16,
 
                         usePointStyle: true,
 
-                        pointStyle: 'circle'
+                        boxWidth: 8
 
                     }
 
@@ -1600,10 +1400,10 @@ new Chart(
 
 
 /*
- * ==========================================================
- * YEAR CHART
- * ==========================================================
- */
+|--------------------------------------------------------------------------
+| YEAR CHART
+|--------------------------------------------------------------------------
+*/
 
 new Chart(
 
@@ -1619,14 +1419,12 @@ new Chart(
 
             datasets: [{
 
-                label: 'Personnel',
-
                 data: yearData,
 
-                borderColor: '#3198ce',
+                borderColor: '#2d7fc1',
 
                 backgroundColor:
-                    'rgba(49,152,206,0.10)',
+                    'rgba(45, 127, 193, 0.10)',
 
                 borderWidth: 3,
 
@@ -1634,17 +1432,15 @@ new Chart(
 
                 tension: 0.35,
 
-                pointBackgroundColor:
-                    '#3198ce',
-
-                pointBorderColor:
-                    '#101923',
-
-                pointBorderWidth: 2,
-
                 pointRadius: 4,
 
-                pointHoverRadius: 6
+                pointHoverRadius: 6,
+
+                pointBackgroundColor: '#2d7fc1',
+
+                pointBorderColor: '#ffffff',
+
+                pointBorderWidth: 2
 
             }]
 
@@ -1659,9 +1455,7 @@ new Chart(
             plugins: {
 
                 legend: {
-
                     display: false
-
                 }
 
             },
@@ -1673,34 +1467,19 @@ new Chart(
                     beginAtZero: true,
 
                     ticks: {
-
-                        precision: 0,
-
-                        color: '#8b9aaa'
-
+                        precision: 0
                     },
 
                     grid: {
-
-                        color:
-                            'rgba(255,255,255,0.06)'
-
+                        color: '#e9eef4'
                     }
 
                 },
 
                 x: {
 
-                    ticks: {
-
-                        color: '#8b9aaa'
-
-                    },
-
                     grid: {
-
                         display: false
-
                     }
 
                 }
@@ -1715,10 +1494,10 @@ new Chart(
 
 
 /*
- * ==========================================================
- * COURSE CHART
- * ==========================================================
- */
+|--------------------------------------------------------------------------
+| COURSE CHART
+|--------------------------------------------------------------------------
+*/
 
 new Chart(
 
@@ -1734,17 +1513,15 @@ new Chart(
 
             datasets: [{
 
-                label: 'Personnel',
-
                 data: courseData,
 
-                backgroundColor: chartColors,
+                backgroundColor: colors,
 
-                borderRadius: 6,
+                borderRadius: 5,
 
                 borderSkipped: false,
 
-                barThickness: 22
+                maxBarThickness: 32
 
             }]
 
@@ -1761,9 +1538,7 @@ new Chart(
             plugins: {
 
                 legend: {
-
                     display: false
-
                 }
 
             },
@@ -1775,34 +1550,19 @@ new Chart(
                     beginAtZero: true,
 
                     ticks: {
-
-                        precision: 0,
-
-                        color: '#8b9aaa'
-
+                        precision: 0
                     },
 
                     grid: {
-
-                        color:
-                            'rgba(255,255,255,0.06)'
-
+                        color: '#e9eef4'
                     }
 
                 },
 
                 y: {
 
-                    ticks: {
-
-                        color: '#8b9aaa'
-
-                    },
-
                     grid: {
-
                         display: false
-
                     }
 
                 }
@@ -1817,79 +1577,56 @@ new Chart(
 
 
 /*
- * ==========================================================
- * COPY FILE DROPDOWN
- * ==========================================================
- */
+|--------------------------------------------------------------------------
+| COPY FILE MENU
+|--------------------------------------------------------------------------
+*/
 
-const copyFileToggle =
-    document.getElementById(
-        'copyFileToggle'
-    );
+document
+    .getElementById('copyFileToggle')
+    .addEventListener('click', function () {
 
-const copyFileMenu =
-    document.getElementById(
-        'copyFileMenu'
-    );
+        document
+            .getElementById('copyFileMenu')
+            .classList.toggle('show');
 
+        this.classList.toggle('open');
 
-if (
-    copyFileToggle &&
-    copyFileMenu
-) {
-
-    copyFileToggle.addEventListener(
-        'click',
-        function () {
-
-            copyFileMenu.classList.toggle(
-                'show'
-            );
-
-            copyFileToggle.classList.toggle(
-                'open'
-            );
-
-        }
-    );
-
-}
+    });
 
 
 /*
- * ==========================================================
- * MOBILE SIDEBAR
- * ==========================================================
- */
+|--------------------------------------------------------------------------
+| MOBILE SIDEBAR
+|--------------------------------------------------------------------------
+*/
 
-const sidebarToggle =
-    document.getElementById(
-        'sidebarToggle'
-    );
+document
+    .getElementById('mobileMenuBtn')
+    .addEventListener('click', function () {
 
-const sidebar =
-    document.querySelector(
-        '.sidebar'
-    );
+        document
+            .getElementById('sidebar')
+            .classList.toggle('show');
+
+        document
+            .getElementById('sidebarOverlay')
+            .classList.toggle('show');
+
+    });
 
 
-if (
-    sidebarToggle &&
-    sidebar
-) {
+document
+    .getElementById('sidebarOverlay')
+    .addEventListener('click', function () {
 
-    sidebarToggle.addEventListener(
-        'click',
-        function () {
+        document
+            .getElementById('sidebar')
+            .classList.remove('show');
 
-            sidebar.classList.toggle(
-                'mobile-open'
-            );
+        this.classList.remove('show');
 
-        }
-    );
-
-}
+    });
 
 </script>
 
