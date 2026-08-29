@@ -2,17 +2,25 @@
 
 /*
  * ==========================================================
+ * LOGIN SECURITY
+ * ==========================================================
+ */
+
+session_start();
+
+if (!isset($_SESSION['username'])) {
+    header("Location: login.php");
+    exit;
+}
+
+
+/*
+ * ==========================================================
  * DATABASE CONNECTION
  * ==========================================================
  *
  * db.php connects to PostgreSQL using Render environment
- * variables:
- *
- * DB_HOST
- * DB_PORT
- * DB_NAME
- * DB_USER
- * DB_PASSWORD
+ * variables.
  *
  */
 
