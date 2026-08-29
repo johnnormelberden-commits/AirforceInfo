@@ -1,15 +1,551 @@
 /* ==========================================================
-   CMO / PAF DASHBOARD HEADER
-   CLEAN DARK DESIGN
+   CMO TRAINING SQUADRON
+   PERSONNEL INFORMATION SYSTEM
+
+   STATISTICS PAGE
+   Complete Dark Professional Design
    ========================================================== */
 
-.paf-topbar {
+
+/* ==========================================================
+   COLOR VARIABLES
+   ========================================================== */
+
+:root {
+
+    --stat-bg:
+        #07111d;
+
+    --stat-bg-light:
+        #0b1827;
+
+    --stat-card:
+        #0d1d2e;
+
+    --stat-card-light:
+        #11263b;
+
+    --stat-border:
+        rgba(122, 164, 202, 0.15);
+
+    --stat-border-hover:
+        rgba(67, 151, 215, 0.35);
+
+    --stat-blue:
+        #2d8bd2;
+
+    --stat-blue-light:
+        #62b9ef;
+
+    --stat-blue-dark:
+        #1769a7;
+
+    --stat-gold:
+        #e7c64a;
+
+    --stat-gold-light:
+        #f4d96b;
+
+    --stat-white:
+        #f5f8fb;
+
+    --stat-text:
+        #d6e0e9;
+
+    --stat-muted:
+        #8798aa;
+
+    --stat-muted-light:
+        #a9b7c5;
+
+    --stat-success:
+        #35c98d;
+
+    --stat-danger:
+        #ef6666;
+
+    --stat-warning:
+        #e4b84c;
+
+    --stat-radius:
+        14px;
+
+}
+
+
+/* ==========================================================
+   BODY
+   ========================================================== */
+
+body {
+
+    background:
+        radial-gradient(
+            circle at 10% 10%,
+            rgba(36, 105, 160, 0.12),
+            transparent 28%
+        ),
+
+        radial-gradient(
+            circle at 90% 80%,
+            rgba(23, 76, 123, 0.10),
+            transparent 30%
+        ),
+
+        var(--stat-bg);
+
+    color:
+        var(--stat-text);
+
+}
+
+
+/* ==========================================================
+   MAIN STATISTICS CONTAINER
+   ========================================================== */
+
+.statistics-page {
 
     width: 100%;
 
-    min-height: 76px;
+    max-width: 1500px;
 
-    padding: 10px 32px;
+    margin: 0 auto;
+
+    padding:
+        35px 42px 55px;
+
+}
+
+
+/* ==========================================================
+   PAGE HEADER
+   ========================================================== */
+
+.statistics-header {
+
+    display: flex;
+
+    align-items: flex-end;
+
+    justify-content: space-between;
+
+    gap: 25px;
+
+    margin-bottom: 28px;
+
+    padding-bottom: 20px;
+
+    border-bottom:
+        1px solid var(--stat-border);
+
+}
+
+
+/* ==========================================================
+   PAGE TITLE
+   ========================================================== */
+
+.statistics-header h2 {
+
+    position: relative;
+
+    margin: 0;
+
+    padding-left: 14px;
+
+    color:
+        var(--stat-white);
+
+    font-size: 27px;
+
+    font-weight: 800;
+
+    line-height: 1.2;
+
+    letter-spacing: -0.6px;
+
+}
+
+
+/* Gold title indicator */
+
+.statistics-header h2::before {
+
+    content: "";
+
+    position: absolute;
+
+    left: 0;
+
+    top: 2px;
+
+    width: 4px;
+
+    height: 27px;
+
+    border-radius: 5px;
+
+    background:
+        linear-gradient(
+            180deg,
+            var(--stat-gold-light),
+            var(--stat-gold)
+        );
+
+}
+
+
+/* ==========================================================
+   PAGE DESCRIPTION
+   ========================================================== */
+
+.statistics-header p {
+
+    margin:
+        8px 0 0;
+
+    color:
+        var(--stat-muted);
+
+    font-size: 11px;
+
+    line-height: 1.6;
+
+}
+
+
+/* ==========================================================
+   OPTIONAL DATE / INFO AREA
+   ========================================================== */
+
+.statistics-header-info {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 8px;
+
+    padding:
+        8px 12px;
+
+    color:
+        var(--stat-muted-light);
+
+    background:
+        rgba(255,255,255,0.025);
+
+    border:
+        1px solid var(--stat-border);
+
+    border-radius: 8px;
+
+    font-size: 9px;
+
+}
+
+
+/* ==========================================================
+   SUMMARY STATISTICS
+   ========================================================== */
+
+.summary-grid {
+
+    margin-bottom:
+        26px;
+
+}
+
+
+/* ==========================================================
+   SUMMARY CARD
+   ========================================================== */
+
+.summary-card {
+
+    position: relative;
+
+    height: 100%;
+
+    min-height: 145px;
+
+    padding:
+        21px 22px;
+
+    overflow: hidden;
+
+    background:
+        linear-gradient(
+            145deg,
+            #11263b 0%,
+            #0b1b2c 100%
+        );
+
+    border:
+        1px solid var(--stat-border);
+
+    border-radius:
+        var(--stat-radius);
+
+    box-shadow:
+        0 10px 28px rgba(0,0,0,0.20);
+
+    transition:
+        transform 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+
+}
+
+
+/* Decorative circle */
+
+.summary-card::after {
+
+    content: "";
+
+    position: absolute;
+
+    width: 120px;
+
+    height: 120px;
+
+    right: -65px;
+
+    top: -65px;
+
+    border-radius: 50%;
+
+    border:
+        1px solid rgba(255,255,255,0.035);
+
+}
+
+
+/* Hover */
+
+.summary-card:hover {
+
+    transform:
+        translateY(-3px);
+
+    border-color:
+        var(--stat-border-hover);
+
+    box-shadow:
+        0 15px 35px rgba(0,0,0,0.28);
+
+}
+
+
+/* ==========================================================
+   SUMMARY ICON
+   ========================================================== */
+
+.summary-icon {
+
+    width: 42px;
+
+    height: 42px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    margin-bottom:
+        17px;
+
+    border-radius:
+        10px;
+
+    background:
+        rgba(45,139,210,0.11);
+
+    border:
+        1px solid rgba(45,139,210,0.18);
+
+    color:
+        var(--stat-blue-light);
+
+    font-size: 17px;
+
+}
+
+
+/* ==========================================================
+   DIFFERENT ICON COLORS
+   ========================================================== */
+
+.summary-card:nth-child(2) .summary-icon {
+
+    background:
+        rgba(231,198,74,0.10);
+
+    border-color:
+        rgba(231,198,74,0.18);
+
+    color:
+        var(--stat-gold-light);
+
+}
+
+
+.summary-card:nth-child(3) .summary-icon {
+
+    background:
+        rgba(53,201,141,0.10);
+
+    border-color:
+        rgba(53,201,141,0.18);
+
+    color:
+        var(--stat-success);
+
+}
+
+
+.summary-card:nth-child(4) .summary-icon {
+
+    background:
+        rgba(150,108,220,0.10);
+
+    border-color:
+        rgba(150,108,220,0.18);
+
+    color:
+        #b995ed;
+
+}
+
+
+/* ==========================================================
+   SUMMARY NUMBER
+   ========================================================== */
+
+.summary-number {
+
+    color:
+        var(--stat-white);
+
+    font-size: 27px;
+
+    font-weight: 800;
+
+    line-height: 1;
+
+    letter-spacing: -0.7px;
+
+}
+
+
+/* ==========================================================
+   SUMMARY LABEL
+   ========================================================== */
+
+.summary-label {
+
+    margin-top:
+        8px;
+
+    color:
+        var(--stat-muted);
+
+    font-size: 9px;
+
+    font-weight: 700;
+
+    text-transform:
+        uppercase;
+
+    letter-spacing:
+        0.9px;
+
+}
+
+
+/* ==========================================================
+   SUMMARY DESCRIPTION
+   ========================================================== */
+
+.summary-description {
+
+    margin-top:
+        5px;
+
+    color:
+        #6f8193;
+
+    font-size: 9px;
+
+}
+
+
+/* ==========================================================
+   CHART GRID
+   ========================================================== */
+
+.chart-row {
+
+    margin-bottom:
+        24px;
+
+}
+
+
+/* ==========================================================
+   CHART CARD
+   ========================================================== */
+
+.chart-card {
+
+    position: relative;
+
+    height: 100%;
+
+    min-height: 390px;
+
+    padding:
+        22px 23px 20px;
+
+    background:
+        linear-gradient(
+            145deg,
+            #102339,
+            #0b1a2b
+        );
+
+    border:
+        1px solid var(--stat-border);
+
+    border-radius:
+        var(--stat-radius);
+
+    box-shadow:
+        0 10px 28px rgba(0,0,0,0.20);
+
+}
+
+
+/* ==========================================================
+   LARGE CHART
+   ========================================================== */
+
+.chart-card.large {
+
+    min-height:
+        430px;
+
+}
+
+
+/* ==========================================================
+   CHART HEADER
+   ========================================================== */
+
+.chart-header {
 
     display: flex;
 
@@ -17,168 +553,263 @@
 
     justify-content: space-between;
 
-    gap: 25px;
+    min-height: 22px;
 
-    background:
-        #081522;
-
-    border-bottom:
-        1px solid rgba(232, 197, 71, 0.35);
-
-    box-shadow:
-        0 5px 20px rgba(0, 0, 0, 0.25);
+    margin-bottom:
+        4px;
 
 }
 
 
 /* ==========================================================
-   LEFT BRAND
+   CHART TITLE
    ========================================================== */
 
-.paf-brand {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 13px;
-
-    min-width: 280px;
-
-    flex-shrink: 0;
-
-}
-
-
-/* ==========================================================
-   LOGO
-   ========================================================== */
-
-.paf-brand img {
-
-    width: 50px !important;
-
-    height: 50px !important;
-
-    flex: 0 0 50px;
-
-    object-fit: contain;
-
-    display: block;
-
-    padding: 3px;
-
-    border-radius: 50%;
-
-    background: #ffffff;
-
-    border:
-        1px solid rgba(232, 197, 71, 0.55);
-
-    box-shadow:
-        0 3px 10px rgba(0, 0, 0, 0.35);
-
-}
-
-
-/* Remove old hover animation */
-
-.paf-brand img:hover {
-
-    transform: none !important;
-
-    filter: none !important;
-
-}
-
-
-/* ==========================================================
-   BRAND TEXT
-   ========================================================== */
-
-.paf-text {
-
-    line-height: 1.2;
-
-}
-
-
-.paf-text h1 {
-
-    margin: 0;
-
-    color: #ffffff;
-
-    font-size: 14px !important;
-
-    font-weight: 700;
-
-    letter-spacing: 0.3px;
-
-    white-space: nowrap;
-
-}
-
-
-.paf-text span {
-
-    display: block;
-
-    margin-top: 5px;
-
-    color: #d9bb48 !important;
-
-    font-size: 9px !important;
-
-    font-weight: 500;
-
-    letter-spacing: 0.2px;
-
-    white-space: nowrap;
-
-}
-
-
-/* ==========================================================
-   CENTER NAVIGATION
-   ========================================================== */
-
-.dashboard-nav {
-
-    display: flex;
-
-    align-items: center;
-
-    justify-content: center;
-
-    gap: 4px;
-
-    flex: 1;
-
-}
-
-
-/* ==========================================================
-   NAVIGATION LINKS
-   ========================================================== */
-
-.dashboard-nav a {
+.chart-title {
 
     position: relative;
 
+    margin: 0;
+
+    color:
+        var(--stat-white);
+
+    font-size: 13px;
+
+    font-weight: 700;
+
+    line-height: 1.4;
+
+}
+
+
+/* Blue title line */
+
+.chart-title::before {
+
+    content: "";
+
+    display: inline-block;
+
+    width: 3px;
+
+    height: 14px;
+
+    margin-right: 8px;
+
+    vertical-align: -2px;
+
+    border-radius: 4px;
+
+    background:
+        var(--stat-blue);
+
+}
+
+
+/* ==========================================================
+   CHART SUBTITLE
+   ========================================================== */
+
+.chart-subtitle {
+
+    margin:
+        5px 0 18px;
+
+    color:
+        var(--stat-muted);
+
+    font-size: 9px;
+
+    line-height: 1.5;
+
+}
+
+
+/* ==========================================================
+   CHART CONTAINER
+   ========================================================== */
+
+.chart-container {
+
+    position: relative;
+
+    width: 100%;
+
+    height: 285px;
+
+}
+
+
+/* ==========================================================
+   LARGE CHART CONTAINER
+   ========================================================== */
+
+.chart-card.large .chart-container {
+
+    height:
+        330px;
+
+}
+
+
+/* ==========================================================
+   CANVAS
+   ========================================================== */
+
+.chart-container canvas {
+
+    width: 100% !important;
+
+    max-width: 100%;
+
+}
+
+
+/* ==========================================================
+   CHART FOOTER
+   ========================================================== */
+
+.chart-footer {
+
     display: flex;
 
     align-items: center;
 
-    gap: 7px;
+    justify-content: space-between;
 
-    padding: 9px 13px;
+    margin-top:
+        8px;
 
-    border-radius: 7px;
+    padding-top:
+        10px;
 
-    color: #9eacba;
+    border-top:
+        1px solid rgba(255,255,255,0.05);
 
-    text-decoration: none;
+    color:
+        var(--stat-muted);
+
+    font-size: 9px;
+
+}
+
+
+/* ==========================================================
+   LEGEND
+   ========================================================== */
+
+.statistics-legend {
+
+    display: flex;
+
+    align-items: center;
+
+    flex-wrap: wrap;
+
+    gap:
+        12px;
+
+}
+
+
+.legend-item {
+
+    display: flex;
+
+    align-items: center;
+
+    gap:
+        6px;
+
+    color:
+        var(--stat-muted-light);
+
+    font-size: 9px;
+
+}
+
+
+.legend-color {
+
+    width: 8px;
+
+    height: 8px;
+
+    border-radius: 50%;
+
+}
+
+
+/* ==========================================================
+   CHART CARD HOVER
+   ========================================================== */
+
+.chart-card:hover {
+
+    border-color:
+        rgba(67,151,215,0.24);
+
+}
+
+
+/* ==========================================================
+   COURSE STATISTICS
+   ========================================================== */
+
+.course-statistics {
+
+    margin-top:
+        24px;
+
+}
+
+
+/* ==========================================================
+   COURSE LIST
+   ========================================================== */
+
+.course-list {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap:
+        13px;
+
+}
+
+
+/* ==========================================================
+   COURSE ITEM
+   ========================================================== */
+
+.course-item {
+
+    display: grid;
+
+    grid-template-columns:
+        minmax(150px, 1fr)
+        minmax(100px, 3fr)
+        50px;
+
+    align-items: center;
+
+    gap:
+        14px;
+
+}
+
+
+/* ==========================================================
+   COURSE NAME
+   ========================================================== */
+
+.course-name {
+
+    color:
+        var(--stat-text);
 
     font-size: 10px;
 
@@ -186,300 +817,422 @@
 
     white-space: nowrap;
 
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+}
+
+
+/* ==========================================================
+   COURSE BAR
+   ========================================================== */
+
+.course-bar {
+
+    width: 100%;
+
+    height: 7px;
+
+    overflow: hidden;
+
+    border-radius: 10px;
+
+    background:
+        rgba(255,255,255,0.06);
+
+}
+
+
+/* ==========================================================
+   COURSE BAR FILL
+   ========================================================== */
+
+.course-bar-fill {
+
+    height: 100%;
+
+    min-width: 2px;
+
+    border-radius: 10px;
+
+    background:
+        linear-gradient(
+            90deg,
+            var(--stat-blue-dark),
+            var(--stat-blue-light)
+        );
+
     transition:
-        color 0.2s ease,
-        background 0.2s ease;
-
-}
-
-
-.dashboard-nav a i {
-
-    font-size: 12px;
+        width 0.6s ease;
 
 }
 
 
 /* ==========================================================
-   NAV HOVER
+   COURSE COUNT
    ========================================================== */
 
-.dashboard-nav a:hover {
+.course-count {
 
-    color: #ffffff;
+    color:
+        var(--stat-muted-light);
 
-    background:
-        rgba(255, 255, 255, 0.05);
+    font-size: 10px;
+
+    font-weight: 700;
+
+    text-align: right;
 
 }
 
 
 /* ==========================================================
-   ACTIVE NAVIGATION
+   TABLE STYLE FOR STATISTICS
    ========================================================== */
 
-.dashboard-nav a.active {
+.statistics-table-wrapper {
 
-    color: #ffffff;
+    width: 100%;
 
-    background:
-        rgba(45, 139, 210, 0.13);
+    overflow-x: auto;
+
+    border:
+        1px solid var(--stat-border);
+
+    border-radius:
+        var(--stat-radius);
 
 }
 
 
-.dashboard-nav a.active::after {
+.statistics-table {
 
-    content: "";
+    width: 100%;
 
-    position: absolute;
+    margin: 0;
 
-    left: 12px;
+    border-collapse:
+        collapse;
 
-    right: 12px;
+    color:
+        var(--stat-text);
 
-    bottom: 2px;
+    font-size: 10px;
 
-    height: 2px;
+}
 
-    border-radius: 3px;
+
+.statistics-table thead th {
+
+    padding:
+        12px 14px;
 
     background:
-        #e8c547;
+        #11263b;
+
+    color:
+        var(--stat-muted-light);
+
+    font-size: 9px;
+
+    font-weight: 700;
+
+    text-transform:
+        uppercase;
+
+    letter-spacing:
+        0.7px;
+
+    border-bottom:
+        1px solid var(--stat-border);
+
+}
+
+
+.statistics-table tbody td {
+
+    padding:
+        12px 14px;
+
+    border-bottom:
+        1px solid rgba(255,255,255,0.04);
+
+}
+
+
+.statistics-table tbody tr:hover {
+
+    background:
+        rgba(45,139,210,0.05);
 
 }
 
 
 /* ==========================================================
-   RIGHT SIDE
+   EMPTY STATISTICS
    ========================================================== */
 
-.paf-actions {
+.empty-statistics {
+
+    min-height:
+        230px;
 
     display: flex;
 
-    align-items: center;
-
-    justify-content: flex-end;
-
-    gap: 8px;
-
-    min-width: 280px;
-
-    flex-shrink: 0;
-
-}
-
-
-/* ==========================================================
-   USER INFORMATION
-   ========================================================== */
-
-.user-info {
-
-    display: flex;
-
-    align-items: center;
-
-    gap: 8px;
-
-    margin-right: 5px;
-
-    padding-right: 12px;
-
-    border-right:
-        1px solid rgba(255,255,255,0.10);
-
-}
-
-
-.user-icon {
-
-    width: 28px;
-
-    height: 28px;
-
-    display: flex;
+    flex-direction: column;
 
     align-items: center;
 
     justify-content: center;
 
-    border-radius: 50%;
+    text-align: center;
 
-    background:
-        rgba(45, 139, 210, 0.14);
+    color:
+        var(--stat-muted);
 
-    color: #67b8ef;
+}
+
+
+.empty-statistics i {
+
+    margin-bottom:
+        12px;
+
+    color:
+        #48647e;
+
+    font-size: 28px;
+
+}
+
+
+.empty-statistics strong {
+
+    margin-bottom:
+        5px;
+
+    color:
+        var(--stat-muted-light);
 
     font-size: 11px;
 
 }
 
 
-.user-name {
-
-    color: #cbd5df;
+.empty-statistics span {
 
     font-size: 9px;
 
-    font-weight: 600;
-
 }
 
 
 /* ==========================================================
-   HEADER BUTTONS
+   DATABASE ERROR
    ========================================================== */
 
-.paf-actions .btn {
-
-    min-height: 30px;
-
-    padding:
-        5px 10px;
-
-    border-radius: 7px;
-
-    font-size: 9px;
-
-    font-weight: 600;
-
-    white-space: nowrap;
-
-}
-
-
-/* ==========================================================
-   CHANGE PASSWORD
-   ========================================================== */
-
-.paf-actions .btn-outline-warning {
-
-    color: #e8c547;
-
-    border-color:
-        rgba(232, 197, 71, 0.35);
-
-}
-
-
-.paf-actions .btn-outline-warning:hover {
-
-    color: #111c28;
-
-    background: #e8c547;
-
-    border-color: #e8c547;
-
-}
-
-
-/* ==========================================================
-   LOGOUT
-   ========================================================== */
-
-.paf-actions .btn-outline-light {
-
-    color: #b8c4cf;
-
-    border-color:
-        rgba(255,255,255,0.18);
-
-}
-
-
-.paf-actions .btn-outline-light:hover {
-
-    color: #101a26;
-
-    background: #ffffff;
-
-}
-
-
-/* ==========================================================
-   EXPORT BUTTON
-   ========================================================== */
-
-.export-menu-btn {
-
-    width: 31px;
-
-    height: 31px;
-
-    padding: 0 !important;
+.database-error {
 
     display: flex;
 
     align-items: center;
 
-    justify-content: center;
+    gap:
+        10px;
 
-    border-radius: 7px !important;
+    margin-bottom:
+        24px;
 
-    color: #69b8ec !important;
+    padding:
+        12px 15px;
+
+    background:
+        rgba(239,102,102,0.07);
 
     border:
-        1px solid rgba(45, 139, 210, 0.30) !important;
+        1px solid rgba(239,102,102,0.20);
+
+    border-radius:
+        9px;
+
+    color:
+        #ff9696;
+
+    font-size:
+        10px;
 
 }
 
 
-.export-menu-btn:hover {
+.database-error i {
 
-    color: #ffffff !important;
-
-    background:
-        rgba(45, 139, 210, 0.15);
+    font-size:
+        14px;
 
 }
 
 
 /* ==========================================================
-   DROPDOWN
+   SUCCESS MESSAGE
    ========================================================== */
 
-.paf-actions .dropdown-menu {
+.statistics-success {
 
-    margin-top: 8px;
+    display: flex;
 
-    padding: 6px;
+    align-items: center;
 
-    min-width: 175px;
+    gap:
+        9px;
 
-    background: #102238;
+    margin-bottom:
+        24px;
 
-    border:
-        1px solid rgba(255,255,255,0.10);
-
-    border-radius: 9px;
-
-    box-shadow:
-        0 15px 35px rgba(0,0,0,0.35);
-
-}
-
-
-.paf-actions .dropdown-item {
-
-    padding: 8px 10px;
-
-    border-radius: 6px;
-
-    color: #cbd5df;
-
-    font-size: 10px;
-
-}
-
-
-.paf-actions .dropdown-item:hover {
-
-    color: #ffffff;
+    padding:
+        11px 14px;
 
     background:
-        rgba(45,139,210,0.15);
+        rgba(53,201,141,0.07);
+
+    border:
+        1px solid rgba(53,201,141,0.18);
+
+    border-radius:
+        9px;
+
+    color:
+        #72dbb1;
+
+    font-size:
+        10px;
+
+}
+
+
+/* ==========================================================
+   SECTION SPACING
+   ========================================================== */
+
+.statistics-section {
+
+    margin-bottom:
+        26px;
+
+}
+
+
+/* ==========================================================
+   SECTION TITLE
+   ========================================================== */
+
+.statistics-section-title {
+
+    display: flex;
+
+    align-items: center;
+
+    gap:
+        9px;
+
+    margin-bottom:
+        14px;
+
+    color:
+        var(--stat-white);
+
+    font-size:
+        13px;
+
+    font-weight:
+        700;
+
+}
+
+
+.statistics-section-title::before {
+
+    content: "";
+
+    width:
+        3px;
+
+    height:
+        15px;
+
+    border-radius:
+        4px;
+
+    background:
+        var(--stat-gold);
+
+}
+
+
+/* ==========================================================
+   BOOTSTRAP ROW FIX
+   ========================================================== */
+
+.statistics-page .row {
+
+    --bs-gutter-x:
+        1.25rem;
+
+    --bs-gutter-y:
+        1.25rem;
+
+}
+
+
+/* ==========================================================
+   BOOTSTRAP ALERT RESET
+   ========================================================== */
+
+.statistics-page .alert {
+
+    border-radius:
+        9px;
+
+}
+
+
+/* ==========================================================
+   SCROLLBAR
+   ========================================================== */
+
+.statistics-page ::-webkit-scrollbar {
+
+    width:
+        7px;
+
+    height:
+        7px;
+
+}
+
+
+.statistics-page ::-webkit-scrollbar-track {
+
+    background:
+        #081522;
+
+}
+
+
+.statistics-page ::-webkit-scrollbar-thumb {
+
+    background:
+        #1b3a57;
+
+    border-radius:
+        10px;
+
+}
+
+
+.statistics-page ::-webkit-scrollbar-thumb:hover {
+
+    background:
+        #275274;
 
 }
 
@@ -490,57 +1243,36 @@
 
 @media (max-width: 1100px) {
 
-    .paf-topbar {
+    .statistics-page {
 
         padding:
-            10px 20px;
-
-        gap: 15px;
+            30px 25px 45px;
 
     }
 
 
-    .paf-brand {
+    .statistics-header h2 {
 
-        min-width: auto;
-
-    }
-
-
-    .dashboard-nav {
-
-        gap: 1px;
+        font-size:
+            24px;
 
     }
 
 
-    .dashboard-nav a {
+    .summary-card {
 
-        padding:
-            8px 8px;
-
-        font-size: 9px;
+        min-height:
+            135px;
 
     }
 
 
-    .dashboard-nav a i {
+    .course-item {
 
-        display: none;
-
-    }
-
-
-    .paf-actions {
-
-        min-width: auto;
-
-    }
-
-
-    .user-info {
-
-        display: none;
+        grid-template-columns:
+            minmax(120px, 1fr)
+            minmax(100px, 2fr)
+            45px;
 
     }
 
@@ -551,64 +1283,112 @@
    MOBILE
    ========================================================== */
 
-@media (max-width: 850px) {
+@media (max-width: 768px) {
 
-    .paf-topbar {
-
-        flex-wrap: wrap;
+    .statistics-page {
 
         padding:
-            12px 16px;
+            25px 18px 40px;
 
     }
 
 
-    .paf-brand {
+    .statistics-header {
 
-        width: 100%;
+        display:
+            block;
 
-    }
-
-
-    .dashboard-nav {
-
-        order: 3;
-
-        width: 100%;
-
-        justify-content: flex-start;
-
-        overflow-x: auto;
-
-        padding-bottom: 2px;
+        margin-bottom:
+            23px;
 
     }
 
 
-    .dashboard-nav a {
+    .statistics-header h2 {
 
-        flex-shrink: 0;
+        font-size:
+            22px;
+
+    }
+
+
+    .statistics-header h2::before {
+
+        height:
+            23px;
+
+    }
+
+
+    .statistics-header p {
+
+        font-size:
+            10px;
+
+    }
+
+
+    .statistics-header-info {
+
+        display:
+            inline-flex;
+
+        margin-top:
+            12px;
+
+    }
+
+
+    .summary-card {
+
+        min-height:
+            130px;
+
+    }
+
+
+    .chart-card {
+
+        min-height:
+            350px;
 
         padding:
-            8px 11px;
+            19px 17px;
 
     }
 
 
-    .paf-actions {
+    .chart-card.large {
 
-        position: absolute;
-
-        top: 15px;
-
-        right: 16px;
+        min-height:
+            370px;
 
     }
 
 
-    .paf-actions .btn-outline-warning {
+    .chart-container {
 
-        display: none;
+        height:
+            250px;
+
+    }
+
+
+    .chart-card.large .chart-container {
+
+        height:
+            275px;
+
+    }
+
+
+    .course-item {
+
+        grid-template-columns:
+            1fr 2fr 40px;
+
+        gap:
+            9px;
 
     }
 
@@ -621,44 +1401,177 @@
 
 @media (max-width: 500px) {
 
-    .paf-text h1 {
-
-        font-size: 12px !important;
-
-    }
-
-
-    .paf-text span {
-
-        font-size: 8px !important;
-
-    }
-
-
-    .paf-brand img {
-
-        width: 44px !important;
-
-        height: 44px !important;
-
-        flex-basis: 44px;
-
-    }
-
-
-    .dashboard-nav {
-
-        margin-top: 3px;
-
-    }
-
-
-    .dashboard-nav a {
-
-        font-size: 8px;
+    .statistics-page {
 
         padding:
-            7px 9px;
+            20px 13px 35px;
+
+    }
+
+
+    .statistics-header h2 {
+
+        font-size:
+            20px;
+
+    }
+
+
+    .summary-card {
+
+        padding:
+            18px;
+
+    }
+
+
+    .summary-icon {
+
+        width:
+            38px;
+
+        height:
+            38px;
+
+        margin-bottom:
+            14px;
+
+    }
+
+
+    .summary-number {
+
+        font-size:
+            23px;
+
+    }
+
+
+    .summary-label {
+
+        font-size:
+            8px;
+
+    }
+
+
+    .chart-card {
+
+        min-height:
+            325px;
+
+        padding:
+            17px 14px;
+
+    }
+
+
+    .chart-title {
+
+        font-size:
+            12px;
+
+    }
+
+
+    .chart-subtitle {
+
+        font-size:
+            8px;
+
+        margin-bottom:
+            13px;
+
+    }
+
+
+    .chart-container {
+
+        height:
+            235px;
+
+    }
+
+
+    .chart-card.large .chart-container {
+
+        height:
+            250px;
+
+    }
+
+
+    .course-item {
+
+        grid-template-columns:
+            1fr;
+
+        gap:
+            5px;
+
+    }
+
+
+    .course-count {
+
+        text-align:
+            left;
+
+    }
+
+
+    .course-bar {
+
+        order:
+            2;
+
+    }
+
+}
+
+
+/* ==========================================================
+   VERY SMALL DEVICES
+   ========================================================== */
+
+@media (max-width: 360px) {
+
+    .statistics-page {
+
+        padding:
+            17px 10px 30px;
+
+    }
+
+
+    .statistics-header h2 {
+
+        font-size:
+            18px;
+
+    }
+
+
+    .summary-card {
+
+        min-height:
+            120px;
+
+    }
+
+
+    .summary-number {
+
+        font-size:
+            21px;
+
+    }
+
+
+    .chart-container {
+
+        height:
+            215px;
 
     }
 
