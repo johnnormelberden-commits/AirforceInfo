@@ -410,20 +410,10 @@ foreach ($yearStatistics as $row) {
          SHARED DASHBOARD CSS
     ====================================================== -->
 
-    <link
-        rel="stylesheet"
-        href="css/dashboard.css"
-    >
+   <link rel="stylesheet" href="css/dashboard.css?v=2">
+    <link rel="stylesheet" href="css/statistics.css?v=2">
 
 
-    <!-- =====================================================
-         STATISTICS CSS
-    ====================================================== -->
-
-    <link
-        rel="stylesheet"
-        href="css/statistics.css"
-    >
 
 
     <!-- =====================================================
