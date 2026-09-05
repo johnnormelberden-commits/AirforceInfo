@@ -54,8 +54,10 @@ $databaseError = false;
 try {
 
     /*
-     * TOTAL PERSONNEL
-     */
+    |--------------------------------------------------------------------------
+    | TOTAL PERSONNEL
+    |--------------------------------------------------------------------------
+    */
 
     $stmt = $connection->query("
         SELECT COUNT(*)
@@ -66,8 +68,10 @@ try {
 
 
     /*
-     * TOTAL RANKS
-     */
+    |--------------------------------------------------------------------------
+    | TOTAL RANKS
+    |--------------------------------------------------------------------------
+    */
 
     $stmt = $connection->query("
         SELECT COUNT(DISTINCT NULLIF(TRIM(rank), ''))
@@ -78,8 +82,10 @@ try {
 
 
     /*
-     * TOTAL BRANCHES
-     */
+    |--------------------------------------------------------------------------
+    | TOTAL BRANCHES
+    |--------------------------------------------------------------------------
+    */
 
     $stmt = $connection->query("
         SELECT COUNT(DISTINCT NULLIF(TRIM(branch_of_service), ''))
@@ -90,8 +96,10 @@ try {
 
 
     /*
-     * TOTAL COURSES
-     */
+    |--------------------------------------------------------------------------
+    | TOTAL COURSES
+    |--------------------------------------------------------------------------
+    */
 
     $stmt = $connection->query("
         SELECT COUNT(DISTINCT NULLIF(TRIM(courses), ''))
@@ -102,8 +110,10 @@ try {
 
 
     /*
-     * PERSONNEL BY RANK
-     */
+    |--------------------------------------------------------------------------
+    | PERSONNEL BY RANK
+    |--------------------------------------------------------------------------
+    */
 
     $stmt = $connection->query("
         SELECT
@@ -121,8 +131,10 @@ try {
 
 
     /*
-     * PERSONNEL BY BRANCH
-     */
+    |--------------------------------------------------------------------------
+    | PERSONNEL BY BRANCH
+    |--------------------------------------------------------------------------
+    */
 
     $stmt = $connection->query("
         SELECT
@@ -140,8 +152,10 @@ try {
 
 
     /*
-     * PERSONNEL BY STANDING
-     */
+    |--------------------------------------------------------------------------
+    | PERSONNEL BY STANDING
+    |--------------------------------------------------------------------------
+    */
 
     $stmt = $connection->query("
         SELECT
@@ -159,8 +173,10 @@ try {
 
 
     /*
-     * PERSONNEL BY COURSE
-     */
+    |--------------------------------------------------------------------------
+    | PERSONNEL BY COURSE
+    |--------------------------------------------------------------------------
+    */
 
     $stmt = $connection->query("
         SELECT
@@ -178,8 +194,10 @@ try {
 
 
     /*
-     * PERSONNEL BY YEAR
-     */
+    |--------------------------------------------------------------------------
+    | PERSONNEL BY YEAR
+    |--------------------------------------------------------------------------
+    */
 
     $stmt = $connection->query("
         SELECT
@@ -288,7 +306,9 @@ foreach ($yearStatistics as $row) {
     </title>
 
 
-    <!-- Bootstrap -->
+    <!-- =====================================================
+         BOOTSTRAP
+    ====================================================== -->
 
     <link
         rel="stylesheet"
@@ -296,7 +316,9 @@ foreach ($yearStatistics as $row) {
     >
 
 
-    <!-- Bootstrap Icons -->
+    <!-- =====================================================
+         BOOTSTRAP ICONS
+    ====================================================== -->
 
     <link
         rel="stylesheet"
@@ -304,7 +326,9 @@ foreach ($yearStatistics as $row) {
     >
 
 
-    <!-- Google Font -->
+    <!-- =====================================================
+         GOOGLE FONT
+    ====================================================== -->
 
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
@@ -312,7 +336,9 @@ foreach ($yearStatistics as $row) {
     >
 
 
-    <!-- Shared Dashboard CSS -->
+    <!-- =====================================================
+         DASHBOARD CSS
+    ====================================================== -->
 
     <link
         rel="stylesheet"
@@ -320,7 +346,9 @@ foreach ($yearStatistics as $row) {
     >
 
 
-    <!-- Statistics CSS -->
+    <!-- =====================================================
+         STATISTICS CSS
+    ====================================================== -->
 
     <link
         rel="stylesheet"
@@ -328,7 +356,9 @@ foreach ($yearStatistics as $row) {
     >
 
 
-    <!-- Chart.js -->
+    <!-- =====================================================
+         CHART.JS
+    ====================================================== -->
 
     <script
         src="https://cdn.jsdelivr.net/npm/chart.js"
@@ -341,14 +371,13 @@ foreach ($yearStatistics as $row) {
 
 
 <!-- =========================================================
-     MOBILE OVERLAY
+     MOBILE SIDEBAR OVERLAY
 ========================================================= -->
 
 <div
     class="sidebar-overlay"
     id="sidebarOverlay"
->
-</div>
+></div>
 
 
 <!-- =========================================================
@@ -361,7 +390,9 @@ foreach ($yearStatistics as $row) {
 >
 
 
-    <!-- BRAND -->
+    <!-- =====================================================
+         SIDEBAR BRAND
+    ====================================================== -->
 
     <div class="sidebar-brand">
 
@@ -390,7 +421,9 @@ foreach ($yearStatistics as $row) {
     </div>
 
 
-    <!-- NAVIGATION -->
+    <!-- =====================================================
+         NAVIGATION TITLE
+    ====================================================== -->
 
     <div class="sidebar-section-title">
 
@@ -398,6 +431,10 @@ foreach ($yearStatistics as $row) {
 
     </div>
 
+
+    <!-- =====================================================
+         MAIN NAVIGATION
+    ====================================================== -->
 
     <nav class="sidebar-nav">
 
@@ -462,7 +499,9 @@ foreach ($yearStatistics as $row) {
         </a>
 
 
-        <!-- COPY FILE -->
+        <!-- =================================================
+             COPY FILE
+        ================================================== -->
 
         <div class="nav-dropdown">
 
@@ -494,7 +533,7 @@ foreach ($yearStatistics as $row) {
             >
 
                 <a
-                    href="index.php"
+                    href="index.php#personnel"
                 >
 
                     <i class="bi bi-table"></i>
@@ -507,10 +546,13 @@ foreach ($yearStatistics as $row) {
 
         </div>
 
+
     </nav>
 
 
-    <!-- MANAGEMENT -->
+    <!-- =====================================================
+         MANAGEMENT
+    ====================================================== -->
 
     <div class="sidebar-section-title management-title">
 
@@ -564,7 +606,9 @@ foreach ($yearStatistics as $row) {
     </nav>
 
 
-    <!-- SIDEBAR BOTTOM -->
+    <!-- =====================================================
+         SIDEBAR BOTTOM
+    ====================================================== -->
 
     <div class="sidebar-bottom">
 
@@ -609,12 +653,13 @@ foreach ($yearStatistics as $row) {
     <header class="topbar">
 
 
-        <!-- MOBILE MENU -->
+        <!-- MOBILE MENU BUTTON -->
 
         <button
             type="button"
             class="mobile-menu-btn"
             id="mobileMenuBtn"
+            aria-label="Open navigation"
         >
 
             <i class="bi bi-list"></i>
@@ -622,7 +667,7 @@ foreach ($yearStatistics as $row) {
         </button>
 
 
-        <!-- TITLE -->
+        <!-- TOPBAR TITLE -->
 
         <div class="topbar-title">
 
@@ -637,21 +682,26 @@ foreach ($yearStatistics as $row) {
         </div>
 
 
-        <!-- USER -->
+        <!-- TOPBAR RIGHT -->
 
         <div class="topbar-right">
 
+
+            <!-- STATISTICS ICON -->
 
             <button
                 type="button"
                 class="header-icon-btn"
                 title="Statistics"
+                aria-label="Statistics"
             >
 
                 <i class="bi bi-bar-chart"></i>
 
             </button>
 
+
+            <!-- USER -->
 
             <div class="user-menu">
 
@@ -668,7 +718,9 @@ foreach ($yearStatistics as $row) {
                     <strong>
 
                         <?= htmlspecialchars(
-                            $_SESSION['username']
+                            $_SESSION['username'],
+                            ENT_QUOTES,
+                            'UTF-8'
                         ); ?>
 
                     </strong>
@@ -681,6 +733,7 @@ foreach ($yearStatistics as $row) {
 
 
             </div>
+
 
         </div>
 
@@ -705,18 +758,24 @@ foreach ($yearStatistics as $row) {
             <div>
 
                 <div class="page-label">
+
                     CMO INFORMATION SYSTEM
+
                 </div>
 
 
                 <h1>
+
                     Personnel Statistics
+
                 </h1>
 
 
                 <p>
+
                     Overview and analysis of military personnel
                     information in the database.
+
                 </p>
 
             </div>
@@ -735,7 +794,7 @@ foreach ($yearStatistics as $row) {
 
 
         <!-- =================================================
-             ERROR
+             DATABASE ERROR
         ================================================== -->
 
         <?php if ($databaseError): ?>
@@ -788,7 +847,7 @@ foreach ($yearStatistics as $row) {
             </div>
 
 
-            <!-- RANKS -->
+            <!-- TOTAL RANKS -->
 
             <div class="statistics-card cyan-card">
 
@@ -818,7 +877,7 @@ foreach ($yearStatistics as $row) {
             </div>
 
 
-            <!-- BRANCHES -->
+            <!-- TOTAL BRANCHES -->
 
             <div class="statistics-card purple-card">
 
@@ -848,7 +907,7 @@ foreach ($yearStatistics as $row) {
             </div>
 
 
-            <!-- COURSES -->
+            <!-- TOTAL COURSES -->
 
             <div class="statistics-card green-card">
 
@@ -888,7 +947,9 @@ foreach ($yearStatistics as $row) {
         <section class="statistics-grid">
 
 
-            <!-- RANK -->
+            <!-- =================================================
+                 RANK CHART
+            ================================================== -->
 
             <div class="chart-panel">
 
@@ -898,11 +959,16 @@ foreach ($yearStatistics as $row) {
                     <div>
 
                         <span class="chart-label">
+
                             PERSONNEL DISTRIBUTION
+
                         </span>
 
+
                         <h2>
+
                             Personnel by Rank
+
                         </h2>
 
                     </div>
@@ -923,10 +989,13 @@ foreach ($yearStatistics as $row) {
 
                 </div>
 
+
             </div>
 
 
-            <!-- BRANCH -->
+            <!-- =================================================
+                 BRANCH CHART
+            ================================================== -->
 
             <div class="chart-panel">
 
@@ -936,11 +1005,16 @@ foreach ($yearStatistics as $row) {
                     <div>
 
                         <span class="chart-label">
+
                             SERVICE DISTRIBUTION
+
                         </span>
 
+
                         <h2>
+
                             Branch of Service
+
                         </h2>
 
                     </div>
@@ -961,10 +1035,13 @@ foreach ($yearStatistics as $row) {
 
                 </div>
 
+
             </div>
 
 
-            <!-- STANDING -->
+            <!-- =================================================
+                 STANDING CHART
+            ================================================== -->
 
             <div class="chart-panel">
 
@@ -974,11 +1051,16 @@ foreach ($yearStatistics as $row) {
                     <div>
 
                         <span class="chart-label">
+
                             PERFORMANCE
+
                         </span>
 
+
                         <h2>
+
                             Personnel by Standing
+
                         </h2>
 
                     </div>
@@ -999,10 +1081,13 @@ foreach ($yearStatistics as $row) {
 
                 </div>
 
+
             </div>
 
 
-            <!-- YEAR -->
+            <!-- =================================================
+                 YEAR CHART
+            ================================================== -->
 
             <div class="chart-panel">
 
@@ -1012,11 +1097,16 @@ foreach ($yearStatistics as $row) {
                     <div>
 
                         <span class="chart-label">
+
                             GRADUATION HISTORY
+
                         </span>
 
+
                         <h2>
+
                             Year Graduated
+
                         </h2>
 
                     </div>
@@ -1037,10 +1127,13 @@ foreach ($yearStatistics as $row) {
 
                 </div>
 
+
             </div>
 
 
-            <!-- COURSE -->
+            <!-- =================================================
+                 COURSE CHART
+            ================================================== -->
 
             <div class="chart-panel chart-panel-wide">
 
@@ -1050,11 +1143,16 @@ foreach ($yearStatistics as $row) {
                     <div>
 
                         <span class="chart-label">
+
                             TRAINING DISTRIBUTION
+
                         </span>
 
+
                         <h2>
+
                             Personnel by Course
+
                         </h2>
 
                     </div>
@@ -1075,6 +1173,7 @@ foreach ($yearStatistics as $row) {
 
                 </div>
 
+
             </div>
 
 
@@ -1083,11 +1182,12 @@ foreach ($yearStatistics as $row) {
 
     </main>
 
+
 </div>
 
 
 <!-- =========================================================
-     JAVASCRIPT
+     BOOTSTRAP JAVASCRIPT
 ========================================================= -->
 
 <script
@@ -1095,538 +1195,753 @@ foreach ($yearStatistics as $row) {
 ></script>
 
 
+<!-- =========================================================
+     STATISTICS JAVASCRIPT
+========================================================= -->
+
 <script>
 
-/*
-|--------------------------------------------------------------------------
-| PHP DATA
-|--------------------------------------------------------------------------
-*/
-
-const rankLabels =
-    <?= json_encode($rankLabels); ?>;
-
-const rankData =
-    <?= json_encode($rankData); ?>;
+document.addEventListener('DOMContentLoaded', function () {
 
 
-const branchLabels =
-    <?= json_encode($branchLabels); ?>;
+    /*
+    |--------------------------------------------------------------------------
+    | PHP DATA
+    |--------------------------------------------------------------------------
+    */
 
-const branchData =
-    <?= json_encode($branchData); ?>;
+    const rankLabels =
+        <?= json_encode($rankLabels); ?>;
 
-
-const standingLabels =
-    <?= json_encode($standingLabels); ?>;
-
-const standingData =
-    <?= json_encode($standingData); ?>;
-
-
-const courseLabels =
-    <?= json_encode($courseLabels); ?>;
-
-const courseData =
-    <?= json_encode($courseData); ?>;
+    const rankData =
+        <?= json_encode($rankData); ?>;
 
 
-const yearLabels =
-    <?= json_encode($yearLabels); ?>;
+    const branchLabels =
+        <?= json_encode($branchLabels); ?>;
 
-const yearData =
-    <?= json_encode($yearData); ?>;
-
-
-/*
-|--------------------------------------------------------------------------
-| COLORS
-|--------------------------------------------------------------------------
-*/
-
-const colors = [
-
-    '#2d7fc1',
-    '#42a5d5',
-    '#6c8fd8',
-    '#7c6dcc',
-    '#3baf86',
-    '#e2a83b',
-    '#d46b6b',
-    '#527fa8',
-    '#365f86',
-    '#86a9c7'
-
-];
+    const branchData =
+        <?= json_encode($branchData); ?>;
 
 
-/*
-|--------------------------------------------------------------------------
-| DEFAULT CHART SETTINGS
-|--------------------------------------------------------------------------
-*/
+    const standingLabels =
+        <?= json_encode($standingLabels); ?>;
 
-Chart.defaults.font.family =
-    'Inter, Arial, sans-serif';
-
-Chart.defaults.color =
-    '#728096';
-
-Chart.defaults.font.size = 11;
+    const standingData =
+        <?= json_encode($standingData); ?>;
 
 
-/*
-|--------------------------------------------------------------------------
-| RANK CHART
-|--------------------------------------------------------------------------
-*/
+    const courseLabels =
+        <?= json_encode($courseLabels); ?>;
 
-new Chart(
+    const courseData =
+        <?= json_encode($courseData); ?>;
 
-    document.getElementById('rankChart'),
 
-    {
+    const yearLabels =
+        <?= json_encode($yearLabels); ?>;
 
-        type: 'bar',
+    const yearData =
+        <?= json_encode($yearData); ?>;
 
-        data: {
 
-            labels: rankLabels,
+    /*
+    |--------------------------------------------------------------------------
+    | COLORS
+    |--------------------------------------------------------------------------
+    */
 
-            datasets: [{
+    const colors = [
 
-                data: rankData,
+        '#2d7fc1',
+        '#42a5d5',
+        '#6c8fd8',
+        '#7c6dcc',
+        '#3baf86',
+        '#e2a83b',
+        '#d46b6b',
+        '#527fa8',
+        '#365f86',
+        '#86a9c7'
 
-                backgroundColor: '#2d7fc1',
+    ];
 
-                borderRadius: 5,
 
-                borderSkipped: false,
+    /*
+    |--------------------------------------------------------------------------
+    | CHART.JS DEFAULTS
+    |--------------------------------------------------------------------------
+    */
 
-                maxBarThickness: 42
+    Chart.defaults.font.family =
+        'Inter, Arial, sans-serif';
 
-            }]
+    Chart.defaults.color =
+        '#728096';
 
-        },
+    Chart.defaults.font.size = 11;
 
-        options: {
 
-            responsive: true,
+    /*
+    |--------------------------------------------------------------------------
+    | RANK CHART
+    |--------------------------------------------------------------------------
+    */
 
-            maintainAspectRatio: false,
+    const rankCanvas =
+        document.getElementById('rankChart');
 
-            plugins: {
 
-                legend: {
-                    display: false
-                }
+    if (rankCanvas) {
 
-            },
+        new Chart(
 
-            scales: {
+            rankCanvas,
 
-                y: {
+            {
 
-                    beginAtZero: true,
+                type: 'bar',
 
-                    ticks: {
-                        precision: 0
-                    },
+                data: {
 
-                    grid: {
-                        color: '#e9eef4'
-                    }
+                    labels: rankLabels,
+
+                    datasets: [{
+
+                        data: rankData,
+
+                        backgroundColor: '#2d7fc1',
+
+                        borderRadius: 5,
+
+                        borderSkipped: false,
+
+                        maxBarThickness: 42
+
+                    }]
 
                 },
 
-                x: {
+                options: {
 
-                    grid: {
-                        display: false
-                    }
+                    responsive: true,
 
-                }
+                    maintainAspectRatio: false,
 
-            }
+                    plugins: {
 
-        }
+                        legend: {
 
-    }
+                            display: false
 
-);
+                        }
 
-
-/*
-|--------------------------------------------------------------------------
-| BRANCH CHART
-|--------------------------------------------------------------------------
-*/
-
-new Chart(
-
-    document.getElementById('branchChart'),
-
-    {
-
-        type: 'doughnut',
-
-        data: {
-
-            labels: branchLabels,
-
-            datasets: [{
-
-                data: branchData,
-
-                backgroundColor: colors,
-
-                borderColor: '#ffffff',
-
-                borderWidth: 3
-
-            }]
-
-        },
-
-        options: {
-
-            responsive: true,
-
-            maintainAspectRatio: false,
-
-            cutout: '66%',
-
-            plugins: {
-
-                legend: {
-
-                    position: 'bottom',
-
-                    labels: {
-
-                        padding: 16,
-
-                        usePointStyle: true,
-
-                        boxWidth: 8
-
-                    }
-
-                }
-
-            }
-
-        }
-
-    }
-
-);
-
-
-/*
-|--------------------------------------------------------------------------
-| STANDING CHART
-|--------------------------------------------------------------------------
-*/
-
-new Chart(
-
-    document.getElementById('standingChart'),
-
-    {
-
-        type: 'doughnut',
-
-        data: {
-
-            labels: standingLabels,
-
-            datasets: [{
-
-                data: standingData,
-
-                backgroundColor: [
-
-                    '#2d7fc1',
-                    '#3baf86',
-                    '#e2a83b',
-                    '#d46b6b',
-                    '#7c6dcc',
-                    '#527fa8'
-
-                ],
-
-                borderColor: '#ffffff',
-
-                borderWidth: 3
-
-            }]
-
-        },
-
-        options: {
-
-            responsive: true,
-
-            maintainAspectRatio: false,
-
-            cutout: '66%',
-
-            plugins: {
-
-                legend: {
-
-                    position: 'bottom',
-
-                    labels: {
-
-                        padding: 16,
-
-                        usePointStyle: true,
-
-                        boxWidth: 8
-
-                    }
-
-                }
-
-            }
-
-        }
-
-    }
-
-);
-
-
-/*
-|--------------------------------------------------------------------------
-| YEAR CHART
-|--------------------------------------------------------------------------
-*/
-
-new Chart(
-
-    document.getElementById('yearChart'),
-
-    {
-
-        type: 'line',
-
-        data: {
-
-            labels: yearLabels,
-
-            datasets: [{
-
-                data: yearData,
-
-                borderColor: '#2d7fc1',
-
-                backgroundColor:
-                    'rgba(45, 127, 193, 0.10)',
-
-                borderWidth: 3,
-
-                fill: true,
-
-                tension: 0.35,
-
-                pointRadius: 4,
-
-                pointHoverRadius: 6,
-
-                pointBackgroundColor: '#2d7fc1',
-
-                pointBorderColor: '#ffffff',
-
-                pointBorderWidth: 2
-
-            }]
-
-        },
-
-        options: {
-
-            responsive: true,
-
-            maintainAspectRatio: false,
-
-            plugins: {
-
-                legend: {
-                    display: false
-                }
-
-            },
-
-            scales: {
-
-                y: {
-
-                    beginAtZero: true,
-
-                    ticks: {
-                        precision: 0
                     },
 
-                    grid: {
-                        color: '#e9eef4'
+                    scales: {
+
+                        y: {
+
+                            beginAtZero: true,
+
+                            ticks: {
+
+                                precision: 0
+
+                            },
+
+                            grid: {
+
+                                color: '#e9eef4'
+
+                            }
+
+                        },
+
+                        x: {
+
+                            grid: {
+
+                                display: false
+
+                            }
+
+                        }
+
                     }
+
+                }
+
+            }
+
+        );
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | BRANCH CHART
+    |--------------------------------------------------------------------------
+    */
+
+    const branchCanvas =
+        document.getElementById('branchChart');
+
+
+    if (branchCanvas) {
+
+        new Chart(
+
+            branchCanvas,
+
+            {
+
+                type: 'doughnut',
+
+                data: {
+
+                    labels: branchLabels,
+
+                    datasets: [{
+
+                        data: branchData,
+
+                        backgroundColor: colors,
+
+                        borderColor: '#ffffff',
+
+                        borderWidth: 3
+
+                    }]
 
                 },
 
-                x: {
+                options: {
 
-                    grid: {
-                        display: false
+                    responsive: true,
+
+                    maintainAspectRatio: false,
+
+                    cutout: '66%',
+
+                    plugins: {
+
+                        legend: {
+
+                            position: 'bottom',
+
+                            labels: {
+
+                                padding: 16,
+
+                                usePointStyle: true,
+
+                                boxWidth: 8
+
+                            }
+
+                        }
+
                     }
 
                 }
 
             }
 
-        }
+        );
 
     }
 
-);
+
+    /*
+    |--------------------------------------------------------------------------
+    | STANDING CHART
+    |--------------------------------------------------------------------------
+    */
+
+    const standingCanvas =
+        document.getElementById('standingChart');
 
 
-/*
-|--------------------------------------------------------------------------
-| COURSE CHART
-|--------------------------------------------------------------------------
-*/
+    if (standingCanvas) {
 
-new Chart(
+        new Chart(
 
-    document.getElementById('courseChart'),
+            standingCanvas,
 
-    {
+            {
 
-        type: 'bar',
+                type: 'doughnut',
 
-        data: {
+                data: {
 
-            labels: courseLabels,
+                    labels: standingLabels,
 
-            datasets: [{
+                    datasets: [{
 
-                data: courseData,
+                        data: standingData,
 
-                backgroundColor: colors,
+                        backgroundColor: [
 
-                borderRadius: 5,
+                            '#2d7fc1',
+                            '#3baf86',
+                            '#e2a83b',
+                            '#d46b6b',
+                            '#7c6dcc',
+                            '#527fa8'
 
-                borderSkipped: false,
+                        ],
 
-                maxBarThickness: 32
+                        borderColor: '#ffffff',
 
-            }]
+                        borderWidth: 3
 
-        },
-
-        options: {
-
-            indexAxis: 'y',
-
-            responsive: true,
-
-            maintainAspectRatio: false,
-
-            plugins: {
-
-                legend: {
-                    display: false
-                }
-
-            },
-
-            scales: {
-
-                x: {
-
-                    beginAtZero: true,
-
-                    ticks: {
-                        precision: 0
-                    },
-
-                    grid: {
-                        color: '#e9eef4'
-                    }
+                    }]
 
                 },
 
-                y: {
+                options: {
 
-                    grid: {
-                        display: false
+                    responsive: true,
+
+                    maintainAspectRatio: false,
+
+                    cutout: '66%',
+
+                    plugins: {
+
+                        legend: {
+
+                            position: 'bottom',
+
+                            labels: {
+
+                                padding: 16,
+
+                                usePointStyle: true,
+
+                                boxWidth: 8
+
+                            }
+
+                        }
+
                     }
 
                 }
 
             }
 
-        }
+        );
 
     }
 
-);
+
+    /*
+    |--------------------------------------------------------------------------
+    | YEAR CHART
+    |--------------------------------------------------------------------------
+    */
+
+    const yearCanvas =
+        document.getElementById('yearChart');
 
 
-/*
-|--------------------------------------------------------------------------
-| COPY FILE MENU
-|--------------------------------------------------------------------------
-*/
+    if (yearCanvas) {
 
-document
-    .getElementById('copyFileToggle')
-    .addEventListener('click', function () {
+        new Chart(
 
-        document
-            .getElementById('copyFileMenu')
-            .classList.toggle('show');
+            yearCanvas,
 
-        this.classList.toggle('open');
+            {
 
-    });
+                type: 'line',
+
+                data: {
+
+                    labels: yearLabels,
+
+                    datasets: [{
+
+                        data: yearData,
+
+                        borderColor: '#2d7fc1',
+
+                        backgroundColor:
+                            'rgba(45, 127, 193, 0.10)',
+
+                        borderWidth: 3,
+
+                        fill: true,
+
+                        tension: 0.35,
+
+                        pointRadius: 4,
+
+                        pointHoverRadius: 6,
+
+                        pointBackgroundColor: '#2d7fc1',
+
+                        pointBorderColor: '#ffffff',
+
+                        pointBorderWidth: 2
+
+                    }]
+
+                },
+
+                options: {
+
+                    responsive: true,
+
+                    maintainAspectRatio: false,
+
+                    plugins: {
+
+                        legend: {
+
+                            display: false
+
+                        }
+
+                    },
+
+                    scales: {
+
+                        y: {
+
+                            beginAtZero: true,
+
+                            ticks: {
+
+                                precision: 0
+
+                            },
+
+                            grid: {
+
+                                color: '#e9eef4'
+
+                            }
+
+                        },
+
+                        x: {
+
+                            grid: {
+
+                                display: false
+
+                            }
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        );
+
+    }
 
 
-/*
-|--------------------------------------------------------------------------
-| MOBILE SIDEBAR
-|--------------------------------------------------------------------------
-*/
+    /*
+    |--------------------------------------------------------------------------
+    | COURSE CHART
+    |--------------------------------------------------------------------------
+    */
 
-document
-    .getElementById('mobileMenuBtn')
-    .addEventListener('click', function () {
-
-        document
-            .getElementById('sidebar')
-            .classList.toggle('show');
-
-        document
-            .getElementById('sidebarOverlay')
-            .classList.toggle('show');
-
-    });
+    const courseCanvas =
+        document.getElementById('courseChart');
 
 
-document
-    .getElementById('sidebarOverlay')
-    .addEventListener('click', function () {
+    if (courseCanvas) {
 
-        document
-            .getElementById('sidebar')
-            .classList.remove('show');
+        new Chart(
 
-        this.classList.remove('show');
+            courseCanvas,
 
-    });
+            {
+
+                type: 'bar',
+
+                data: {
+
+                    labels: courseLabels,
+
+                    datasets: [{
+
+                        data: courseData,
+
+                        backgroundColor: colors,
+
+                        borderRadius: 5,
+
+                        borderSkipped: false,
+
+                        maxBarThickness: 32
+
+                    }]
+
+                },
+
+                options: {
+
+                    indexAxis: 'y',
+
+                    responsive: true,
+
+                    maintainAspectRatio: false,
+
+                    plugins: {
+
+                        legend: {
+
+                            display: false
+
+                        }
+
+                    },
+
+                    scales: {
+
+                        x: {
+
+                            beginAtZero: true,
+
+                            ticks: {
+
+                                precision: 0
+
+                            },
+
+                            grid: {
+
+                                color: '#e9eef4'
+
+                            }
+
+                        },
+
+                        y: {
+
+                            grid: {
+
+                                display: false
+
+                            }
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+        );
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | COPY FILE DROPDOWN
+    |--------------------------------------------------------------------------
+    */
+
+    const copyFileToggle =
+        document.getElementById('copyFileToggle');
+
+    const copyFileMenu =
+        document.getElementById('copyFileMenu');
+
+
+    if (copyFileToggle && copyFileMenu) {
+
+        copyFileToggle.addEventListener(
+            'click',
+            function (e) {
+
+                e.preventDefault();
+
+                e.stopPropagation();
+
+
+                copyFileMenu.classList.toggle('show');
+
+                copyFileToggle.classList.toggle('open');
+
+            }
+        );
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CLOSE COPY FILE DROPDOWN WHEN CLICKING OUTSIDE
+    |--------------------------------------------------------------------------
+    */
+
+    document.addEventListener(
+        'click',
+        function (e) {
+
+            const navDropdown =
+                e.target.closest('.nav-dropdown');
+
+
+            if (!navDropdown) {
+
+                if (copyFileMenu) {
+
+                    copyFileMenu.classList.remove('show');
+
+                }
+
+
+                if (copyFileToggle) {
+
+                    copyFileToggle.classList.remove('open');
+
+                }
+
+            }
+
+        }
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | ESCAPE KEY
+    |--------------------------------------------------------------------------
+    */
+
+    document.addEventListener(
+        'keydown',
+        function (e) {
+
+            if (e.key === 'Escape') {
+
+                if (copyFileMenu) {
+
+                    copyFileMenu.classList.remove('show');
+
+                }
+
+
+                if (copyFileToggle) {
+
+                    copyFileToggle.classList.remove('open');
+
+                }
+
+            }
+
+        }
+    );
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | MOBILE SIDEBAR
+    |--------------------------------------------------------------------------
+    */
+
+    const mobileMenuBtn =
+        document.getElementById('mobileMenuBtn');
+
+    const sidebar =
+        document.getElementById('sidebar');
+
+    const sidebarOverlay =
+        document.getElementById('sidebarOverlay');
+
+
+    if (
+        mobileMenuBtn &&
+        sidebar &&
+        sidebarOverlay
+    ) {
+
+        mobileMenuBtn.addEventListener(
+            'click',
+            function (e) {
+
+                e.preventDefault();
+
+                e.stopPropagation();
+
+
+                sidebar.classList.toggle('show');
+
+                sidebarOverlay.classList.toggle('show');
+
+            }
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | CLOSE SIDEBAR USING OVERLAY
+        |--------------------------------------------------------------------------
+        */
+
+        sidebarOverlay.addEventListener(
+            'click',
+            function () {
+
+                sidebar.classList.remove('show');
+
+                sidebarOverlay.classList.remove('show');
+
+            }
+        );
+
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CLOSE MOBILE SIDEBAR AFTER NAVIGATION
+    |--------------------------------------------------------------------------
+    |
+    | This only matters on mobile. The desktop sidebar remains visible.
+    |--------------------------------------------------------------------------
+    */
+
+    document
+        .querySelectorAll('.sidebar-nav a')
+        .forEach(function (link) {
+
+            link.addEventListener(
+                'click',
+                function () {
+
+                    if (
+                        window.innerWidth <= 991 &&
+                        sidebar &&
+                        sidebarOverlay
+                    ) {
+
+                        sidebar.classList.remove('show');
+
+                        sidebarOverlay.classList.remove('show');
+
+                    }
+
+                }
+            );
+
+        });
+
+
+});
 
 </script>
 
