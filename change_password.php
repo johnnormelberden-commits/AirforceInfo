@@ -2,15 +2,21 @@
 
 session_start();
 
+
 /*
  * ==========================================================
  * CHECK LOGIN
  * ==========================================================
  */
 
-if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+if (
+    !isset($_SESSION['logged_in']) ||
+    $_SESSION['logged_in'] !== true
+) {
+
     header("Location: login.php");
     exit;
+
 }
 
 
@@ -18,26 +24,25 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
  * ==========================================================
  * POSTGRESQL DATABASE CONNECTION
  * ==========================================================
- *
- * Render provides these through Environment Variables:
- *
- * DB_HOST
- * DB_PORT
- * DB_NAME
- * DB_USER
- * DB_PASSWORD
- *
- * Do NOT put the actual database password in this file.
- * ==========================================================
  */
 
 try {
 
-    $host = getenv('DB_HOST');
-    $port = getenv('DB_PORT') ?: '5432';
-    $database = getenv('DB_NAME');
-    $dbUsername = getenv('DB_USER');
-    $dbPassword = getenv('DB_PASSWORD');
+    $host =
+        getenv('DB_HOST');
+
+    $port =
+        getenv('DB_PORT') ?: '5432';
+
+    $database =
+        getenv('DB_NAME');
+
+    $dbUsername =
+        getenv('DB_USER');
+
+    $dbPassword =
+        getenv('DB_PASSWORD');
+
 
     if (
         !$host ||
@@ -45,8 +50,13 @@ try {
         !$dbUsername ||
         !$dbPassword
     ) {
-        throw new Exception("Database configuration is missing.");
+
+        throw new Exception(
+            "Database configuration is missing."
+        );
+
     }
+
 
     $conn = new PDO(
         "pgsql:host={$host};port={$port};dbname={$database}",
@@ -54,19 +64,22 @@ try {
         $dbPassword
     );
 
+
     $conn->setAttribute(
         PDO::ATTR_ERRMODE,
         PDO::ERRMODE_EXCEPTION
     );
 
+
 } catch (Exception $e) {
 
     /*
-     * Do not expose database credentials or
-     * connection details to users.
+     * Do not expose database details.
      */
 
-    die("Unable to connect to the database.");
+    die(
+        "Unable to connect to the database."
+    );
 
 }
 
@@ -77,12 +90,18 @@ try {
  * ==========================================================
  */
 
-$username = $_SESSION['username'] ?? '';
+$username =
+    $_SESSION['username'] ?? '';
+
 
 if (empty($username)) {
+
     session_destroy();
+
     header("Location: login.php");
+
     exit;
+
 }
 
 
@@ -93,10 +112,13 @@ if (empty($username)) {
  */
 
 $currentPassword = "";
+
 $newPassword = "";
+
 $confirmPassword = "";
 
 $errorMessage = "";
+
 $successMessage = "";
 
 
@@ -106,11 +128,18 @@ $successMessage = "";
  * ==========================================================
  */
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if (
+    $_SERVER['REQUEST_METHOD'] === 'POST'
+) {
 
-    $currentPassword = $_POST['current_password'] ?? '';
-    $newPassword     = $_POST['new_password'] ?? '';
-    $confirmPassword = $_POST['confirm_password'] ?? '';
+    $currentPassword =
+        $_POST['current_password'] ?? '';
+
+    $newPassword =
+        $_POST['new_password'] ?? '';
+
+    $confirmPassword =
+        $_POST['confirm_password'] ?? '';
 
 
     /*
@@ -125,42 +154,65 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         empty($confirmPassword)
     ) {
 
-        $errorMessage = "All fields are required.";
+        $errorMessage =
+            "All fields are required.";
 
-    } elseif ($newPassword !== $confirmPassword) {
+    }
 
-        $errorMessage = "New password and confirmation do not match.";
+    elseif (
+        $newPassword !== $confirmPassword
+    ) {
 
-    } elseif (strlen($newPassword) < 6) {
+        $errorMessage =
+            "New password and confirmation do not match.";
 
-        $errorMessage = "New password must be at least 6 characters.";
+    }
 
-    } elseif ($currentPassword === $newPassword) {
+    elseif (
+        strlen($newPassword) < 6
+    ) {
 
-        $errorMessage = "New password must be different from your current password.";
+        $errorMessage =
+            "New password must be at least 6 characters.";
 
-    } else {
+    }
+
+    elseif (
+        $currentPassword === $newPassword
+    ) {
+
+        $errorMessage =
+            "New password must be different from your current password.";
+
+    }
+
+    else {
 
         try {
 
             /*
              * ==================================================
-             * GET CURRENT PASSWORD HASH
+             * GET CURRENT PASSWORD
              * ==================================================
              */
 
             $stmt = $conn->prepare(
-                "SELECT password
-                 FROM users
-                 WHERE username = :username
-                 LIMIT 1"
+                "
+                SELECT password
+                FROM users
+                WHERE username = :username
+                LIMIT 1
+                "
             );
+
 
             $stmt->execute([
                 ':username' => $username
             ]);
 
-            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            $user =
+                $stmt->fetch(PDO::FETCH_ASSOC);
 
 
             /*
@@ -171,9 +223,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if (!$user) {
 
-                $errorMessage = "User not found.";
+                $errorMessage =
+                    "User not found.";
 
-            } else {
+            }
+
+            else {
 
                 /*
                  * ==================================================
@@ -181,14 +236,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                  * ==================================================
                  */
 
-                if (!password_verify(
-                    $currentPassword,
-                    $user['password']
-                )) {
+                if (
+                    !password_verify(
+                        $currentPassword,
+                        $user['password']
+                    )
+                ) {
 
-                    $errorMessage = "Current password is incorrect.";
+                    $errorMessage =
+                        "Current password is incorrect.";
 
-                } else {
+                }
+
+                else {
 
                     /*
                      * ==================================================
@@ -196,10 +256,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                      * ==================================================
                      */
 
-                    $hashedPassword = password_hash(
-                        $newPassword,
-                        PASSWORD_DEFAULT
-                    );
+                    $hashedPassword =
+                        password_hash(
+                            $newPassword,
+                            PASSWORD_DEFAULT
+                        );
 
 
                     /*
@@ -208,11 +269,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                      * ==================================================
                      */
 
-                    $update = $conn->prepare(
-                        "UPDATE users
-                         SET password = :password
-                         WHERE username = :username"
-                    );
+                    $update =
+                        $conn->prepare(
+                            "
+                            UPDATE users
+                            SET password = :password
+                            WHERE username = :username
+                            "
+                        );
+
 
                     $update->execute([
                         ':password' => $hashedPassword,
@@ -229,15 +294,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $successMessage =
                         "Password updated successfully.";
 
+
                     /*
-                     * Clear form fields
+                     * Clear password fields.
                      */
 
                     $currentPassword = "";
+
                     $newPassword = "";
+
                     $confirmPassword = "";
+
                 }
+
             }
+
 
         } catch (PDOException $e) {
 
@@ -247,8 +318,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             $errorMessage =
                 "Unable to update the password.";
+
         }
+
     }
+
 }
 
 ?>
@@ -258,155 +332,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <head>
 
-  <meta charset="UTF-8">
+    <meta charset="UTF-8">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-  <title>Change Password</title>
+    <title>
+        Change Password | CMO Training Squadron
+    </title>
 
 
-  <!-- Bootstrap -->
+    <!-- =====================================================
+         SHARED DASHBOARD CSS
+         ===================================================== -->
 
-  <link
-    rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
-  >
+    <link
+        rel="stylesheet"
+        href="css/dashboard.css"
+    >
 
 
-  <style>
+    <!-- =====================================================
+         CHANGE PASSWORD CSS
+         ===================================================== -->
 
-    body {
+    <link
+        rel="stylesheet"
+        href="css/change-password.css"
+    >
 
-      background:
-        radial-gradient(
-          circle at top left,
-          #021631,
-          #05254d
-        );
 
-      color: #e6edf3;
+    <!-- =====================================================
+         FONT AWESOME
+         ===================================================== -->
 
-      font-family: "Poppins", sans-serif;
-
-      min-height: 100vh;
-
-      margin: 0;
-
-      display: flex;
-
-      align-items: center;
-
-      justify-content: center;
-
-    }
-
-
-    .container-main {
-
-      width: 100%;
-
-      max-width: 500px;
-
-      background: rgba(0, 0, 0, 0.7);
-
-      border-radius: 15px;
-
-      padding: 30px;
-
-      box-shadow:
-        0 0 25px rgba(0, 0, 0, 0.7);
-
-      border: 1px solid #1f3b63;
-
-    }
-
-
-    h3 {
-
-      color: #58a6ff;
-
-      font-weight: 600;
-
-    }
-
-
-    .form-label {
-
-      color: #d0e2ff;
-
-      font-weight: 500;
-
-    }
-
-
-    .form-control {
-
-      background-color: #050b16 !important;
-
-      border: 1px solid #264b7c;
-
-      color: #ffffff !important;
-
-    }
-
-
-    .form-control:focus {
-
-      background-color: #071021 !important;
-
-      border-color: #ffd700;
-
-      box-shadow:
-        0 0 8px rgba(255, 215, 0, 0.7);
-
-      color: #ffffff !important;
-
-    }
-
-
-    .form-control::placeholder {
-
-      color: rgba(255, 255, 255, 0.5);
-
-    }
-
-
-    .btn-primary {
-
-      background-color: #0057b7;
-
-      border: none;
-
-    }
-
-
-    .btn-primary:hover {
-
-      background-color: #003b88;
-
-      box-shadow:
-        0 0 10px rgba(255, 215, 0, 0.8);
-
-    }
-
-
-    .btn-secondary {
-
-      border: none;
-
-    }
-
-
-    .alert {
-
-      border-radius: 10px;
-
-    }
-
-  </style>
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    >
 
 </head>
 
@@ -414,153 +379,584 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
 
 
-<div class="container-main">
+    <!-- =====================================================
+         SIDEBAR
+         ===================================================== -->
 
-  <h3 class="mb-4 text-center">
-    Change Password
-  </h3>
-
-
-  <!-- CURRENT USER -->
-
-  <div class="text-center mb-4">
-
-    <span class="text-light">
-      Logged in as:
-    </span>
-
-    <strong style="color:#ffd700;">
-      <?= htmlspecialchars($username); ?>
-    </strong>
-
-  </div>
+    <?php include 'sidebar.php'; ?>
 
 
-  <!-- ERROR MESSAGE -->
-
-  <?php if (!empty($errorMessage)): ?>
+    <!-- =====================================================
+         SIDEBAR OVERLAY
+         ===================================================== -->
 
     <div
-      class="alert alert-danger"
-      role="alert"
-    >
+        id="sidebarOverlay"
+        class="sidebar-overlay"
+    ></div>
 
-      <?= htmlspecialchars($errorMessage); ?>
+
+    <!-- =====================================================
+         MAIN WRAPPER
+         ===================================================== -->
+
+    <div class="main-wrapper">
+
+
+        <!-- =================================================
+             TOPBAR
+             ================================================= -->
+
+        <?php include 'topbar.php'; ?>
+
+
+        <!-- =================================================
+             MAIN CONTENT
+             ================================================= -->
+
+        <main class="page-content">
+
+
+            <div class="change-password-content">
+
+
+                <!-- =========================================
+                     PAGE HEADING
+                     ========================================= -->
+
+                <div class="change-password-heading">
+
+                    <div>
+
+                        <h1>
+                            Change Password
+                        </h1>
+
+                        <p>
+                            Update your account password
+                            securely.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =========================================
+                     PASSWORD PANEL
+                     ========================================= -->
+
+                <div class="change-password-panel">
+
+
+                    <!-- =====================================
+                         PANEL HEADER
+                         ===================================== -->
+
+                    <div class="change-password-panel-header">
+
+
+                        <div class="change-password-icon">
+
+                            <i
+                                class="fa-solid fa-lock"
+                            ></i>
+
+                        </div>
+
+
+                        <div>
+
+                            <h2>
+                                Account Security
+                            </h2>
+
+                            <p>
+                                Change the password
+                                associated with your account.
+                            </p>
+
+                        </div>
+
+
+                    </div>
+
+
+                    <!-- =====================================
+                         CURRENT USER
+                         ===================================== -->
+
+                    <div class="change-password-user">
+
+                        <span>
+                            Logged in as:
+                        </span>
+
+                        <strong>
+                            <?= htmlspecialchars(
+                                $username,
+                                ENT_QUOTES,
+                                'UTF-8'
+                            ); ?>
+                        </strong>
+
+                    </div>
+
+
+                    <!-- =====================================
+                         ERROR MESSAGE
+                         ===================================== -->
+
+                    <?php if (
+                        !empty($errorMessage)
+                    ): ?>
+
+                        <div
+                            class="
+                                change-password-alert
+                                change-password-alert-error
+                            "
+                            role="alert"
+                        >
+
+                            <i
+                                class="fa-solid fa-circle-exclamation"
+                            ></i>
+
+                            <span>
+
+                                <?= htmlspecialchars(
+                                    $errorMessage,
+                                    ENT_QUOTES,
+                                    'UTF-8'
+                                ); ?>
+
+                            </span>
+
+                        </div>
+
+                    <?php endif; ?>
+
+
+                    <!-- =====================================
+                         SUCCESS MESSAGE
+                         ===================================== -->
+
+                    <?php if (
+                        !empty($successMessage)
+                    ): ?>
+
+                        <div
+                            class="
+                                change-password-alert
+                                change-password-alert-success
+                            "
+                            role="alert"
+                        >
+
+                            <i
+                                class="fa-solid fa-circle-check"
+                            ></i>
+
+                            <span>
+
+                                <?= htmlspecialchars(
+                                    $successMessage,
+                                    ENT_QUOTES,
+                                    'UTF-8'
+                                ); ?>
+
+                            </span>
+
+                        </div>
+
+                    <?php endif; ?>
+
+
+                    <!-- =====================================
+                         FORM
+                         ===================================== -->
+
+                    <form
+                        method="post"
+                        action=""
+                        autocomplete="off"
+                    >
+
+
+                        <!-- =================================
+                             CURRENT PASSWORD
+                             ================================= -->
+
+                        <div
+                            class="
+                                change-password-form-group
+                            "
+                        >
+
+                            <label
+                                for="current_password"
+                            >
+                                Current Password
+                            </label>
+
+
+                            <div
+                                class="password-input-wrapper"
+                            >
+
+                                <input
+                                    type="password"
+                                    id="current_password"
+                                    name="current_password"
+                                    class="password-input"
+                                    autocomplete="current-password"
+                                    required
+                                >
+
+
+                                <button
+                                    type="button"
+                                    class="password-toggle"
+                                    data-target="current_password"
+                                    aria-label="Show current password"
+                                >
+
+                                    <i
+                                        class="fa-solid fa-eye"
+                                    ></i>
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- =================================
+                             NEW PASSWORD
+                             ================================= -->
+
+                        <div
+                            class="
+                                change-password-form-group
+                            "
+                        >
+
+                            <label
+                                for="new_password"
+                            >
+                                New Password
+                            </label>
+
+
+                            <div
+                                class="password-input-wrapper"
+                            >
+
+                                <input
+                                    type="password"
+                                    id="new_password"
+                                    name="new_password"
+                                    class="password-input"
+                                    minlength="6"
+                                    autocomplete="new-password"
+                                    required
+                                >
+
+
+                                <button
+                                    type="button"
+                                    class="password-toggle"
+                                    data-target="new_password"
+                                    aria-label="Show new password"
+                                >
+
+                                    <i
+                                        class="fa-solid fa-eye"
+                                    ></i>
+
+                                </button>
+
+                            </div>
+
+
+                            <span
+                                class="change-password-help"
+                            >
+                                Minimum 6 characters.
+                            </span>
+
+                        </div>
+
+
+                        <!-- =================================
+                             CONFIRM PASSWORD
+                             ================================= -->
+
+                        <div
+                            class="
+                                change-password-form-group
+                            "
+                        >
+
+                            <label
+                                for="confirm_password"
+                            >
+                                Confirm New Password
+                            </label>
+
+
+                            <div
+                                class="password-input-wrapper"
+                            >
+
+                                <input
+                                    type="password"
+                                    id="confirm_password"
+                                    name="confirm_password"
+                                    class="password-input"
+                                    minlength="6"
+                                    autocomplete="new-password"
+                                    required
+                                >
+
+
+                                <button
+                                    type="button"
+                                    class="password-toggle"
+                                    data-target="confirm_password"
+                                    aria-label="Show password confirmation"
+                                >
+
+                                    <i
+                                        class="fa-solid fa-eye"
+                                    ></i>
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- =================================
+                             PASSWORD REQUIREMENTS
+                             ================================= -->
+
+                        <div
+                            class="password-requirements"
+                        >
+
+                            <span
+                                class="password-requirements-title"
+                            >
+                                Password Requirements
+                            </span>
+
+
+                            <ul>
+
+                                <li>
+                                    At least 6 characters
+                                </li>
+
+                                <li>
+                                    Must be different from
+                                    your current password
+                                </li>
+
+                                <li>
+                                    New password must match
+                                    the confirmation
+                                </li>
+
+                            </ul>
+
+                        </div>
+
+
+                        <!-- =================================
+                             FORM ACTIONS
+                             ================================= -->
+
+                        <div
+                            class="change-password-actions"
+                        >
+
+
+                            <a
+                                href="index.php"
+                                class="
+                                    change-password-btn
+                                    change-password-btn-secondary
+                                "
+                            >
+
+                                <i
+                                    class="fa-solid fa-arrow-left"
+                                ></i>
+
+                                Back
+
+                            </a>
+
+
+                            <button
+                                type="submit"
+                                class="
+                                    change-password-btn
+                                    change-password-btn-primary
+                                "
+                            >
+
+                                <i
+                                    class="fa-solid fa-key"
+                                ></i>
+
+                                Update Password
+
+                            </button>
+
+
+                        </div>
+
+
+                    </form>
+
+
+                </div>
+
+
+            </div>
+
+
+        </main>
+
 
     </div>
 
-  <?php endif; ?>
+
+    <!-- =====================================================
+         DASHBOARD JAVASCRIPT
+         ===================================================== -->
+
+    <script
+        src="js/dashboard.js"
+    ></script>
 
 
-  <!-- SUCCESS MESSAGE -->
+    <!-- =====================================================
+         PASSWORD VISIBILITY JAVASCRIPT
+         ===================================================== -->
 
-  <?php if (!empty($successMessage)): ?>
+    <script>
 
-    <div
-      class="alert alert-success"
-      role="alert"
-    >
+        document.addEventListener(
+            "DOMContentLoaded",
+            function () {
 
-      <?= htmlspecialchars($successMessage); ?>
-
-    </div>
-
-  <?php endif; ?>
-
-
-  <!-- CHANGE PASSWORD FORM -->
-
-  <form method="post">
+                const toggleButtons =
+                    document.querySelectorAll(
+                        ".password-toggle"
+                    );
 
 
-    <!-- CURRENT PASSWORD -->
+                toggleButtons.forEach(
+                    function (button) {
 
-    <div class="mb-3">
+                        button.addEventListener(
+                            "click",
+                            function () {
 
-      <label class="form-label">
-        Current Password
-      </label>
-
-      <input
-        type="password"
-        class="form-control"
-        name="current_password"
-        autocomplete="current-password"
-        required
-      >
-
-    </div>
+                                const targetId =
+                                    button.getAttribute(
+                                        "data-target"
+                                    );
 
 
-    <!-- NEW PASSWORD -->
-
-    <div class="mb-3">
-
-      <label class="form-label">
-        New Password
-      </label>
-
-      <input
-        type="password"
-        class="form-control"
-        name="new_password"
-        minlength="6"
-        autocomplete="new-password"
-        required
-      >
-
-      <div class="form-text text-secondary">
-        Minimum 6 characters.
-      </div>
-
-    </div>
+                                const input =
+                                    document.getElementById(
+                                        targetId
+                                    );
 
 
-    <!-- CONFIRM PASSWORD -->
-
-    <div class="mb-4">
-
-      <label class="form-label">
-        Confirm New Password
-      </label>
-
-      <input
-        type="password"
-        class="form-control"
-        name="confirm_password"
-        minlength="6"
-        autocomplete="new-password"
-        required
-      >
-
-    </div>
+                                const icon =
+                                    button.querySelector(
+                                        "i"
+                                    );
 
 
-    <!-- BUTTONS -->
-
-    <div class="d-flex justify-content-between">
-
-      <a
-        href="index.php"
-        class="btn btn-secondary"
-      >
-        Back
-      </a>
+                                if (!input) {
+                                    return;
+                                }
 
 
-      <button
-        type="submit"
-        class="btn btn-primary"
-      >
-        Update Password
-      </button>
+                                if (
+                                    input.type ===
+                                    "password"
+                                ) {
 
-    </div>
+                                    input.type =
+                                        "text";
 
 
-  </form>
+                                    if (icon) {
 
-</div>
+                                        icon.classList.remove(
+                                            "fa-eye"
+                                        );
+
+                                        icon.classList.add(
+                                            "fa-eye-slash"
+                                        );
+
+                                    }
+
+
+                                    button.setAttribute(
+                                        "aria-label",
+                                        "Hide password"
+                                    );
+
+                                }
+
+                                else {
+
+                                    input.type =
+                                        "password";
+
+
+                                    if (icon) {
+
+                                        icon.classList.remove(
+                                            "fa-eye-slash"
+                                        );
+
+                                        icon.classList.add(
+                                            "fa-eye"
+                                        );
+
+                                    }
+
+
+                                    button.setAttribute(
+                                        "aria-label",
+                                        "Show password"
+                                    );
+
+                                }
+
+                            }
+                        );
+
+                    }
+                );
+
+            }
+        );
+
+    </script>
 
 
 </body>
