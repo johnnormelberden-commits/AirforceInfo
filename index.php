@@ -155,9 +155,10 @@ try {
     ====================================================== -->
 
     <link
-        rel="stylesheet"
-        href="css/dashboard.css"
-    >
+    rel="stylesheet"
+    href="css/dashboard.css?v=2"
+>
+
 
 </head>
 
