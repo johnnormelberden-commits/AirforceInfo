@@ -9,9 +9,7 @@
 session_start();
 
 if (!isset($_SESSION['username'])) {
-
     header("Location: login.php");
-
     exit;
 }
 
@@ -40,9 +38,8 @@ try {
     /*
      * Total military personnel
      */
-
     $stmt = $connection->query("
-        SELECT COUNT(*) 
+        SELECT COUNT(*)
         FROM military_personnel
     ");
 
@@ -51,11 +48,7 @@ try {
 
     /*
      * Total courses
-     *
-     * This counts different course values stored
-     * in the courses column.
      */
-
     $stmt = $connection->query("
         SELECT COUNT(DISTINCT courses)
         FROM military_personnel
@@ -69,7 +62,6 @@ try {
     /*
      * Total branches of service
      */
-
     $stmt = $connection->query("
         SELECT COUNT(DISTINCT branch_of_service)
         FROM military_personnel
@@ -94,7 +86,6 @@ try {
 ?>
 
 <!DOCTYPE html>
-
 <html lang="en">
 
 <head>
@@ -106,9 +97,7 @@ try {
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>
-        CMO Training Squadron - Dashboard
-    </title>
+    <title>CMO Training Squadron - Dashboard</title>
 
 
     <!-- =====================================================
@@ -183,8 +172,7 @@ try {
 <div
     class="sidebar-overlay"
     id="sidebarOverlay"
->
-</div>
+></div>
 
 
 <!-- =========================================================
@@ -202,7 +190,6 @@ try {
     ====================================================== -->
 
     <div class="sidebar-brand">
-
 
         <div class="sidebar-logo">
 
@@ -226,7 +213,6 @@ try {
 
         </div>
 
-
     </div>
 
 
@@ -235,9 +221,7 @@ try {
     ====================================================== -->
 
     <div class="sidebar-section-title">
-
         NAVIGATION
-
     </div>
 
 
@@ -302,7 +286,6 @@ try {
 
         <div class="nav-dropdown">
 
-
             <button
                 type="button"
                 class="nav-item nav-dropdown-toggle"
@@ -366,7 +349,6 @@ try {
 
         </div>
 
-
     </nav>
 
 
@@ -375,9 +357,7 @@ try {
     ====================================================== -->
 
     <div class="sidebar-section-title management-title">
-
         MANAGEMENT
-
     </div>
 
 
@@ -419,7 +399,6 @@ try {
 
         </a>
 
-
     </nav>
 
 
@@ -450,9 +429,7 @@ try {
 
         </a>
 
-
     </div>
-
 
 </aside>
 
@@ -541,12 +518,9 @@ try {
 
                 </div>
 
-
             </div>
 
-
         </div>
-
 
     </header>
 
@@ -578,11 +552,15 @@ try {
 
 
                 <p>
+
                     Welcome back,
+
                     <strong>
                         <?= htmlspecialchars($_SESSION['username']); ?>
                     </strong>.
+
                     Here's an overview of the personnel database.
+
                 </p>
 
             </div>
@@ -598,7 +576,6 @@ try {
                 Add New Personnel
 
             </a>
-
 
         </div>
 
@@ -655,7 +632,6 @@ try {
 
                 </div>
 
-
             </div>
 
 
@@ -686,7 +662,6 @@ try {
                     </small>
 
                 </div>
-
 
             </div>
 
@@ -719,9 +694,7 @@ try {
 
                 </div>
 
-
             </div>
-
 
         </section>
 
@@ -768,7 +741,6 @@ try {
                     Add Personnel
 
                 </a>
-
 
             </div>
 
@@ -834,23 +806,14 @@ try {
                             SELECT
 
                                 id,
-
                                 rank,
-
                                 name,
-
                                 serial_number,
-
                                 branch_of_service,
-
                                 courses,
-
                                 year_graduated,
-
                                 standing,
-
                                 created_at,
-
                                 updated_at
 
                             FROM military_personnel
@@ -859,16 +822,11 @@ try {
 
                         ";
 
-
-                        $stmt =
-                            $connection->query($sql);
+                        $stmt = $connection->query($sql);
 
 
                         while (
-                            $row =
-                            $stmt->fetch(
-                                PDO::FETCH_ASSOC
-                            )
+                            $row = $stmt->fetch(PDO::FETCH_ASSOC)
                         ):
 
                     ?>
@@ -968,24 +926,21 @@ try {
 
                                 <?php
 
-                                $standing =
-                                    trim(
-                                        $row['standing'] ?? ''
-                                    );
+                                $standing = trim(
+                                    $row['standing'] ?? ''
+                                );
 
                                 ?>
 
                                 <span
                                     class="standing-badge
-                                    <?=
-                                    strtolower(
+                                    <?= strtolower(
                                         str_replace(
                                             ' ',
                                             '-',
                                             $standing
                                         )
-                                    );
-                                    ?>"
+                                    ); ?>"
                                 >
 
                                     <?= htmlspecialchars(
@@ -1003,11 +958,7 @@ try {
 
                                 <?php
 
-                                if (
-                                    !empty(
-                                        $row['created_at']
-                                    )
-                                ) {
+                                if (!empty($row['created_at'])) {
 
                                     echo htmlspecialchars(
                                         date(
@@ -1031,11 +982,7 @@ try {
 
                                 <?php
 
-                                if (
-                                    !empty(
-                                        $row['updated_at']
-                                    )
-                                ) {
+                                if (!empty($row['updated_at'])) {
 
                                     echo htmlspecialchars(
                                         date(
@@ -1093,11 +1040,9 @@ try {
 
                                     </button>
 
-
                                 </div>
 
                             </td>
-
 
                         </tr>
 
@@ -1127,15 +1072,11 @@ try {
 
                 </table>
 
-
             </div>
-
 
         </section>
 
-
     </main>
-
 
 </div>
 
@@ -1178,7 +1119,6 @@ try {
                 >
                 </button>
 
-
             </div>
 
 
@@ -1189,9 +1129,7 @@ try {
                 </p>
 
 
-                <strong id="deletePersonName">
-                </strong>
-
+                <strong id="deletePersonName"></strong>
 
             </div>
 
@@ -1219,9 +1157,7 @@ try {
 
                 </a>
 
-
             </div>
-
 
         </div>
 
@@ -1231,300 +1167,55 @@ try {
 
 
 <!-- =========================================================
-     JAVASCRIPT
+     JAVASCRIPT LIBRARIES
 ========================================================= -->
 
-<script
-    src="https://code.jquery.com/jquery-3.7.1.min.js"
-></script>
+<!-- jQuery -->
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
 
-<script
-    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
-></script>
+<!-- Bootstrap -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
 
 
 <!-- =========================================================
      DATATABLES
 ========================================================= -->
 
-<script
-    src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"
-></script>
+<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
 
-
-<script
-    src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"
-></script>
+<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
 
 
 <!-- =========================================================
      DATATABLE BUTTONS
 ========================================================= -->
 
-<script
-    src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"
-></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
 
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
 
-<script
-    src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"
-></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
 
-<script
-    src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
-></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
 
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
 
-<script
-    src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"
-></script>
+<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
 
 
-<script
-    src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"
-></script>
+<!-- =========================================================
+     CUSTOM JAVASCRIPT
+     
+     All dashboard JavaScript is now located in:
+     js/dashboard.js
+========================================================= -->
 
-
-<script
-    src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"
-></script>
-
-
-<script
-    src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"
-></script>
-
-
-<script>
-
-$(document).ready(function () {
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | DATATABLE
-    |--------------------------------------------------------------------------
-    */
-
-    const table = $('#personnelTable').DataTable({
-
-        order: [
-            [0, 'asc']
-        ],
-
-        pageLength: 5,
-
-        lengthMenu: [
-            [5, 10, 25, 50],
-            [5, 10, 25, 50]
-        ],
-
-        dom: 'lBfrtip',
-
-        buttons: [
-
-            {
-                extend: 'excelHtml5',
-
-                title:
-                    'Military Personnel Information'
-            },
-
-            {
-                extend: 'pdfHtml5',
-
-                title:
-                    'Military Personnel Information',
-
-                orientation:
-                    'landscape',
-
-                pageSize:
-                    'A4'
-            },
-
-            {
-                extend: 'print',
-
-                title:
-                    'Military Personnel Information'
-            }
-
-        ]
-
-    });
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | EXPORT EXCEL
-    |--------------------------------------------------------------------------
-    */
-
-    $('#exportExcel').on('click', function (e) {
-
-        e.preventDefault();
-
-        table
-            .button('.buttons-excel')
-            .trigger();
-
-    });
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | EXPORT PDF
-    |--------------------------------------------------------------------------
-    */
-
-    $('#exportPDF').on('click', function (e) {
-
-        e.preventDefault();
-
-        table
-            .button('.buttons-pdf')
-            .trigger();
-
-    });
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | PRINT TABLE
-    |--------------------------------------------------------------------------
-    */
-
-    $('#exportPrint').on('click', function (e) {
-
-        e.preventDefault();
-
-        table
-            .button('.buttons-print')
-            .trigger();
-
-    });
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | COPY FILE DROPDOWN
-    |--------------------------------------------------------------------------
-    */
-
-    $('#copyFileToggle').on('click', function () {
-
-        $('#copyFileMenu').toggleClass('show');
-
-        $(this).toggleClass('open');
-
-    });
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | MOBILE SIDEBAR
-    |--------------------------------------------------------------------------
-    */
-
-    $('#mobileMenuBtn').on('click', function () {
-
-        $('#sidebar').toggleClass('show');
-
-        $('#sidebarOverlay').toggleClass('show');
-
-    });
-
-
-    $('#sidebarOverlay').on('click', function () {
-
-        $('#sidebar').removeClass('show');
-
-        $('#sidebarOverlay').removeClass('show');
-
-    });
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | DELETE MODAL
-    |--------------------------------------------------------------------------
-    */
-
-    const deleteModalElement =
-        document.getElementById('deleteModal');
-
-
-    const deleteModal =
-        new bootstrap.Modal(deleteModalElement);
-
-
-    const confirmDeleteBtn =
-        document.getElementById(
-            'confirmDeleteBtn'
-        );
-
-
-    const deletePersonName =
-        document.getElementById(
-            'deletePersonName'
-        );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | DELETE BUTTON
-    |--------------------------------------------------------------------------
-    */
-
-    $('#personnelTable').on(
-        'click',
-        '.btn-delete',
-        function () {
-
-
-            const id =
-                $(this).data('id');
-
-
-            const name =
-                $(this).data('name');
-
-
-            /*
-             * Show name in confirmation
-             */
-
-            deletePersonName.textContent =
-                name
-                    ? 'Personnel: ' + name
-                    : '';
-
-
-            /*
-             * Delete URL
-             */
-
-            confirmDeleteBtn.href =
-                'delete.php?id=' +
-                encodeURIComponent(id);
-
-
-            /*
-             * Show modal
-             */
-
-            deleteModal.show();
-
-        }
-    );
-
-
-});
-
-</script>
+<script src="js/dashboard.js"></script>
 
 
 </body>
