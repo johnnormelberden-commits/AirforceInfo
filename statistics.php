@@ -74,7 +74,12 @@ try {
     */
 
     $stmt = $connection->query("
-        SELECT COUNT(DISTINCT NULLIF(TRIM(rank), ''))
+        SELECT COUNT(
+            DISTINCT NULLIF(
+                TRIM(rank),
+                ''
+            )
+        )
         FROM military_personnel
     ");
 
@@ -243,13 +248,6 @@ try {
     |--------------------------------------------------------------------------
     | PERSONNEL BY YEAR
     |--------------------------------------------------------------------------
-    |
-    | Handles:
-    | NULL
-    | Empty values
-    | Whitespace
-    |
-    |--------------------------------------------------------------------------
     */
 
     $stmt = $connection->query("
@@ -304,11 +302,9 @@ $rankData = [];
 
 foreach ($rankStatistics as $row) {
 
-    $rankLabels[] =
-        $row['label'];
+    $rankLabels[] = $row['label'];
 
-    $rankData[] =
-        (int) $row['total'];
+    $rankData[] = (int) $row['total'];
 
 }
 
@@ -318,11 +314,9 @@ $branchData = [];
 
 foreach ($branchStatistics as $row) {
 
-    $branchLabels[] =
-        $row['label'];
+    $branchLabels[] = $row['label'];
 
-    $branchData[] =
-        (int) $row['total'];
+    $branchData[] = (int) $row['total'];
 
 }
 
@@ -332,11 +326,9 @@ $standingData = [];
 
 foreach ($standingStatistics as $row) {
 
-    $standingLabels[] =
-        $row['label'];
+    $standingLabels[] = $row['label'];
 
-    $standingData[] =
-        (int) $row['total'];
+    $standingData[] = (int) $row['total'];
 
 }
 
@@ -346,11 +338,9 @@ $courseData = [];
 
 foreach ($courseStatistics as $row) {
 
-    $courseLabels[] =
-        $row['label'];
+    $courseLabels[] = $row['label'];
 
-    $courseData[] =
-        (int) $row['total'];
+    $courseData[] = (int) $row['total'];
 
 }
 
@@ -360,11 +350,9 @@ $yearData = [];
 
 foreach ($yearStatistics as $row) {
 
-    $yearLabels[] =
-        $row['label'];
+    $yearLabels[] = $row['label'];
 
-    $yearData[] =
-        (int) $row['total'];
+    $yearData[] = (int) $row['total'];
 
 }
 
@@ -453,291 +441,14 @@ foreach ($yearStatistics as $row) {
 
 
 <!-- =========================================================
-     MOBILE SIDEBAR OVERLAY
+     SHARED SIDEBAR
 ========================================================= -->
 
-<div
-    class="sidebar-overlay"
-    id="sidebarOverlay"
-></div>
+<?php
 
+require_once __DIR__ . '/includes/sidebar.php';
 
-<!-- =========================================================
-     SIDEBAR
-========================================================= -->
-
-<aside
-    class="sidebar"
-    id="sidebar"
->
-
-
-    <!-- =====================================================
-         BRAND
-    ====================================================== -->
-
-    <div class="sidebar-brand">
-
-        <div class="sidebar-logo">
-
-            <img
-                src="cmo1.png"
-                alt="CMO Training Squadron"
-            >
-
-        </div>
-
-
-        <div class="sidebar-brand-text">
-
-            <strong>
-                CMO TRAINING
-            </strong>
-
-            <span>
-                SQUADRON
-            </span>
-
-        </div>
-
-    </div>
-
-
-    <!-- =====================================================
-         NAVIGATION TITLE
-    ====================================================== -->
-
-    <div class="sidebar-section-title">
-
-        NAVIGATION
-
-    </div>
-
-
-    <!-- =====================================================
-         MAIN NAVIGATION
-    ====================================================== -->
-
-    <nav class="sidebar-nav">
-
-
-        <!-- =================================================
-             DASHBOARD
-        ================================================== -->
-
-        <a
-            href="index.php"
-            class="nav-item"
-        >
-
-            <span class="nav-icon">
-
-                <i class="bi bi-grid-1x2-fill"></i>
-
-            </span>
-
-            <span>
-                Dashboard
-            </span>
-
-        </a>
-
-
-        <!-- =================================================
-             MILITARY PERSONNEL
-        ================================================== -->
-
-        <a
-            href="index.php#personnel"
-            class="nav-item"
-        >
-
-            <span class="nav-icon">
-
-                <i class="bi bi-person-badge-fill"></i>
-
-            </span>
-
-            <span>
-                Military Personnel
-            </span>
-
-        </a>
-
-
-        <!-- =================================================
-             STATISTICS
-        ================================================== -->
-
-        <a
-            href="statistics.php"
-            class="nav-item active"
-        >
-
-            <span class="nav-icon">
-
-                <i class="bi bi-bar-chart-fill"></i>
-
-            </span>
-
-            <span>
-                Statistics
-            </span>
-
-        </a>
-
-
-        <!-- =================================================
-             COPY FILE
-        ================================================== -->
-
-        <div class="nav-dropdown">
-
-
-            <button
-                type="button"
-                class="nav-item nav-dropdown-toggle"
-                id="copyFileToggle"
-                aria-expanded="false"
-                aria-controls="copyFileMenu"
-            >
-
-                <span class="nav-icon">
-
-                    <i class="bi bi-file-earmark-arrow-down-fill"></i>
-
-                </span>
-
-                <span>
-                    Copy File
-                </span>
-
-                <i
-                    class="bi bi-chevron-down nav-chevron"
-                ></i>
-
-            </button>
-
-
-            <div
-                class="nav-submenu"
-                id="copyFileMenu"
-            >
-
-                <a
-                    href="index.php#personnel"
-                >
-
-                    <i class="bi bi-table"></i>
-
-                    Go to Personnel Table
-
-                </a>
-
-            </div>
-
-        </div>
-
-    </nav>
-
-
-    <!-- =====================================================
-         MANAGEMENT
-    ====================================================== -->
-
-    <div
-        class="sidebar-section-title management-title"
-    >
-
-        MANAGEMENT
-
-    </div>
-
-
-    <nav class="sidebar-nav">
-
-
-        <!-- =================================================
-             ADD PERSONNEL
-        ================================================== -->
-
-        <a
-            href="create.php"
-            class="nav-item"
-        >
-
-            <span class="nav-icon">
-
-                <i class="bi bi-person-plus-fill"></i>
-
-            </span>
-
-            <span>
-                Add New Personnel
-            </span>
-
-        </a>
-
-
-        <!-- =================================================
-             CHANGE PASSWORD
-        ================================================== -->
-
-        <a
-            href="change_password.php"
-            class="nav-item"
-        >
-
-            <span class="nav-icon">
-
-                <i class="bi bi-key-fill"></i>
-
-            </span>
-
-            <span>
-                Change Password
-            </span>
-
-        </a>
-
-    </nav>
-
-
-    <!-- =====================================================
-         SIDEBAR BOTTOM
-    ====================================================== -->
-
-    <div class="sidebar-bottom">
-
-
-        <!-- SYSTEM STATUS -->
-
-        <div class="system-status">
-
-            <span class="status-dot"></span>
-
-            System Online
-
-        </div>
-
-
-        <!-- LOGOUT -->
-
-        <a
-            href="logout.php"
-            class="logout-nav"
-        >
-
-            <i class="bi bi-box-arrow-right"></i>
-
-            Logout
-
-        </a>
-
-    </div>
-
-
-</aside>
+?>
 
 
 <!-- =========================================================
@@ -748,98 +459,14 @@ foreach ($yearStatistics as $row) {
 
 
     <!-- =====================================================
-         TOPBAR
+         SHARED TOPBAR
     ====================================================== -->
 
-    <header class="topbar">
+    <?php
 
+    require_once __DIR__ . '/includes/topbar.php';
 
-        <!-- MOBILE MENU BUTTON -->
-
-        <button
-            type="button"
-            class="mobile-menu-btn"
-            id="mobileMenuBtn"
-            aria-label="Open navigation menu"
-            aria-controls="sidebar"
-            aria-expanded="false"
-        >
-
-            <i class="bi bi-list"></i>
-
-        </button>
-
-
-        <!-- TOPBAR TITLE -->
-
-        <div class="topbar-title">
-
-            <span>
-                CMO Training Squadron
-            </span>
-
-            <small>
-                Student Database Information System
-            </small>
-
-        </div>
-
-
-        <!-- TOPBAR RIGHT -->
-
-        <div class="topbar-right">
-
-
-            <!-- CURRENT PAGE ICON -->
-
-            <div
-                class="header-icon-btn"
-                title="Statistics"
-                aria-label="Statistics"
-            >
-
-                <i class="bi bi-bar-chart"></i>
-
-            </div>
-
-
-            <!-- USER -->
-
-            <div class="user-menu">
-
-
-                <div class="user-avatar">
-
-                    <i class="bi bi-person-fill"></i>
-
-                </div>
-
-
-                <div class="user-info">
-
-                    <strong>
-
-                        <?= htmlspecialchars(
-                            $_SESSION['username'],
-                            ENT_QUOTES,
-                            'UTF-8'
-                        ); ?>
-
-                    </strong>
-
-                    <span>
-                        Administrator
-                    </span>
-
-                </div>
-
-
-            </div>
-
-        </div>
-
-
-    </header>
+    ?>
 
 
     <!-- =====================================================
@@ -858,31 +485,20 @@ foreach ($yearStatistics as $row) {
 
         <div class="statistics-heading">
 
-
             <div>
 
-
                 <div class="page-label">
-
                     CMO INFORMATION SYSTEM
-
                 </div>
 
-
                 <h1>
-
                     Personnel Statistics
-
                 </h1>
 
-
                 <p>
-
                     Overview and analysis of military personnel
                     information in the database.
-
                 </p>
-
 
             </div>
 
@@ -894,7 +510,6 @@ foreach ($yearStatistics as $row) {
                 Database Overview
 
             </div>
-
 
         </div>
 
@@ -931,9 +546,7 @@ foreach ($yearStatistics as $row) {
         >
 
 
-            <!-- =================================================
-                 TOTAL PERSONNEL
-            ================================================== -->
+            <!-- TOTAL PERSONNEL -->
 
             <div class="statistics-card blue-card">
 
@@ -943,22 +556,15 @@ foreach ($yearStatistics as $row) {
 
                 </div>
 
-
                 <div class="statistics-card-content">
 
                     <span>
                         TOTAL PERSONNEL
                     </span>
 
-
                     <strong>
-
-                        <?= number_format(
-                            $totalPersonnel
-                        ); ?>
-
+                        <?= number_format($totalPersonnel); ?>
                     </strong>
-
 
                     <small>
                         Registered personnel
@@ -969,9 +575,7 @@ foreach ($yearStatistics as $row) {
             </div>
 
 
-            <!-- =================================================
-                 TOTAL RANKS
-            ================================================== -->
+            <!-- TOTAL RANKS -->
 
             <div class="statistics-card cyan-card">
 
@@ -981,22 +585,15 @@ foreach ($yearStatistics as $row) {
 
                 </div>
 
-
                 <div class="statistics-card-content">
 
                     <span>
                         RANKS
                     </span>
 
-
                     <strong>
-
-                        <?= number_format(
-                            $totalRanks
-                        ); ?>
-
+                        <?= number_format($totalRanks); ?>
                     </strong>
-
 
                     <small>
                         Different ranks
@@ -1007,9 +604,7 @@ foreach ($yearStatistics as $row) {
             </div>
 
 
-            <!-- =================================================
-                 TOTAL BRANCHES
-            ================================================== -->
+            <!-- TOTAL BRANCHES -->
 
             <div class="statistics-card purple-card">
 
@@ -1019,22 +614,15 @@ foreach ($yearStatistics as $row) {
 
                 </div>
 
-
                 <div class="statistics-card-content">
 
                     <span>
                         BRANCHES
                     </span>
 
-
                     <strong>
-
-                        <?= number_format(
-                            $totalBranches
-                        ); ?>
-
+                        <?= number_format($totalBranches); ?>
                     </strong>
-
 
                     <small>
                         Branches represented
@@ -1045,9 +633,7 @@ foreach ($yearStatistics as $row) {
             </div>
 
 
-            <!-- =================================================
-                 TOTAL COURSES
-            ================================================== -->
+            <!-- TOTAL COURSES -->
 
             <div class="statistics-card green-card">
 
@@ -1057,22 +643,15 @@ foreach ($yearStatistics as $row) {
 
                 </div>
 
-
                 <div class="statistics-card-content">
 
                     <span>
                         COURSES
                     </span>
 
-
                     <strong>
-
-                        <?= number_format(
-                            $totalCourses
-                        ); ?>
-
+                        <?= number_format($totalCourses); ?>
                     </strong>
-
 
                     <small>
                         Registered courses
@@ -1102,27 +681,19 @@ foreach ($yearStatistics as $row) {
 
             <div class="chart-panel">
 
-
                 <div class="chart-panel-header">
-
 
                     <div>
 
                         <span class="chart-label">
-
                             PERSONNEL DISTRIBUTION
-
                         </span>
 
-
                         <h2>
-
                             Personnel by Rank
-
                         </h2>
 
                     </div>
-
 
                     <div class="chart-icon">
 
@@ -1130,18 +701,14 @@ foreach ($yearStatistics as $row) {
 
                     </div>
 
-
                 </div>
 
 
                 <div class="chart-wrapper">
 
-                    <canvas
-                        id="rankChart"
-                    ></canvas>
+                    <canvas id="rankChart"></canvas>
 
                 </div>
-
 
             </div>
 
@@ -1152,27 +719,19 @@ foreach ($yearStatistics as $row) {
 
             <div class="chart-panel">
 
-
                 <div class="chart-panel-header">
-
 
                     <div>
 
                         <span class="chart-label">
-
                             SERVICE DISTRIBUTION
-
                         </span>
 
-
                         <h2>
-
                             Branch of Service
-
                         </h2>
 
                     </div>
-
 
                     <div class="chart-icon">
 
@@ -1180,20 +739,14 @@ foreach ($yearStatistics as $row) {
 
                     </div>
 
-
                 </div>
 
 
-                <div
-                    class="chart-wrapper doughnut-wrapper"
-                >
+                <div class="chart-wrapper doughnut-wrapper">
 
-                    <canvas
-                        id="branchChart"
-                    ></canvas>
+                    <canvas id="branchChart"></canvas>
 
                 </div>
-
 
             </div>
 
@@ -1204,27 +757,19 @@ foreach ($yearStatistics as $row) {
 
             <div class="chart-panel">
 
-
                 <div class="chart-panel-header">
-
 
                     <div>
 
                         <span class="chart-label">
-
                             PERFORMANCE
-
                         </span>
 
-
                         <h2>
-
                             Personnel by Standing
-
                         </h2>
 
                     </div>
-
 
                     <div class="chart-icon">
 
@@ -1232,20 +777,14 @@ foreach ($yearStatistics as $row) {
 
                     </div>
 
-
                 </div>
 
 
-                <div
-                    class="chart-wrapper doughnut-wrapper"
-                >
+                <div class="chart-wrapper doughnut-wrapper">
 
-                    <canvas
-                        id="standingChart"
-                    ></canvas>
+                    <canvas id="standingChart"></canvas>
 
                 </div>
-
 
             </div>
 
@@ -1256,27 +795,19 @@ foreach ($yearStatistics as $row) {
 
             <div class="chart-panel">
 
-
                 <div class="chart-panel-header">
-
 
                     <div>
 
                         <span class="chart-label">
-
                             GRADUATION HISTORY
-
                         </span>
 
-
                         <h2>
-
                             Year Graduated
-
                         </h2>
 
                     </div>
-
 
                     <div class="chart-icon">
 
@@ -1284,18 +815,14 @@ foreach ($yearStatistics as $row) {
 
                     </div>
 
-
                 </div>
 
 
                 <div class="chart-wrapper">
 
-                    <canvas
-                        id="yearChart"
-                    ></canvas>
+                    <canvas id="yearChart"></canvas>
 
                 </div>
-
 
             </div>
 
@@ -1304,31 +831,21 @@ foreach ($yearStatistics as $row) {
                  PERSONNEL BY COURSE
             ================================================== -->
 
-            <div
-                class="chart-panel chart-panel-wide"
-            >
-
+            <div class="chart-panel chart-panel-wide">
 
                 <div class="chart-panel-header">
-
 
                     <div>
 
                         <span class="chart-label">
-
                             TRAINING DISTRIBUTION
-
                         </span>
 
-
                         <h2>
-
                             Personnel by Course
-
                         </h2>
 
                     </div>
-
 
                     <div class="chart-icon">
 
@@ -1336,20 +853,14 @@ foreach ($yearStatistics as $row) {
 
                     </div>
 
-
                 </div>
 
 
-                <div
-                    class="chart-wrapper course-chart-wrapper"
-                >
+                <div class="chart-wrapper course-chart-wrapper">
 
-                    <canvas
-                        id="courseChart"
-                    ></canvas>
+                    <canvas id="courseChart"></canvas>
 
                 </div>
-
 
             </div>
 
@@ -1373,16 +884,10 @@ foreach ($yearStatistics as $row) {
 
 
 <!-- =========================================================
-     CHART DATA FROM PHP
+     CHART DATA
 ========================================================= -->
 
 <script>
-
-/*
-|--------------------------------------------------------------------------
-| RANK DATA
-|--------------------------------------------------------------------------
-*/
 
 const rankLabels =
     <?= json_encode(
@@ -1394,16 +899,8 @@ const rankLabels =
     ); ?>;
 
 const rankData =
-    <?= json_encode(
-        $rankData
-    ); ?>;
+    <?= json_encode($rankData); ?>;
 
-
-/*
-|--------------------------------------------------------------------------
-| BRANCH DATA
-|--------------------------------------------------------------------------
-*/
 
 const branchLabels =
     <?= json_encode(
@@ -1415,16 +912,8 @@ const branchLabels =
     ); ?>;
 
 const branchData =
-    <?= json_encode(
-        $branchData
-    ); ?>;
+    <?= json_encode($branchData); ?>;
 
-
-/*
-|--------------------------------------------------------------------------
-| STANDING DATA
-|--------------------------------------------------------------------------
-*/
 
 const standingLabels =
     <?= json_encode(
@@ -1436,16 +925,8 @@ const standingLabels =
     ); ?>;
 
 const standingData =
-    <?= json_encode(
-        $standingData
-    ); ?>;
+    <?= json_encode($standingData); ?>;
 
-
-/*
-|--------------------------------------------------------------------------
-| COURSE DATA
-|--------------------------------------------------------------------------
-*/
 
 const courseLabels =
     <?= json_encode(
@@ -1457,16 +938,8 @@ const courseLabels =
     ); ?>;
 
 const courseData =
-    <?= json_encode(
-        $courseData
-    ); ?>;
+    <?= json_encode($courseData); ?>;
 
-
-/*
-|--------------------------------------------------------------------------
-| YEAR DATA
-|--------------------------------------------------------------------------
-*/
 
 const yearLabels =
     <?= json_encode(
@@ -1478,9 +951,7 @@ const yearLabels =
     ); ?>;
 
 const yearData =
-    <?= json_encode(
-        $yearData
-    ); ?>;
+    <?= json_encode($yearData); ?>;
 
 
 /*
@@ -1492,23 +963,14 @@ const yearData =
 const chartColors = [
 
     '#2d7fc1',
-
     '#42a5d5',
-
     '#6c8fd8',
-
     '#7c6dcc',
-
     '#3baf86',
-
     '#e2a83b',
-
     '#d46b6b',
-
     '#527fa8',
-
     '#365f86',
-
     '#86a9c7'
 
 ];
@@ -1538,82 +1000,66 @@ Chart.defaults.font.size = 11;
 const rankCanvas =
     document.getElementById('rankChart');
 
-
 if (rankCanvas) {
 
-    new Chart(
+    new Chart(rankCanvas, {
 
-        rankCanvas,
+        type: 'bar',
 
-        {
+        data: {
 
-            type: 'bar',
+            labels: rankLabels,
 
-            data: {
+            datasets: [{
 
-                labels: rankLabels,
+                data: rankData,
 
-                datasets: [{
+                backgroundColor: '#2d7fc1',
 
-                    data: rankData,
+                borderRadius: 5,
 
-                    backgroundColor:
-                        '#2d7fc1',
+                borderSkipped: false,
 
-                    borderRadius: 5,
+                maxBarThickness: 42
 
-                    borderSkipped: false,
+            }]
 
-                    maxBarThickness: 42
+        },
 
-                }]
+        options: {
+
+            responsive: true,
+
+            maintainAspectRatio: false,
+
+            plugins: {
+
+                legend: {
+                    display: false
+                }
 
             },
 
-            options: {
+            scales: {
 
-                responsive: true,
+                y: {
 
-                maintainAspectRatio: false,
+                    beginAtZero: true,
 
-                plugins: {
+                    ticks: {
+                        precision: 0
+                    },
 
-                    legend: {
-
-                        display: false
-
+                    grid: {
+                        color: '#263b55'
                     }
 
                 },
 
-                scales: {
+                x: {
 
-                    y: {
-
-                        beginAtZero: true,
-
-                        ticks: {
-
-                            precision: 0
-
-                        },
-
-                        grid: {
-
-                            color: '#e9eef4'
-
-                        }
-
-                    },
-
-                    x: {
-
-                        grid: {
-
-                            display: false
-
-                        }
-
+                    grid: {
+                        display: false
                     }
 
                 }
@@ -1622,7 +1068,7 @@ if (rankCanvas) {
 
         }
 
-    );
+    });
 
 }
 
@@ -1636,60 +1082,53 @@ if (rankCanvas) {
 const branchCanvas =
     document.getElementById('branchChart');
 
-
 if (branchCanvas) {
 
-    new Chart(
+    new Chart(branchCanvas, {
 
-        branchCanvas,
+        type: 'doughnut',
 
-        {
+        data: {
 
-            type: 'doughnut',
+            labels: branchLabels,
 
-            data: {
+            datasets: [{
 
-                labels: branchLabels,
+                data: branchData,
 
-                datasets: [{
+                backgroundColor: chartColors,
 
-                    data: branchData,
+                borderColor: '#111d2d',
 
-                    backgroundColor:
-                        chartColors,
+                borderWidth: 3
 
-                    borderColor:
-                        '#ffffff',
+            }]
 
-                    borderWidth: 3
+        },
 
-                }]
+        options: {
 
-            },
+            responsive: true,
 
-            options: {
+            maintainAspectRatio: false,
 
-                responsive: true,
+            cutout: '66%',
 
-                maintainAspectRatio: false,
+            plugins: {
 
-                cutout: '66%',
+                legend: {
 
-                plugins: {
+                    position: 'bottom',
 
-                    legend: {
+                    labels: {
 
-                        position: 'bottom',
+                        color: '#8fa3bd',
 
-                        labels: {
+                        padding: 16,
 
-                            padding: 16,
+                        usePointStyle: true,
 
-                            usePointStyle: true,
-
-                            boxWidth: 8
-
-                        }
+                        boxWidth: 8
 
                     }
 
@@ -1699,7 +1138,7 @@ if (branchCanvas) {
 
         }
 
-    );
+    });
 
 }
 
@@ -1711,77 +1150,64 @@ if (branchCanvas) {
 */
 
 const standingCanvas =
-    document.getElementById(
-        'standingChart'
-    );
-
+    document.getElementById('standingChart');
 
 if (standingCanvas) {
 
-    new Chart(
+    new Chart(standingCanvas, {
 
-        standingCanvas,
+        type: 'doughnut',
 
-        {
+        data: {
 
-            type: 'doughnut',
+            labels: standingLabels,
 
-            data: {
+            datasets: [{
 
-                labels: standingLabels,
+                data: standingData,
 
-                datasets: [{
+                backgroundColor: [
 
-                    data: standingData,
+                    '#2d7fc1',
+                    '#3baf86',
+                    '#e2a83b',
+                    '#d46b6b',
+                    '#7c6dcc',
+                    '#527fa8'
 
-                    backgroundColor: [
+                ],
 
-                        '#2d7fc1',
+                borderColor: '#111d2d',
 
-                        '#3baf86',
+                borderWidth: 3
 
-                        '#e2a83b',
+            }]
 
-                        '#d46b6b',
+        },
 
-                        '#7c6dcc',
+        options: {
 
-                        '#527fa8'
+            responsive: true,
 
-                    ],
+            maintainAspectRatio: false,
 
-                    borderColor:
-                        '#ffffff',
+            cutout: '66%',
 
-                    borderWidth: 3
+            plugins: {
 
-                }]
+                legend: {
 
-            },
+                    position: 'bottom',
 
-            options: {
+                    labels: {
 
-                responsive: true,
+                        color: '#8fa3bd',
 
-                maintainAspectRatio: false,
+                        padding: 16,
 
-                cutout: '66%',
+                        usePointStyle: true,
 
-                plugins: {
-
-                    legend: {
-
-                        position: 'bottom',
-
-                        labels: {
-
-                            padding: 16,
-
-                            usePointStyle: true,
-
-                            boxWidth: 8
-
-                        }
+                        boxWidth: 8
 
                     }
 
@@ -1791,7 +1217,7 @@ if (standingCanvas) {
 
         }
 
-    );
+    });
 
 }
 
@@ -1803,101 +1229,86 @@ if (standingCanvas) {
 */
 
 const yearCanvas =
-    document.getElementById(
-        'yearChart'
-    );
-
+    document.getElementById('yearChart');
 
 if (yearCanvas) {
 
-    new Chart(
+    new Chart(yearCanvas, {
 
-        yearCanvas,
+        type: 'line',
 
-        {
+        data: {
 
-            type: 'line',
+            labels: yearLabels,
 
-            data: {
+            datasets: [{
 
-                labels: yearLabels,
+                data: yearData,
 
-                datasets: [{
+                borderColor: '#3b9cff',
 
-                    data: yearData,
+                backgroundColor:
+                    'rgba(59, 156, 255, 0.10)',
 
-                    borderColor:
-                        '#2d7fc1',
+                borderWidth: 3,
 
-                    backgroundColor:
-                        'rgba(45, 127, 193, 0.10)',
+                fill: true,
 
-                    borderWidth: 3,
+                tension: 0.35,
 
-                    fill: true,
+                pointRadius: 4,
 
-                    tension: 0.35,
+                pointHoverRadius: 6,
 
-                    pointRadius: 4,
+                pointBackgroundColor: '#3b9cff',
 
-                    pointHoverRadius: 6,
+                pointBorderColor: '#111d2d',
 
-                    pointBackgroundColor:
-                        '#2d7fc1',
+                pointBorderWidth: 2
 
-                    pointBorderColor:
-                        '#ffffff',
+            }]
 
-                    pointBorderWidth: 2
+        },
 
-                }]
+        options: {
+
+            responsive: true,
+
+            maintainAspectRatio: false,
+
+            plugins: {
+
+                legend: {
+                    display: false
+                }
 
             },
 
-            options: {
+            scales: {
 
-                responsive: true,
+                y: {
 
-                maintainAspectRatio: false,
+                    beginAtZero: true,
 
-                plugins: {
+                    ticks: {
+                        precision: 0,
+                        color: '#7f95b0'
+                    },
 
-                    legend: {
-
-                        display: false
-
+                    grid: {
+                        color: '#263b55'
                     }
 
                 },
 
-                scales: {
+                x: {
 
-                    y: {
-
-                        beginAtZero: true,
-
-                        ticks: {
-
-                            precision: 0
-
-                        },
-
-                        grid: {
-
-                            color: '#e9eef4'
-
-                        }
-
+                    ticks: {
+                        color: '#7f95b0'
                     },
 
-                    x: {
-
-                        grid: {
-
-                            display: false
-
-                        }
-
+                    grid: {
+                        display: false
                     }
 
                 }
@@ -1906,7 +1317,7 @@ if (yearCanvas) {
 
         }
 
-    );
+    });
 
 }
 
@@ -1918,88 +1329,75 @@ if (yearCanvas) {
 */
 
 const courseCanvas =
-    document.getElementById(
-        'courseChart'
-    );
-
+    document.getElementById('courseChart');
 
 if (courseCanvas) {
 
-    new Chart(
+    new Chart(courseCanvas, {
 
-        courseCanvas,
+        type: 'bar',
 
-        {
+        data: {
 
-            type: 'bar',
+            labels: courseLabels,
 
-            data: {
+            datasets: [{
 
-                labels: courseLabels,
+                data: courseData,
 
-                datasets: [{
+                backgroundColor: chartColors,
 
-                    data: courseData,
+                borderRadius: 5,
 
-                    backgroundColor:
-                        chartColors,
+                borderSkipped: false,
 
-                    borderRadius: 5,
+                maxBarThickness: 32
 
-                    borderSkipped: false,
+            }]
 
-                    maxBarThickness: 32
+        },
 
-                }]
+        options: {
+
+            indexAxis: 'y',
+
+            responsive: true,
+
+            maintainAspectRatio: false,
+
+            plugins: {
+
+                legend: {
+                    display: false
+                }
 
             },
 
-            options: {
+            scales: {
 
-                indexAxis: 'y',
+                x: {
 
-                responsive: true,
+                    beginAtZero: true,
 
-                maintainAspectRatio: false,
+                    ticks: {
+                        precision: 0,
+                        color: '#7f95b0'
+                    },
 
-                plugins: {
-
-                    legend: {
-
-                        display: false
-
+                    grid: {
+                        color: '#263b55'
                     }
 
                 },
 
-                scales: {
+                y: {
 
-                    x: {
-
-                        beginAtZero: true,
-
-                        ticks: {
-
-                            precision: 0
-
-                        },
-
-                        grid: {
-
-                            color: '#e9eef4'
-
-                        }
-
+                    ticks: {
+                        color: '#7f95b0'
                     },
 
-                    y: {
-
-                        grid: {
-
-                            display: false
-
-                        }
-
+                    grid: {
+                        display: false
                     }
 
                 }
@@ -2008,7 +1406,7 @@ if (courseCanvas) {
 
         }
 
-    );
+    });
 
 }
 
