@@ -1,0 +1,835 @@
+/* =========================================================
+   CMO TRAINING SQUADRON
+   CREATE PERSONNEL PAGE
+   ---------------------------------------------------------
+   INHERITS:
+   - Dashboard background
+   - Sidebar
+   - Topbar
+   - Main wrapper
+   - Page content
+   - Typography
+   - Colors
+   - Responsive behavior
+
+   THIS FILE:
+   - Create heading
+   - Form card
+   - Form fields
+   - Form controls
+   - Error message
+   - Form buttons
+   ========================================================= */
+
+
+/* =========================================================
+   PAGE HEADING
+   ========================================================= */
+
+.create-heading {
+
+    display: flex;
+
+    align-items: flex-end;
+
+    justify-content: space-between;
+
+    gap: 30px;
+
+    width: 100%;
+
+    margin-bottom: 30px;
+
+}
+
+
+.create-heading > div:first-child {
+
+    min-width: 0;
+
+}
+
+
+.create-heading h1 {
+
+    margin: 6px 0 8px;
+
+    color: #f8fafc;
+
+    font-size: 34px;
+
+    font-weight: 800;
+
+    line-height: 1.2;
+
+    letter-spacing: -0.5px;
+
+}
+
+
+.create-heading p {
+
+    margin: 0;
+
+    color: #8fa3bd;
+
+    font-size: 15px;
+
+    line-height: 1.6;
+
+}
+
+
+/* =========================================================
+   BACK BUTTON
+   ========================================================= */
+
+.create-back-button {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8px;
+
+    flex-shrink: 0;
+
+    padding: 11px 17px;
+
+    border: 1px solid #29445f;
+
+    border-radius: 9px;
+
+    background: #111d2d;
+
+    color: #b9c9dd;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    text-decoration: none;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease;
+
+}
+
+
+.create-back-button:hover {
+
+    background: #16253a;
+
+    border-color: #3b9cff;
+
+    color: #ffffff;
+
+    transform: translateY(-1px);
+
+}
+
+
+/* =========================================================
+   ERROR MESSAGE
+   ========================================================= */
+
+.create-error {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 11px;
+
+    width: 100%;
+
+    margin-bottom: 24px;
+
+    padding: 14px 18px;
+
+    border: 1px solid
+        rgba(239, 68, 68, 0.35);
+
+    border-radius: 10px;
+
+    background:
+        rgba(127, 29, 29, 0.18);
+
+    color: #fca5a5;
+
+    font-size: 14px;
+
+    font-weight: 600;
+
+}
+
+
+.create-error i {
+
+    flex-shrink: 0;
+
+    color: #ef4444;
+
+    font-size: 18px;
+
+}
+
+
+/* =========================================================
+   FORM CARD
+   ========================================================= */
+
+.create-card {
+
+    width: 100%;
+
+    min-width: 0;
+
+    border: 1px solid #263b55;
+
+    border-radius: 14px;
+
+    background: #111d2d;
+
+    box-shadow:
+        0 8px 25px
+        rgba(0, 0, 0, 0.20);
+
+    overflow: hidden;
+
+}
+
+
+/* =========================================================
+   CARD HEADER
+   ========================================================= */
+
+.create-card-header {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 20px;
+
+    padding: 25px 28px;
+
+    border-bottom: 1px solid #263b55;
+
+}
+
+
+.create-card-header > div:first-child {
+
+    min-width: 0;
+
+}
+
+
+.create-card-header h2 {
+
+    margin: 5px 0 6px;
+
+    color: #f1f5f9;
+
+    font-size: 21px;
+
+    font-weight: 700;
+
+    line-height: 1.3;
+
+}
+
+
+.create-card-header p {
+
+    margin: 0;
+
+    color: #7f95b0;
+
+    font-size: 13px;
+
+    line-height: 1.5;
+
+}
+
+
+.create-header-icon {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    width: 48px;
+
+    height: 48px;
+
+    flex-shrink: 0;
+
+    border: 1px solid #29445f;
+
+    border-radius: 10px;
+
+    background: #16253a;
+
+    color: #3b9cff;
+
+    font-size: 20px;
+
+}
+
+
+/* =========================================================
+   FORM
+   ========================================================= */
+
+.personnel-form {
+
+    width: 100%;
+
+    padding: 28px;
+
+}
+
+
+/* =========================================================
+   FORM FIELD
+   ========================================================= */
+
+.form-field {
+
+    width: 100%;
+
+    max-width: 850px;
+
+    margin-bottom: 21px;
+
+}
+
+
+.form-field label {
+
+    display: block;
+
+    margin-bottom: 8px;
+
+    color: #c9d5e4;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+}
+
+
+.form-field label span {
+
+    color: #ef4444;
+
+    margin-left: 2px;
+
+}
+
+
+/* =========================================================
+   INPUT WRAPPER
+   ========================================================= */
+
+.input-wrapper {
+
+    position: relative;
+
+    width: 100%;
+
+}
+
+
+.input-wrapper > i {
+
+    position: absolute;
+
+    top: 50%;
+
+    left: 15px;
+
+    z-index: 2;
+
+    color: #607b9b;
+
+    font-size: 15px;
+
+    pointer-events: none;
+
+    transform: translateY(-50%);
+
+    transition: color 0.2s ease;
+
+}
+
+
+/* =========================================================
+   FORM CONTROL
+   ========================================================= */
+
+.personnel-form .form-control {
+
+    width: 100%;
+
+    min-height: 46px;
+
+    padding: 11px 15px 11px 43px;
+
+    border: 1px solid #29445f;
+
+    border-radius: 9px;
+
+    background: #0d1929;
+
+    color: #f8fafc;
+
+    font-family: "Inter", sans-serif;
+
+    font-size: 14px;
+
+    box-shadow: none;
+
+    outline: none;
+
+    transition:
+        border-color 0.2s ease,
+        background 0.2s ease,
+        box-shadow 0.2s ease;
+
+}
+
+
+.personnel-form .form-control::placeholder {
+
+    color: #60758f;
+
+    opacity: 1;
+
+}
+
+
+.personnel-form .form-control:hover {
+
+    border-color: #355573;
+
+}
+
+
+.personnel-form .form-control:focus {
+
+    border-color: #3b9cff;
+
+    background: #101f33;
+
+    color: #ffffff;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(59, 156, 255, 0.10);
+
+}
+
+
+.input-wrapper:focus-within > i {
+
+    color: #3b9cff;
+
+}
+
+
+/* =========================================================
+   SELECT
+   ========================================================= */
+
+.personnel-form select.form-control {
+
+    appearance: auto;
+
+    cursor: pointer;
+
+}
+
+
+.personnel-form select.form-control option {
+
+    background: #111d2d;
+
+    color: #f8fafc;
+
+}
+
+
+/* =========================================================
+   FORM ACTIONS
+   ========================================================= */
+
+.form-actions {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: flex-end;
+
+    gap: 12px;
+
+    width: 100%;
+
+    max-width: 850px;
+
+    margin-top: 30px;
+
+    padding-top: 23px;
+
+    border-top: 1px solid #263b55;
+
+}
+
+
+/* =========================================================
+   CANCEL BUTTON
+   ========================================================= */
+
+.form-cancel-button {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8px;
+
+    min-height: 44px;
+
+    padding: 10px 20px;
+
+    border: 1px solid #29445f;
+
+    border-radius: 8px;
+
+    background: #16253a;
+
+    color: #aebfd3;
+
+    font-size: 13px;
+
+    font-weight: 600;
+
+    text-decoration: none;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        color 0.2s ease,
+        transform 0.2s ease;
+
+}
+
+
+.form-cancel-button:hover {
+
+    background: #1a2b42;
+
+    border-color: #3b526d;
+
+    color: #ffffff;
+
+    transform: translateY(-1px);
+
+}
+
+
+/* =========================================================
+   SUBMIT BUTTON
+   ========================================================= */
+
+.form-submit-button {
+
+    display: inline-flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 8px;
+
+    min-height: 44px;
+
+    padding: 10px 21px;
+
+    border: 1px solid #2676c5;
+
+    border-radius: 8px;
+
+    background: #2379c9;
+
+    color: #ffffff;
+
+    font-family: "Inter", sans-serif;
+
+    font-size: 13px;
+
+    font-weight: 700;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        transform 0.2s ease;
+
+}
+
+
+.form-submit-button:hover {
+
+    background: #2f8ee5;
+
+    border-color: #3b9cff;
+
+    color: #ffffff;
+
+    box-shadow:
+        0 6px 18px
+        rgba(37, 126, 214, 0.25);
+
+    transform: translateY(-1px);
+
+}
+
+
+.form-submit-button:active {
+
+    transform: translateY(0);
+
+}
+
+
+/* =========================================================
+   RESPONSIVE - 992px
+   ========================================================= */
+
+@media (max-width: 992px) {
+
+    .create-heading {
+
+        align-items: flex-start;
+
+        flex-direction: column;
+
+        gap: 18px;
+
+    }
+
+
+    .create-back-button {
+
+        align-self: flex-start;
+
+    }
+
+}
+
+
+/* =========================================================
+   RESPONSIVE - 768px
+   ========================================================= */
+
+@media (max-width: 768px) {
+
+    .create-heading h1 {
+
+        font-size: 30px;
+
+    }
+
+
+    .create-heading p {
+
+        font-size: 14px;
+
+    }
+
+
+    .create-card-header {
+
+        padding: 22px;
+
+    }
+
+
+    .personnel-form {
+
+        padding: 22px;
+
+    }
+
+
+    .form-field {
+
+        max-width: none;
+
+    }
+
+
+    .form-actions {
+
+        max-width: none;
+
+    }
+
+}
+
+
+/* =========================================================
+   RESPONSIVE - 600px
+   ========================================================= */
+
+@media (max-width: 600px) {
+
+    .create-heading {
+
+        margin-bottom: 24px;
+
+    }
+
+
+    .create-heading h1 {
+
+        font-size: 27px;
+
+    }
+
+
+    .create-heading p {
+
+        font-size: 13px;
+
+    }
+
+
+    .create-back-button {
+
+        width: 100%;
+
+    }
+
+
+    .create-card-header {
+
+        align-items: flex-start;
+
+        padding: 20px;
+
+    }
+
+
+    .create-card-header h2 {
+
+        font-size: 18px;
+
+    }
+
+
+    .create-card-header p {
+
+        font-size: 12px;
+
+    }
+
+
+    .create-header-icon {
+
+        width: 42px;
+
+        height: 42px;
+
+        font-size: 17px;
+
+    }
+
+
+    .personnel-form {
+
+        padding: 20px;
+
+    }
+
+
+    .form-actions {
+
+        flex-direction: column-reverse;
+
+        align-items: stretch;
+
+    }
+
+
+    .form-cancel-button,
+    .form-submit-button {
+
+        width: 100%;
+
+    }
+
+}
+
+
+/* =========================================================
+   RESPONSIVE - 450px
+   ========================================================= */
+
+@media (max-width: 450px) {
+
+    .create-heading h1 {
+
+        font-size: 25px;
+
+    }
+
+
+    .create-card-header {
+
+        padding: 17px;
+
+    }
+
+
+    .personnel-form {
+
+        padding: 17px;
+
+    }
+
+
+    .personnel-form .form-control {
+
+        min-height: 44px;
+
+        font-size: 13px;
+
+    }
+
+
+    .form-field label {
+
+        font-size: 12px;
+
+    }
+
+}

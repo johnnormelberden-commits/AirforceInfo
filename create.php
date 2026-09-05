@@ -1,46 +1,33 @@
 <?php
 
 /*
- * ==========================================================
- * POSTGRESQL DATABASE CONNECTION
- * ==========================================================
- */
+|--------------------------------------------------------------------------
+| LOGIN SECURITY
+|--------------------------------------------------------------------------
+*/
 
-try {
+session_start();
 
-    $host = getenv('DB_HOST');
-    $port = getenv('DB_PORT') ?: '5432';
-    $database = getenv('DB_NAME');
-    $dbUsername = getenv('DB_USER');
-    $dbPassword = getenv('DB_PASSWORD');
-
-    if (!$host || !$database || !$dbUsername || !$dbPassword) {
-        throw new Exception("Database configuration is missing.");
-    }
-
-    $connection = new PDO(
-        "pgsql:host={$host};port={$port};dbname={$database}",
-        $dbUsername,
-        $dbPassword
-    );
-
-    $connection->setAttribute(
-        PDO::ATTR_ERRMODE,
-        PDO::ERRMODE_EXCEPTION
-    );
-
-} catch (Exception $e) {
-
-    die("Unable to connect to the database.");
-
+if (!isset($_SESSION['username'])) {
+    header("Location: login.php");
+    exit;
 }
 
 
 /*
- * ==========================================================
- * FORM VARIABLES
- * ==========================================================
- */
+|--------------------------------------------------------------------------
+| DATABASE CONNECTION
+|--------------------------------------------------------------------------
+*/
+
+require_once 'db.php';
+
+
+/*
+|--------------------------------------------------------------------------
+| FORM VARIABLES
+|--------------------------------------------------------------------------
+*/
 
 $rank              = "";
 $name              = "";
@@ -50,41 +37,40 @@ $courses           = "";
 $year_graduated    = "";
 $standing          = "";
 
-$errorMessage   = "";
-$successMessage = "";
+$errorMessage = "";
 
 
 /*
- * ==========================================================
- * HANDLE FORM SUBMISSION
- * ==========================================================
- */
+|--------------------------------------------------------------------------
+| HANDLE FORM SUBMISSION
+|--------------------------------------------------------------------------
+*/
 
-if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    $rank              = trim($_POST["rank"] ?? '');
-    $name              = trim($_POST["name"] ?? '');
-    $serial_number     = trim($_POST["serial_number"] ?? '');
-    $branch_of_service = trim($_POST["branch_of_service"] ?? '');
-    $courses           = trim($_POST["courses"] ?? '');
-    $year_graduated    = trim($_POST["year_graduated"] ?? '');
-    $standing          = trim($_POST["standing"] ?? '');
+    $rank              = trim($_POST['rank'] ?? '');
+    $name              = trim($_POST['name'] ?? '');
+    $serial_number     = trim($_POST['serial_number'] ?? '');
+    $branch_of_service = trim($_POST['branch_of_service'] ?? '');
+    $courses           = trim($_POST['courses'] ?? '');
+    $year_graduated    = trim($_POST['year_graduated'] ?? '');
+    $standing          = trim($_POST['standing'] ?? '');
 
 
     /*
-     * ======================================================
-     * VALIDATE REQUIRED FIELDS
-     * ======================================================
+     * ==========================================================
+     * VALIDATION
+     * ==========================================================
      */
 
     if (
-        empty($rank) ||
-        empty($name) ||
-        empty($serial_number) ||
-        empty($branch_of_service) ||
-        empty($courses) ||
-        empty($year_graduated) ||
-        empty($standing)
+        $rank === '' ||
+        $name === '' ||
+        $serial_number === '' ||
+        $branch_of_service === '' ||
+        $courses === '' ||
+        $year_graduated === '' ||
+        $standing === ''
     ) {
 
         $errorMessage = "All the fields are required.";
@@ -95,11 +81,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
             /*
              * ==================================================
-             * INSERT INTO POSTGRESQL
+             * INSERT PERSONNEL
              * ==================================================
-             *
-             * Prepared statements are used instead of putting
-             * user input directly into the SQL query.
              */
 
             $sql = "
@@ -149,11 +132,13 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
         } catch (PDOException $e) {
 
-            $errorMessage = "Unable to save the personnel information.";
+            $errorMessage =
+                "Unable to save the personnel information.";
 
         }
 
     }
+
 }
 
 ?>
@@ -163,229 +148,66 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
 <head>
 
-  <meta charset="UTF-8">
+    <meta charset="UTF-8">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-  <title>Add Military Personnel</title>
-
-  <link
-    rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
-  >
-
-  <script
-    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
-  ></script>
+    <title>
+        Add Military Personnel - CMO Training Squadron
+    </title>
 
 
-  <style>
+    <!-- =====================================================
+         BOOTSTRAP
+    ====================================================== -->
 
-    body {
-      background: radial-gradient(circle at top left, #021631, #05254d);
-      color: #eaeaea;
-      font-family: "Poppins", sans-serif;
-      min-height: 100vh;
-      margin: 0;
-      animation: fadeIn 1.2s ease;
-    }
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+    >
 
-    @keyframes fadeIn {
-      from {
-        opacity: 0;
-        transform: translateY(10px);
-      }
 
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
+    <!-- =====================================================
+         BOOTSTRAP ICONS
+    ====================================================== -->
 
-    .paf-topbar {
-      width: 100%;
-      padding: 15px 40px;
-      background: rgba(0, 40, 90, 0.45);
-      backdrop-filter: blur(12px);
-      border-bottom: 2px solid #ffd700;
-      display: flex;
-      align-items: center;
-      box-shadow: 0 5px 20px rgba(0,0,0,0.6);
-    }
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+    >
 
-    .paf-brand {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-    }
 
-    .paf-brand img {
-      height: 70px;
-      width: 70px;
-      object-fit: contain;
-      transition: 0.4s;
-    }
+    <!-- =====================================================
+         GOOGLE FONT
+    ====================================================== -->
 
-    .paf-brand img:hover {
-      transform: scale(1.15) rotate(5deg);
-      filter: drop-shadow(0 0 12px #00b4d8);
-    }
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
 
-    .paf-text h1 {
-      margin: 0;
-      font-size: 1.4rem;
-      font-weight: 700;
-      color: #ffffff;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-    }
 
-    .paf-text span {
-      font-size: 0.85rem;
-      color: #ffd700;
-    }
+    <!-- =====================================================
+         DASHBOARD CSS
+    ====================================================== -->
 
-    .container-main {
-      background: rgba(255,255,255,0.05);
-      border-radius: 15px;
-      padding: 40px;
-      box-shadow: 0 0 25px rgba(0,0,0,0.7);
-      margin-top: 40px;
-      animation: slideUp 1s ease;
-    }
+    <link
+        rel="stylesheet"
+        href="css/dashboard.css?v=2"
+    >
 
-    @keyframes slideUp {
-      from {
-        opacity: 0;
-        transform: translateY(20px);
-      }
 
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
+    <!-- =====================================================
+         CREATE PAGE CSS
+    ====================================================== -->
 
-    h2 {
-      text-align: center;
-      font-weight: 600;
-      margin-bottom: 30px;
-      color: #58a6ff;
-      text-shadow: 0 0 10px rgba(88,166,255,0.8);
-    }
-
-    .form-control,
-    .form-select {
-      background-color: #050b16;
-      border: 1px solid #264b7c;
-      color: #f1f1f1;
-      transition: 0.3s;
-    }
-
-    .form-control:focus,
-    .form-select:focus {
-      background-color: #071021;
-      border-color: #ffd700;
-      box-shadow: 0 0 8px rgba(255,215,0,0.7);
-    }
-
-    label {
-      color: #e0e0e0;
-      font-weight: 500;
-    }
-
-    .btn-primary {
-      background-color: #0057b7;
-      border: none;
-      transition: all 0.3s ease;
-      border-radius: 8px;
-    }
-
-    .btn-primary:hover {
-      background-color: #003b88;
-      box-shadow: 0 0 12px rgba(255,215,0,0.9);
-      transform: scale(1.03);
-    }
-
-    .btn-outline-primary {
-      color: #ffd700;
-      border-color: #ffd700;
-      border-radius: 8px;
-      transition: all 0.3s ease;
-    }
-
-    .btn-outline-primary:hover {
-      background-color: #ffd700;
-      color: #021631;
-      box-shadow: 0 0 10px rgba(255,215,0,0.8);
-      transform: scale(1.03);
-    }
-
-    .alert {
-      border: none;
-      color: #fff;
-      border-radius: 10px;
-    }
-
-    .alert-warning {
-      background-color: rgba(255, 204, 72, 0.35);
-      color: #000;
-      border: 1px solid rgba(255, 193, 7, 0.8);
-    }
-
-    .alert-success {
-      background-color: rgba(72, 207, 122, 0.35);
-      color: #000;
-      border: 1px solid rgba(40, 167, 69, 0.8);
-    }
-
-    .btn-close {
-      filter: invert(1);
-    }
-
-    input.form-control,
-    select.form-select,
-    textarea.form-control {
-      color: #ffffff !important;
-      background-color: rgba(0, 0, 0, 0.35) !important;
-    }
-
-    input::placeholder,
-    textarea::placeholder {
-      color: rgba(255, 255, 255, 0.6) !important;
-    }
-
-    select.form-select option {
-      color: #000 !important;
-    }
-
-    input.form-control:focus,
-    select.form-select:focus {
-      border-color: #ffd700 !important;
-      box-shadow: 0 0 10px rgba(255, 215, 0, 0.6) !important;
-    }
-
-    select.form-select {
-      color: #ffffff !important;
-      background-color: rgba(0, 0, 0, 0.35) !important;
-      border: 1px solid #ffd700 !important;
-    }
-
-    select.form-select option {
-      background-color: #1c2942 !important;
-      color: #ffffff !important;
-    }
-
-    select.form-select option:checked,
-    select.form-select option:hover {
-      background-color: #324a78 !important;
-      color: #ffffff !important;
-    }
-
-  </style>
+    <link
+        rel="stylesheet"
+        href="css/create.css?v=1"
+    >
 
 </head>
 
@@ -393,404 +215,959 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 <body>
 
 
-  <!-- PAF HEADER -->
+<!-- =========================================================
+     MOBILE OVERLAY
+========================================================= -->
 
-  <div class="paf-topbar">
+<div
+    class="sidebar-overlay"
+    id="sidebarOverlay"
+></div>
 
-    <div class="paf-brand">
 
-      <img
-        src="cmo1.png"
-        alt="Philippine Air Force Logo"
-      >
+<!-- =========================================================
+     SIDEBAR
+========================================================= -->
 
-      <div class="paf-text">
+<aside
+    class="sidebar"
+    id="sidebar"
+>
 
-        <h1>CMO Squadron Training</h1>
 
-        <span>
-          Student Database Information System
-        </span>
+    <!-- =====================================================
+         SIDEBAR BRAND
+    ====================================================== -->
 
-      </div>
+    <div class="sidebar-brand">
+
+        <div class="sidebar-logo">
+
+            <img
+                src="cmo1.png"
+                alt="CMO Training Squadron"
+            >
+
+        </div>
+
+
+        <div class="sidebar-brand-text">
+
+            <strong>
+                CMO TRAINING
+            </strong>
+
+            <span>
+                SQUADRON
+            </span>
+
+        </div>
 
     </div>
 
-  </div>
+
+    <!-- =====================================================
+         NAVIGATION
+    ====================================================== -->
+
+    <div class="sidebar-section-title">
+        NAVIGATION
+    </div>
 
 
-  <!-- MAIN CONTENT -->
-
-  <div class="container container-main my-5">
-
-    <h2>
-      Add Military Personnel Information
-    </h2>
+    <nav class="sidebar-nav">
 
 
-    <!-- ERROR MESSAGE -->
+        <!-- DASHBOARD -->
 
-    <?php if (!empty($errorMessage)): ?>
+        <a
+            href="index.php"
+            class="nav-item"
+        >
 
-      <div
-        class="alert alert-warning alert-dismissible fade show"
-        role="alert"
-      >
+            <span class="nav-icon">
+                <i class="bi bi-grid-1x2-fill"></i>
+            </span>
 
-        <strong>
-          <?= htmlspecialchars($errorMessage); ?>
-        </strong>
+            <span>
+                Dashboard
+            </span>
+
+        </a>
+
+
+        <!-- MILITARY PERSONNEL -->
+
+        <a
+            href="index.php#personnel"
+            class="nav-item"
+        >
+
+            <span class="nav-icon">
+                <i class="bi bi-person-badge-fill"></i>
+            </span>
+
+            <span>
+                Military Personnel
+            </span>
+
+        </a>
+
+
+        <!-- STATISTICS -->
+
+        <a
+            href="statistics.php"
+            class="nav-item"
+        >
+
+            <span class="nav-icon">
+                <i class="bi bi-bar-chart-fill"></i>
+            </span>
+
+            <span>
+                Statistics
+            </span>
+
+        </a>
+
+
+        <!-- COPY FILE -->
+
+        <div class="nav-dropdown">
+
+            <button
+                type="button"
+                class="nav-item nav-dropdown-toggle"
+                id="copyFileToggle"
+            >
+
+                <span class="nav-icon">
+                    <i class="bi bi-file-earmark-arrow-down-fill"></i>
+                </span>
+
+                <span>
+                    Copy File
+                </span>
+
+                <i class="bi bi-chevron-down nav-chevron"></i>
+
+            </button>
+
+
+            <div
+                class="nav-submenu"
+                id="copyFileMenu"
+            >
+
+                <a
+                    href="#"
+                    id="exportExcel"
+                >
+
+                    <i class="bi bi-file-earmark-excel"></i>
+
+                    Export to Excel
+
+                </a>
+
+
+                <a
+                    href="#"
+                    id="exportPDF"
+                >
+
+                    <i class="bi bi-file-earmark-pdf"></i>
+
+                    Export to PDF
+
+                </a>
+
+
+                <a
+                    href="#"
+                    id="exportPrint"
+                >
+
+                    <i class="bi bi-printer"></i>
+
+                    Print Table
+
+                </a>
+
+            </div>
+
+        </div>
+
+    </nav>
+
+
+    <!-- =====================================================
+         MANAGEMENT
+    ====================================================== -->
+
+    <div class="sidebar-section-title management-title">
+        MANAGEMENT
+    </div>
+
+
+    <nav class="sidebar-nav">
+
+
+        <!-- ADD PERSONNEL -->
+
+        <a
+            href="create.php"
+            class="nav-item add-personnel-nav active"
+        >
+
+            <span class="nav-icon">
+                <i class="bi bi-person-plus-fill"></i>
+            </span>
+
+            <span>
+                Add New Personnel
+            </span>
+
+        </a>
+
+
+        <!-- CHANGE PASSWORD -->
+
+        <a
+            href="change_password.php"
+            class="nav-item"
+        >
+
+            <span class="nav-icon">
+                <i class="bi bi-key-fill"></i>
+            </span>
+
+            <span>
+                Change Password
+            </span>
+
+        </a>
+
+    </nav>
+
+
+    <!-- =====================================================
+         SIDEBAR BOTTOM
+    ====================================================== -->
+
+    <div class="sidebar-bottom">
+
+
+        <div class="system-status">
+
+            <span class="status-dot"></span>
+
+            System Online
+
+        </div>
+
+
+        <a
+            href="logout.php"
+            class="logout-nav"
+        >
+
+            <i class="bi bi-box-arrow-right"></i>
+
+            Logout
+
+        </a>
+
+    </div>
+
+</aside>
+
+
+<!-- =========================================================
+     MAIN WRAPPER
+========================================================= -->
+
+<div class="main-wrapper">
+
+
+    <!-- =====================================================
+         TOPBAR
+    ====================================================== -->
+
+    <header class="topbar">
+
+
+        <!-- MOBILE MENU -->
 
         <button
-          type="button"
-          class="btn-close"
-          data-bs-dismiss="alert"
-          aria-label="Close"
-        ></button>
+            type="button"
+            class="mobile-menu-btn"
+            id="mobileMenuBtn"
+        >
 
-      </div>
+            <i class="bi bi-list"></i>
 
-    <?php endif; ?>
-
-
-    <!-- FORM -->
-
-    <form method="post">
+        </button>
 
 
-      <!-- RANK -->
+        <!-- TITLE -->
 
-      <div class="row mb-3">
+        <div class="topbar-title">
 
-        <label class="col-sm-3 col-form-label">
-          Rank
-        </label>
+            <span>
+                CMO Training Squadron
+            </span>
 
-        <div class="col-sm-6">
-
-          <select
-            class="form-select"
-            name="rank"
-            required
-          >
-
-            <option value="">
-              -- Select Rank --
-            </option>
-
-            <option value="Airman Basic"
-              <?= ($rank == 'Airman Basic') ? 'selected' : ''; ?>>
-              Airman Basic
-            </option>
-
-            <option value="Airman"
-              <?= ($rank == 'Airman') ? 'selected' : ''; ?>>
-              Airman
-            </option>
-
-            <option value="Airman First Class"
-              <?= ($rank == 'Airman First Class') ? 'selected' : ''; ?>>
-              Airman First Class
-            </option>
-
-            <option value="Sergeant"
-              <?= ($rank == 'Sergeant') ? 'selected' : ''; ?>>
-              Sergeant
-            </option>
-
-            <option value="Technical Sergeant"
-              <?= ($rank == 'Technical Sergeant') ? 'selected' : ''; ?>>
-              Technical Sergeant
-            </option>
-
-            <option value="Master Sergeant"
-              <?= ($rank == 'Master Sergeant') ? 'selected' : ''; ?>>
-              Master Sergeant
-            </option>
-
-            <option value="Senior Master Sergeant"
-              <?= ($rank == 'Senior Master Sergeant') ? 'selected' : ''; ?>>
-              Senior Master Sergeant
-            </option>
-
-            <option value="Chief Master Sergeant"
-              <?= ($rank == 'Chief Master Sergeant') ? 'selected' : ''; ?>>
-              Chief Master Sergeant
-            </option>
-
-            <option value="Lieutenant"
-              <?= ($rank == 'Lieutenant') ? 'selected' : ''; ?>>
-              Lieutenant
-            </option>
-
-            <option value="Captain"
-              <?= ($rank == 'Captain') ? 'selected' : ''; ?>>
-              Captain
-            </option>
-
-            <option value="Major"
-              <?= ($rank == 'Major') ? 'selected' : ''; ?>>
-              Major
-            </option>
-
-            <option value="Lieutenant Colonel"
-              <?= ($rank == 'Lieutenant Colonel') ? 'selected' : ''; ?>>
-              Lieutenant Colonel
-            </option>
-
-            <option value="Colonel"
-              <?= ($rank == 'Colonel') ? 'selected' : ''; ?>>
-              Colonel
-            </option>
-
-            <option value="AW1C"
-              <?= ($rank == 'AW1C') ? 'selected' : ''; ?>>
-              AW1C
-            </option>
-
-            <option value="A1C"
-              <?= ($rank == 'A1C') ? 'selected' : ''; ?>>
-              A1C
-            </option>
-
-            <option value="A2C"
-              <?= ($rank == 'A2C') ? 'selected' : ''; ?>>
-              A2C
-            </option>
-
-            <option value="Staff Sargent"
-              <?= ($rank == 'Staff Sargent') ? 'selected' : ''; ?>>
-              Staff Sargent
-            </option>
-
-          </select>
+            <small>
+                Student Database Information System
+            </small>
 
         </div>
 
-      </div>
+
+        <!-- RIGHT SIDE -->
+
+        <div class="topbar-right">
 
 
-      <!-- NAME -->
+            <!-- NOTIFICATION -->
 
-      <div class="row mb-3">
+            <button
+                type="button"
+                class="header-icon-btn"
+                title="Notifications"
+            >
 
-        <label class="col-sm-3 col-form-label">
-          Name
-        </label>
+                <i class="bi bi-bell"></i>
 
-        <div class="col-sm-6">
-
-          <input
-            type="text"
-            class="form-control"
-            name="name"
-            value="<?= htmlspecialchars($name); ?>"
-            required
-          >
-
-        </div>
-
-      </div>
+            </button>
 
 
-      <!-- SERIAL NUMBER -->
+            <!-- USER -->
 
-      <div class="row mb-3">
+            <div class="user-menu">
 
-        <label class="col-sm-3 col-form-label">
-          Serial Number
-        </label>
+                <div class="user-avatar">
 
-        <div class="col-sm-6">
+                    <i class="bi bi-person-fill"></i>
 
-          <input
-            type="text"
-            class="form-control"
-            name="serial_number"
-            value="<?= htmlspecialchars($serial_number); ?>"
-            required
-          >
-
-        </div>
-
-      </div>
+                </div>
 
 
-      <!-- BRANCH -->
+                <div class="user-info">
 
-      <div class="row mb-3">
+                    <strong>
+                        <?= htmlspecialchars($_SESSION['username']); ?>
+                    </strong>
 
-        <label class="col-sm-3 col-form-label">
-          Branch of Service
-        </label>
+                    <span>
+                        Administrator
+                    </span>
 
-        <div class="col-sm-6">
+                </div>
 
-          <select
-            class="form-select"
-            name="branch_of_service"
-            required
-          >
-
-            <option value="">
-              -- Select Branch --
-            </option>
-
-            <option value="Philippine Air Force"
-              <?= ($branch_of_service == 'Philippine Air Force') ? 'selected' : ''; ?>>
-              Philippine Air Force
-            </option>
-
-            <option value="Philippine Army"
-              <?= ($branch_of_service == 'Philippine Army') ? 'selected' : ''; ?>>
-              Philippine Army
-            </option>
-
-            <option value="Philippine Navy"
-              <?= ($branch_of_service == 'Philippine Navy') ? 'selected' : ''; ?>>
-              Philippine Navy
-            </option>
-
-            <option value="Reserved Force"
-              <?= ($branch_of_service == 'Reserved Force') ? 'selected' : ''; ?>>
-              Reserved Force
-            </option>
-
-            <option value="Others"
-              <?= ($branch_of_service == 'Others') ? 'selected' : ''; ?>>
-              Others
-            </option>
-
-          </select>
+            </div>
 
         </div>
 
-      </div>
+    </header>
 
 
-      <!-- COURSES -->
+    <!-- =====================================================
+         PAGE CONTENT
+    ====================================================== -->
 
-      <div class="row mb-3">
-
-        <label class="col-sm-3 col-form-label">
-          Course/s
-        </label>
-
-        <div class="col-sm-6">
-
-          <input
-            type="text"
-            class="form-control"
-            name="courses"
-            value="<?= htmlspecialchars($courses); ?>"
-            required
-          >
-
-        </div>
-
-      </div>
+    <main class="page-content">
 
 
-      <!-- YEAR GRADUATED -->
+        <!-- =================================================
+             PAGE HEADING
+        ================================================== -->
 
-      <div class="row mb-3">
+        <div class="create-heading">
 
-        <label class="col-sm-3 col-form-label">
-          Year Graduated
-        </label>
+            <div>
 
-        <div class="col-sm-6">
+                <div class="page-label">
+                    CMO INFORMATION SYSTEM
+                </div>
 
-          <select
-            class="form-select"
-            name="year_graduated"
-            required
-          >
 
-            <option value="">
-              -- Select Year --
-            </option>
+                <h1>
+                    Add New Personnel
+                </h1>
 
-            <?php
 
-            $currentYear = date('Y');
+                <p>
+                    Register a new military personnel record
+                    in the database.
+                </p>
 
-           for ($y = $currentYear; $y >= 1960; $y--) {
+            </div>
 
-                $selected =
-                    ($year_graduated == $y)
-                    ? 'selected'
-                    : '';
 
-                echo "
-                <option value=\"$y\" $selected>
-                    $y
-                </option>
-                ";
+            <a
+                href="index.php"
+                class="create-back-button"
+            >
 
-            }
+                <i class="bi bi-arrow-left"></i>
 
-            ?>
+                Back to Dashboard
 
-          </select>
+            </a>
 
         </div>
 
-      </div>
+
+        <!-- =================================================
+             ERROR MESSAGE
+        ================================================== -->
+
+        <?php if (!empty($errorMessage)): ?>
+
+            <div
+                class="create-error"
+                role="alert"
+            >
+
+                <i class="bi bi-exclamation-triangle-fill"></i>
+
+                <span>
+                    <?= htmlspecialchars($errorMessage); ?>
+                </span>
+
+            </div>
+
+        <?php endif; ?>
 
 
-      <!-- STANDING -->
+        <!-- =================================================
+             FORM CARD
+        ================================================== -->
 
-      <div class="row mb-3">
-
-        <label class="col-sm-3 col-form-label">
-          Standing
-        </label>
-
-        <div class="col-sm-6">
-
-          <input
-            type="text"
-            class="form-control"
-            name="standing"
-            value="<?= htmlspecialchars($standing); ?>"
-            required
-          >
-
-        </div>
-
-      </div>
+        <section class="create-card">
 
 
-      <!-- BUTTONS -->
+            <!-- CARD HEADER -->
 
-      <div class="row mb-3">
+            <div class="create-card-header">
 
-        <div class="offset-sm-3 col-sm-6 d-flex justify-content-between">
+                <div>
 
-          <button
-            type="submit"
-            class="btn btn-primary px-4"
-          >
-            Submit
-          </button>
+                    <div class="section-label">
+                        PERSONNEL INFORMATION
+                    </div>
 
-          <a
-            class="btn btn-outline-primary px-4"
-            href="index.php"
-            role="button"
-          >
-            Cancel
-          </a>
+                    <h2>
+                        Military Personnel Details
+                    </h2>
 
-        </div>
+                    <p>
+                        Enter the required information
+                        below to register personnel.
+                    </p>
 
-      </div>
+                </div>
 
 
-    </form>
+                <div class="create-header-icon">
 
-  </div>
+                    <i class="bi bi-person-plus-fill"></i>
+
+                </div>
+
+            </div>
+
+
+            <!-- =================================================
+                 FORM
+            ================================================== -->
+
+            <form
+                method="post"
+                class="personnel-form"
+                autocomplete="off"
+            >
+
+
+                <!-- =================================================
+                     RANK
+                ================================================== -->
+
+                <div class="form-field">
+
+                    <label for="rank">
+
+                        Rank
+
+                        <span>*</span>
+
+                    </label>
+
+
+                    <div class="input-wrapper">
+
+                        <i class="bi bi-award-fill"></i>
+
+                        <select
+                            id="rank"
+                            class="form-control"
+                            name="rank"
+                            required
+                        >
+
+                            <option value="">
+                                -- Select Rank --
+                            </option>
+
+                            <option
+                                value="Airman Basic"
+                                <?= ($rank === 'Airman Basic') ? 'selected' : ''; ?>
+                            >
+                                Airman Basic
+                            </option>
+
+                            <option
+                                value="Airman"
+                                <?= ($rank === 'Airman') ? 'selected' : ''; ?>
+                            >
+                                Airman
+                            </option>
+
+                            <option
+                                value="Airman First Class"
+                                <?= ($rank === 'Airman First Class') ? 'selected' : ''; ?>
+                            >
+                                Airman First Class
+                            </option>
+
+                            <option
+                                value="Sergeant"
+                                <?= ($rank === 'Sergeant') ? 'selected' : ''; ?>
+                            >
+                                Sergeant
+                            </option>
+
+                            <option
+                                value="Technical Sergeant"
+                                <?= ($rank === 'Technical Sergeant') ? 'selected' : ''; ?>
+                            >
+                                Technical Sergeant
+                            </option>
+
+                            <option
+                                value="Master Sergeant"
+                                <?= ($rank === 'Master Sergeant') ? 'selected' : ''; ?>
+                            >
+                                Master Sergeant
+                            </option>
+
+                            <option
+                                value="Senior Master Sergeant"
+                                <?= ($rank === 'Senior Master Sergeant') ? 'selected' : ''; ?>
+                            >
+                                Senior Master Sergeant
+                            </option>
+
+                            <option
+                                value="Chief Master Sergeant"
+                                <?= ($rank === 'Chief Master Sergeant') ? 'selected' : ''; ?>
+                            >
+                                Chief Master Sergeant
+                            </option>
+
+                            <option
+                                value="Lieutenant"
+                                <?= ($rank === 'Lieutenant') ? 'selected' : ''; ?>
+                            >
+                                Lieutenant
+                            </option>
+
+                            <option
+                                value="Captain"
+                                <?= ($rank === 'Captain') ? 'selected' : ''; ?>
+                            >
+                                Captain
+                            </option>
+
+                            <option
+                                value="Major"
+                                <?= ($rank === 'Major') ? 'selected' : ''; ?>
+                            >
+                                Major
+                            </option>
+
+                            <option
+                                value="Lieutenant Colonel"
+                                <?= ($rank === 'Lieutenant Colonel') ? 'selected' : ''; ?>
+                            >
+                                Lieutenant Colonel
+                            </option>
+
+                            <option
+                                value="Colonel"
+                                <?= ($rank === 'Colonel') ? 'selected' : ''; ?>
+                            >
+                                Colonel
+                            </option>
+
+                            <option
+                                value="AW1C"
+                                <?= ($rank === 'AW1C') ? 'selected' : ''; ?>
+                            >
+                                AW1C
+                            </option>
+
+                            <option
+                                value="A1C"
+                                <?= ($rank === 'A1C') ? 'selected' : ''; ?>
+                            >
+                                A1C
+                            </option>
+
+                            <option
+                                value="A2C"
+                                <?= ($rank === 'A2C') ? 'selected' : ''; ?>
+                            >
+                                A2C
+                            </option>
+
+                            <option
+                                value="Staff Sargent"
+                                <?= ($rank === 'Staff Sargent') ? 'selected' : ''; ?>
+                            >
+                                Staff Sargent
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =================================================
+                     NAME
+                ================================================== -->
+
+                <div class="form-field">
+
+                    <label for="name">
+
+                        Name
+
+                        <span>*</span>
+
+                    </label>
+
+
+                    <div class="input-wrapper">
+
+                        <i class="bi bi-person-fill"></i>
+
+                        <input
+                            type="text"
+                            id="name"
+                            class="form-control"
+                            name="name"
+                            value="<?= htmlspecialchars($name); ?>"
+                            placeholder="Enter full name"
+                            required
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- =================================================
+                     SERIAL NUMBER
+                ================================================== -->
+
+                <div class="form-field">
+
+                    <label for="serial_number">
+
+                        Serial Number
+
+                        <span>*</span>
+
+                    </label>
+
+
+                    <div class="input-wrapper">
+
+                        <i class="bi bi-upc-scan"></i>
+
+                        <input
+                            type="text"
+                            id="serial_number"
+                            class="form-control"
+                            name="serial_number"
+                            value="<?= htmlspecialchars($serial_number); ?>"
+                            placeholder="Enter serial number"
+                            required
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- =================================================
+                     BRANCH
+                ================================================== -->
+
+                <div class="form-field">
+
+                    <label for="branch_of_service">
+
+                        Branch of Service
+
+                        <span>*</span>
+
+                    </label>
+
+
+                    <div class="input-wrapper">
+
+                        <i class="bi bi-diagram-3-fill"></i>
+
+                        <select
+                            id="branch_of_service"
+                            class="form-control"
+                            name="branch_of_service"
+                            required
+                        >
+
+                            <option value="">
+                                -- Select Branch --
+                            </option>
+
+                            <option
+                                value="Philippine Air Force"
+                                <?= ($branch_of_service === 'Philippine Air Force') ? 'selected' : ''; ?>
+                            >
+                                Philippine Air Force
+                            </option>
+
+                            <option
+                                value="Philippine Army"
+                                <?= ($branch_of_service === 'Philippine Army') ? 'selected' : ''; ?>
+                            >
+                                Philippine Army
+                            </option>
+
+                            <option
+                                value="Philippine Navy"
+                                <?= ($branch_of_service === 'Philippine Navy') ? 'selected' : ''; ?>
+                            >
+                                Philippine Navy
+                            </option>
+
+                            <option
+                                value="Reserved Force"
+                                <?= ($branch_of_service === 'Reserved Force') ? 'selected' : ''; ?>
+                            >
+                                Reserved Force
+                            </option>
+
+                            <option
+                                value="Others"
+                                <?= ($branch_of_service === 'Others') ? 'selected' : ''; ?>
+                            >
+                                Others
+                            </option>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =================================================
+                     COURSE
+                ================================================== -->
+
+                <div class="form-field">
+
+                    <label for="courses">
+
+                        Course/s
+
+                        <span>*</span>
+
+                    </label>
+
+
+                    <div class="input-wrapper">
+
+                        <i class="bi bi-mortarboard-fill"></i>
+
+                        <input
+                            type="text"
+                            id="courses"
+                            class="form-control"
+                            name="courses"
+                            value="<?= htmlspecialchars($courses); ?>"
+                            placeholder="Enter course or courses"
+                            required
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- =================================================
+                     YEAR
+                ================================================== -->
+
+                <div class="form-field">
+
+                    <label for="year_graduated">
+
+                        Year Graduated
+
+                        <span>*</span>
+
+                    </label>
+
+
+                    <div class="input-wrapper">
+
+                        <i class="bi bi-calendar-event-fill"></i>
+
+                        <select
+                            id="year_graduated"
+                            class="form-control"
+                            name="year_graduated"
+                            required
+                        >
+
+                            <option value="">
+                                -- Select Year --
+                            </option>
+
+                            <?php
+
+                            $currentYear = (int) date('Y');
+
+                            for (
+                                $y = $currentYear;
+                                $y >= 1960;
+                                $y--
+                            ):
+
+                            ?>
+
+                                <option
+                                    value="<?= $y; ?>"
+                                    <?= ((string) $year_graduated === (string) $y) ? 'selected' : ''; ?>
+                                >
+                                    <?= $y; ?>
+                                </option>
+
+                            <?php endfor; ?>
+
+                        </select>
+
+                    </div>
+
+                </div>
+
+
+                <!-- =================================================
+                     STANDING
+                ================================================== -->
+
+                <div class="form-field">
+
+                    <label for="standing">
+
+                        Standing
+
+                        <span>*</span>
+
+                    </label>
+
+
+                    <div class="input-wrapper">
+
+                        <i class="bi bi-trophy-fill"></i>
+
+                        <input
+                            type="text"
+                            id="standing"
+                            class="form-control"
+                            name="standing"
+                            value="<?= htmlspecialchars($standing); ?>"
+                            placeholder="Enter standing"
+                            required
+                        >
+
+                    </div>
+
+                </div>
+
+
+                <!-- =================================================
+                     FORM ACTIONS
+                ================================================== -->
+
+                <div class="form-actions">
+
+
+                    <a
+                        href="index.php"
+                        class="form-cancel-button"
+                    >
+
+                        <i class="bi bi-x-lg"></i>
+
+                        Cancel
+
+                    </a>
+
+
+                    <button
+                        type="submit"
+                        class="form-submit-button"
+                    >
+
+                        <i class="bi bi-check-lg"></i>
+
+                        Save Personnel
+
+                    </button>
+
+                </div>
+
+
+            </form>
+
+        </section>
+
+    </main>
+
+</div>
+
+
+<!-- =========================================================
+     JAVASCRIPT
+========================================================= -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+
+
+<!-- =========================================================
+     SHARED DASHBOARD JAVASCRIPT
+========================================================= -->
+
+<script src="js/dashboard.js"></script>
 
 
 </body>
