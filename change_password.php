@@ -22,6 +22,43 @@ if (
 
 /*
  * ==========================================================
+ * GET CURRENT USER
+ * ==========================================================
+ */
+
+$username =
+    $_SESSION['username'] ?? '';
+
+
+if (empty($username)) {
+
+    session_destroy();
+
+    header("Location: login.php");
+
+    exit;
+
+}
+
+
+/*
+ * ==========================================================
+ * CSRF TOKEN
+ * ==========================================================
+ */
+
+if (
+    empty($_SESSION['csrf_token'])
+) {
+
+    $_SESSION['csrf_token'] =
+        bin2hex(random_bytes(32));
+
+}
+
+
+/*
+ * ==========================================================
  * POSTGRESQL DATABASE CONNECTION
  * ==========================================================
  */
@@ -61,13 +98,17 @@ try {
     $conn = new PDO(
         "pgsql:host={$host};port={$port};dbname={$database}",
         $dbUsername,
-        $dbPassword
-    );
+        $dbPassword,
+        [
+            PDO::ATTR_ERRMODE =>
+                PDO::ERRMODE_EXCEPTION,
 
+            PDO::ATTR_DEFAULT_FETCH_MODE =>
+                PDO::FETCH_ASSOC,
 
-    $conn->setAttribute(
-        PDO::ATTR_ERRMODE,
-        PDO::ERRMODE_EXCEPTION
+            PDO::ATTR_EMULATE_PREPARES =>
+                false
+        ]
     );
 
 
@@ -80,27 +121,6 @@ try {
     die(
         "Unable to connect to the database."
     );
-
-}
-
-
-/*
- * ==========================================================
- * GET CURRENT USER
- * ==========================================================
- */
-
-$username =
-    $_SESSION['username'] ?? '';
-
-
-if (empty($username)) {
-
-    session_destroy();
-
-    header("Location: login.php");
-
-    exit;
 
 }
 
@@ -132,192 +152,295 @@ if (
     $_SERVER['REQUEST_METHOD'] === 'POST'
 ) {
 
-    $currentPassword =
-        $_POST['current_password'] ?? '';
+    /*
+     * ======================================================
+     * GET CSRF TOKEN
+     * ======================================================
+     */
 
-    $newPassword =
-        $_POST['new_password'] ?? '';
-
-    $confirmPassword =
-        $_POST['confirm_password'] ?? '';
+    $submittedToken =
+        $_POST['csrf_token'] ?? '';
 
 
     /*
      * ======================================================
-     * VALIDATION
+     * VERIFY CSRF TOKEN
      * ======================================================
      */
 
     if (
-        empty($currentPassword) ||
-        empty($newPassword) ||
-        empty($confirmPassword)
+        empty($submittedToken) ||
+        empty($_SESSION['csrf_token']) ||
+        !hash_equals(
+            $_SESSION['csrf_token'],
+            $submittedToken
+        )
     ) {
 
         $errorMessage =
-            "All fields are required.";
-
-    }
-
-    elseif (
-        $newPassword !== $confirmPassword
-    ) {
-
-        $errorMessage =
-            "New password and confirmation do not match.";
-
-    }
-
-    elseif (
-        strlen($newPassword) < 6
-    ) {
-
-        $errorMessage =
-            "New password must be at least 6 characters.";
-
-    }
-
-    elseif (
-        $currentPassword === $newPassword
-    ) {
-
-        $errorMessage =
-            "New password must be different from your current password.";
+            "Invalid form request. Please refresh the page and try again.";
 
     }
 
     else {
 
-        try {
+        /*
+         * ==================================================
+         * GET FORM VALUES
+         * ==================================================
+         */
 
-            /*
-             * ==================================================
-             * GET CURRENT PASSWORD
-             * ==================================================
-             */
+        $currentPassword =
+            $_POST['current_password'] ?? '';
 
-            $stmt = $conn->prepare(
-                "
-                SELECT password
-                FROM users
-                WHERE username = :username
-                LIMIT 1
-                "
-            );
+        $newPassword =
+            $_POST['new_password'] ?? '';
+
+        $confirmPassword =
+            $_POST['confirm_password'] ?? '';
 
 
-            $stmt->execute([
-                ':username' => $username
-            ]);
+        /*
+         * ==================================================
+         * VALIDATION
+         * ==================================================
+         */
 
+        if (
+            empty($currentPassword) ||
+            empty($newPassword) ||
+            empty($confirmPassword)
+        ) {
 
-            $user =
-                $stmt->fetch(PDO::FETCH_ASSOC);
+            $errorMessage =
+                "All fields are required.";
 
+        }
 
-            /*
-             * ==================================================
-             * CHECK USER
-             * ==================================================
-             */
+        elseif (
+            strlen($newPassword) < 6
+        ) {
 
-            if (!$user) {
+            $errorMessage =
+                "New password must be at least 6 characters.";
 
-                $errorMessage =
-                    "User not found.";
+        }
 
-            }
+        elseif (
+            $newPassword !== $confirmPassword
+        ) {
 
-            else {
+            $errorMessage =
+                "New password and confirmation do not match.";
+
+        }
+
+        else {
+
+            try {
 
                 /*
-                 * ==================================================
-                 * VERIFY CURRENT PASSWORD
-                 * ==================================================
+                 * ==========================================
+                 * GET CURRENT PASSWORD
+                 * ==========================================
                  */
 
-                if (
-                    !password_verify(
-                        $currentPassword,
-                        $user['password']
-                    )
-                ) {
+                $stmt =
+                    $conn->prepare(
+                        "
+                        SELECT password
+                        FROM users
+                        WHERE username = :username
+                        LIMIT 1
+                        "
+                    );
+
+
+                $stmt->execute([
+                    ':username' => $username
+                ]);
+
+
+                $user =
+                    $stmt->fetch();
+
+
+                /*
+                 * ==========================================
+                 * CHECK USER
+                 * ==========================================
+                 */
+
+                if (!$user) {
 
                     $errorMessage =
-                        "Current password is incorrect.";
+                        "User not found.";
 
                 }
 
                 else {
 
                     /*
-                     * ==================================================
-                     * HASH NEW PASSWORD
-                     * ==================================================
+                     * ======================================
+                     * VERIFY CURRENT PASSWORD
+                     * ======================================
                      */
 
-                    $hashedPassword =
-                        password_hash(
+                    if (
+                        !password_verify(
+                            $currentPassword,
+                            $user['password']
+                        )
+                    ) {
+
+                        $errorMessage =
+                            "Current password is incorrect.";
+
+                    }
+
+                    /*
+                     * ======================================
+                     * CHECK SAME PASSWORD
+                     * ======================================
+                     */
+
+                    elseif (
+                        password_verify(
                             $newPassword,
-                            PASSWORD_DEFAULT
-                        );
+                            $user['password']
+                        )
+                    ) {
+
+                        $errorMessage =
+                            "New password must be different from your current password.";
+
+                    }
+
+                    else {
+
+                        /*
+                         * ==================================
+                         * HASH NEW PASSWORD
+                         * ==================================
+                         */
+
+                        $hashedPassword =
+                            password_hash(
+                                $newPassword,
+                                PASSWORD_DEFAULT
+                            );
 
 
-                    /*
-                     * ==================================================
-                     * UPDATE PASSWORD
-                     * ==================================================
-                     */
+                        if (
+                            $hashedPassword === false
+                        ) {
 
-                    $update =
-                        $conn->prepare(
-                            "
-                            UPDATE users
-                            SET password = :password
-                            WHERE username = :username
-                            "
-                        );
+                            throw new Exception(
+                                "Unable to hash password."
+                            );
+
+                        }
 
 
-                    $update->execute([
-                        ':password' => $hashedPassword,
-                        ':username' => $username
-                    ]);
+                        /*
+                         * ==================================
+                         * UPDATE PASSWORD
+                         * ==================================
+                         */
+
+                        $update =
+                            $conn->prepare(
+                                "
+                                UPDATE users
+                                SET password = :password
+                                WHERE username = :username
+                                "
+                            );
 
 
-                    /*
-                     * ==================================================
-                     * SUCCESS
-                     * ==================================================
-                     */
+                        $update->execute([
+                            ':password' =>
+                                $hashedPassword,
 
-                    $successMessage =
-                        "Password updated successfully.";
+                            ':username' =>
+                                $username
+                        ]);
 
 
-                    /*
-                     * Clear password fields.
-                     */
+                        /*
+                         * ==================================
+                         * CHECK UPDATE
+                         * ==================================
+                         */
 
-                    $currentPassword = "";
+                        if (
+                            $update->rowCount() < 1
+                        ) {
 
-                    $newPassword = "";
+                            $errorMessage =
+                                "Unable to update the password.";
 
-                    $confirmPassword = "";
+                        }
+
+                        else {
+
+                            /*
+                             * ==============================
+                             * SUCCESS
+                             * ==============================
+                             */
+
+                            $successMessage =
+                                "Password updated successfully.";
+
+
+                            /*
+                             * Clear password fields.
+                             */
+
+                            $currentPassword = "";
+
+                            $newPassword = "";
+
+                            $confirmPassword = "";
+
+
+                            /*
+                             * Generate a new CSRF token
+                             * after successful submission.
+                             */
+
+                            $_SESSION['csrf_token'] =
+                                bin2hex(
+                                    random_bytes(32)
+                                );
+
+                        }
+
+                    }
 
                 }
 
+
+            } catch (PDOException $e) {
+
+                /*
+                 * Do not expose database error details.
+                 */
+
+                $errorMessage =
+                    "Unable to update the password.";
+
+            } catch (Exception $e) {
+
+                /*
+                 * Do not expose internal error details.
+                 */
+
+                $errorMessage =
+                    "Unable to update the password.";
+
             }
-
-
-        } catch (PDOException $e) {
-
-            /*
-             * Do not expose database error details.
-             */
-
-            $errorMessage =
-                "Unable to update the password.";
 
         }
 
@@ -551,7 +674,7 @@ if (
                                 change-password-alert
                                 change-password-alert-success
                             "
-                            role="alert"
+                            role="status"
                         >
 
                             <i
@@ -581,7 +704,23 @@ if (
                         method="post"
                         action=""
                         autocomplete="off"
+                        id="changePasswordForm"
                     >
+
+
+                        <!-- =================================
+                             CSRF TOKEN
+                             ================================= -->
+
+                        <input
+                            type="hidden"
+                            name="csrf_token"
+                            value="<?= htmlspecialchars(
+                                $_SESSION['csrf_token'],
+                                ENT_QUOTES,
+                                'UTF-8'
+                            ); ?>"
+                        >
 
 
                         <!-- =================================
@@ -808,6 +947,7 @@ if (
                                     change-password-btn
                                     change-password-btn-primary
                                 "
+                                id="updatePasswordButton"
                             >
 
                                 <i
@@ -856,6 +996,12 @@ if (
             "DOMContentLoaded",
             function () {
 
+                /*
+                 * ==========================================
+                 * PASSWORD VISIBILITY
+                 * ==========================================
+                 */
+
                 const toggleButtons =
                     document.querySelectorAll(
                         ".password-toggle"
@@ -888,7 +1034,9 @@ if (
 
 
                                 if (!input) {
+
                                     return;
+
                                 }
 
 
@@ -952,6 +1100,154 @@ if (
 
                     }
                 );
+
+
+                /*
+                 * ==========================================
+                 * CLIENT-SIDE PASSWORD MATCH VALIDATION
+                 * ==========================================
+                 */
+
+                const form =
+                    document.getElementById(
+                        "changePasswordForm"
+                    );
+
+
+                const newPassword =
+                    document.getElementById(
+                        "new_password"
+                    );
+
+
+                const confirmPassword =
+                    document.getElementById(
+                        "confirm_password"
+                    );
+
+
+                if (
+                    form &&
+                    newPassword &&
+                    confirmPassword
+                ) {
+
+                    function checkPasswordMatch() {
+
+                        if (
+                            confirmPassword.value === ""
+                        ) {
+
+                            confirmPassword.classList.remove(
+                                "is-valid"
+                            );
+
+                            confirmPassword.classList.remove(
+                                "is-invalid"
+                            );
+
+                            return;
+
+                        }
+
+
+                        if (
+                            newPassword.value ===
+                            confirmPassword.value
+                        ) {
+
+                            confirmPassword.classList.remove(
+                                "is-invalid"
+                            );
+
+                            confirmPassword.classList.add(
+                                "is-valid"
+                            );
+
+                        }
+
+                        else {
+
+                            confirmPassword.classList.remove(
+                                "is-valid"
+                            );
+
+                            confirmPassword.classList.add(
+                                "is-invalid"
+                            );
+
+                        }
+
+                    }
+
+
+                    newPassword.addEventListener(
+                        "input",
+                        checkPasswordMatch
+                    );
+
+
+                    confirmPassword.addEventListener(
+                        "input",
+                        checkPasswordMatch
+                    );
+
+
+                    /*
+                     * Prevent submission if passwords
+                     * do not match.
+                     */
+
+                    form.addEventListener(
+                        "submit",
+                        function (event) {
+
+                            if (
+                                newPassword.value !==
+                                confirmPassword.value
+                            ) {
+
+                                event.preventDefault();
+
+                                confirmPassword.focus();
+
+                                confirmPassword.classList.remove(
+                                    "is-valid"
+                                );
+
+                                confirmPassword.classList.add(
+                                    "is-invalid"
+                                );
+
+                                return;
+
+                            }
+
+
+                            if (
+                                newPassword.value.length < 6
+                            ) {
+
+                                event.preventDefault();
+
+                                newPassword.focus();
+
+                                newPassword.classList.remove(
+                                    "is-valid"
+                                );
+
+                                newPassword.classList.add(
+                                    "is-invalid"
+                                );
+
+                                return;
+
+                            }
+
+                        }
+                    );
+
+                }
 
             }
         );
