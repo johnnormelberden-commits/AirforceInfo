@@ -10,13 +10,15 @@
    - Active navigation item
    - Responsive sidebar behavior
    - Same-page hash navigation
+   - DataTables on Dashboard
+   - Export Excel
+   - Export PDF
+   - Print Table
+   - Delete confirmation modal
 
-   DOES NOT CONTROL:
-   - Chart.js
-   - DataTables
-   - Page-specific forms
-   - Page-specific modals
-   - Database operations
+   IMPORTANT:
+   - DataTables is only initialized when #personnelTable exists.
+   - Statistics page will not be affected.
    ========================================================= */
 
 
@@ -53,10 +55,7 @@
 
 
         /*
-         * Select normal sidebar navigation links.
-         *
-         * We intentionally do NOT include submenu links
-         * in this selector.
+         * Normal sidebar navigation links.
          */
 
         const sidebarLinks =
@@ -69,23 +68,19 @@
            SIDEBAR FUNCTIONS
         ================================================= */
 
-
         function openSidebar() {
 
             if (!sidebar) {
                 return;
             }
 
-
             sidebar.classList.add("show");
-
 
             if (sidebarOverlay) {
 
                 sidebarOverlay.classList.add("show");
 
             }
-
 
             document.body.classList.add(
                 "sidebar-open"
@@ -100,16 +95,13 @@
                 return;
             }
 
-
             sidebar.classList.remove("show");
-
 
             if (sidebarOverlay) {
 
                 sidebarOverlay.classList.remove("show");
 
             }
-
 
             document.body.classList.remove(
                 "sidebar-open"
@@ -123,7 +115,6 @@
             if (!sidebar) {
                 return;
             }
-
 
             if (
                 sidebar.classList.contains("show")
@@ -223,7 +214,7 @@
 
 
                     /*
-                     * Close dropdown first.
+                     * Close first.
                      */
 
                     copyFileMenu.classList.remove(
@@ -236,7 +227,7 @@
 
 
                     /*
-                     * Open only if it was previously closed.
+                     * Open only when it was closed.
                      */
 
                     if (!isOpen) {
@@ -299,6 +290,502 @@
 
 
         /* =================================================
+           DATATABLES
+           
+           IMPORTANT:
+           Only initialize this on pages that have
+           #personnelTable.
+        ================================================= */
+
+        let personnelTable = null;
+
+
+        if (
+            document.getElementById(
+                "personnelTable"
+            )
+        ) {
+
+            /*
+             * Make sure jQuery exists.
+             */
+
+            if (
+                typeof window.jQuery !== "undefined"
+            ) {
+
+                const $ =
+                    window.jQuery;
+
+
+                /*
+                 * Make sure DataTables exists.
+                 */
+
+                if (
+                    $.fn.DataTable
+                ) {
+
+
+                    /* =====================================
+                       INITIALIZE PERSONNEL TABLE
+                    ===================================== */
+
+                    personnelTable =
+                        $("#personnelTable").DataTable({
+
+                            /*
+                             * Hide the DataTables Buttons.
+                             *
+                             * We use the custom
+                             * "Copy File" sidebar instead.
+                             */
+
+                            dom:
+                                '<"datatable-top"lf>' +
+                                'rt' +
+                                '<"datatable-bottom"ip>',
+
+
+                            pageLength: 10,
+
+
+                            lengthMenu: [
+                                [10, 25, 50, 100, -1],
+                                [
+                                    10,
+                                    25,
+                                    50,
+                                    100,
+                                    "All"
+                                ]
+                            ],
+
+
+                            ordering: true,
+
+
+                            searching: true,
+
+
+                            responsive: false,
+
+
+                            autoWidth: false,
+
+
+                            language: {
+
+                                search: "",
+
+                                searchPlaceholder:
+                                    "Search personnel...",
+
+                                lengthMenu:
+                                    "Show _MENU_ entries",
+
+                                info:
+                                    "Showing _START_ to _END_ of _TOTAL_ personnel",
+
+                                infoEmpty:
+                                    "Showing 0 to 0 of 0 personnel",
+
+                                zeroRecords:
+                                    "No matching personnel found",
+
+                                emptyTable:
+                                    "No personnel records available",
+
+                                paginate: {
+
+                                    first: "First",
+
+                                    last: "Last",
+
+                                    next: "Next",
+
+                                    previous: "Previous"
+
+                                }
+
+                            },
+
+
+                            /* =================================
+                               DATATABLE BUTTONS
+                            ================================= */
+
+                            buttons: [
+
+                                /*
+                                 * EXCEL
+                                 */
+
+                                {
+                                    extend:
+                                        "excelHtml5",
+
+                                    title:
+                                        "CMO Training Squadron - Military Personnel",
+
+                                    filename:
+                                        "CMO_Training_Squadron_Personnel",
+
+                                    exportOptions: {
+
+                                        /*
+                                         * Exclude Action column.
+                                         *
+                                         * The Action column is
+                                         * the last column.
+                                         */
+
+                                        columns:
+                                            ":not(:last-child)"
+
+                                    }
+
+                                },
+
+
+                                /*
+                                 * PDF
+                                 */
+
+                                {
+                                    extend:
+                                        "pdfHtml5",
+
+                                    title:
+                                        "CMO Training Squadron - Military Personnel",
+
+                                    filename:
+                                        "CMO_Training_Squadron_Personnel",
+
+                                    orientation:
+                                        "landscape",
+
+                                    pageSize:
+                                        "A4",
+
+                                    exportOptions: {
+
+                                        columns:
+                                            ":not(:last-child)"
+
+                                    },
+
+
+                                    customize:
+                                        function (doc) {
+
+                                            doc.defaultStyle.fontSize =
+                                                7;
+
+                                            doc.styles.tableHeader.fontSize =
+                                                7;
+
+                                            doc.styles.tableHeader.bold =
+                                                true;
+
+
+                                            doc.styles.title = {
+
+                                                fontSize:
+                                                    14,
+
+                                                bold:
+                                                    true,
+
+                                                color:
+                                                    "#1e3a5f",
+
+                                                alignment:
+                                                    "center",
+
+                                                margin:
+                                                    [
+                                                        0,
+                                                        0,
+                                                        0,
+                                                        10
+                                                    ]
+
+                                            };
+
+                                        }
+
+                                },
+
+
+                                /*
+                                 * PRINT
+                                 */
+
+                                {
+                                    extend:
+                                        "print",
+
+                                    title:
+                                        "CMO Training Squadron - Military Personnel",
+
+                                    exportOptions: {
+
+                                        columns:
+                                            ":not(:last-child)"
+
+                                    },
+
+
+                                    customize:
+                                        function (win) {
+
+                                            $(win.document.body)
+                                                .css(
+                                                    "font-size",
+                                                    "10pt"
+                                                );
+
+
+                                            $(win.document.body)
+                                                .find("h1")
+                                                .css({
+
+                                                    "text-align":
+                                                        "center",
+
+                                                    "font-size":
+                                                        "18pt",
+
+                                                    "margin-bottom":
+                                                        "20px",
+
+                                                    "color":
+                                                        "#1e3a5f"
+
+                                                });
+
+
+                                            $(win.document.body)
+                                                .find("table")
+                                                .css({
+
+                                                    "width":
+                                                        "100%",
+
+                                                    "border-collapse":
+                                                        "collapse"
+
+                                                });
+
+
+                                            $(win.document.body)
+                                                .find(
+                                                    "th, td"
+                                                )
+                                                .css({
+
+                                                    "border":
+                                                        "1px solid #ccc",
+
+                                                    "padding":
+                                                        "6px",
+
+                                                    "font-size":
+                                                        "9pt"
+
+                                                });
+
+                                        }
+
+                                }
+
+                            ]
+
+                        });
+
+
+                    /* =====================================
+                       EXPORT TO EXCEL
+                    ===================================== */
+
+                    const exportExcel =
+                        document.getElementById(
+                            "exportExcel"
+                        );
+
+
+                    if (exportExcel) {
+
+                        exportExcel.addEventListener(
+                            "click",
+                            function (event) {
+
+                                event.preventDefault();
+
+                                event.stopPropagation();
+
+
+                                /*
+                                 * Close Copy File menu.
+                                 */
+
+                                if (copyFileMenu) {
+
+                                    copyFileMenu.classList.remove(
+                                        "show"
+                                    );
+
+                                }
+
+                                if (copyFileToggle) {
+
+                                    copyFileToggle.classList.remove(
+                                        "open"
+                                    );
+
+                                }
+
+
+                                /*
+                                 * Trigger DataTables Excel.
+                                 */
+
+                                personnelTable
+                                    .button(
+                                        ".buttons-excel"
+                                    )
+                                    .trigger();
+
+                            }
+                        );
+
+                    }
+
+
+                    /* =====================================
+                       EXPORT TO PDF
+                    ===================================== */
+
+                    const exportPDF =
+                        document.getElementById(
+                            "exportPDF"
+                        );
+
+
+                    if (exportPDF) {
+
+                        exportPDF.addEventListener(
+                            "click",
+                            function (event) {
+
+                                event.preventDefault();
+
+                                event.stopPropagation();
+
+
+                                /*
+                                 * Close Copy File menu.
+                                 */
+
+                                if (copyFileMenu) {
+
+                                    copyFileMenu.classList.remove(
+                                        "show"
+                                    );
+
+                                }
+
+                                if (copyFileToggle) {
+
+                                    copyFileToggle.classList.remove(
+                                        "open"
+                                    );
+
+                                }
+
+
+                                /*
+                                 * Trigger DataTables PDF.
+                                 */
+
+                                personnelTable
+                                    .button(
+                                        ".buttons-pdf"
+                                    )
+                                    .trigger();
+
+                            }
+                        );
+
+                    }
+
+
+                    /* =====================================
+                       PRINT TABLE
+                    ===================================== */
+
+                    const exportPrint =
+                        document.getElementById(
+                            "exportPrint"
+                        );
+
+
+                    if (exportPrint) {
+
+                        exportPrint.addEventListener(
+                            "click",
+                            function (event) {
+
+                                event.preventDefault();
+
+                                event.stopPropagation();
+
+
+                                /*
+                                 * Close Copy File menu.
+                                 */
+
+                                if (copyFileMenu) {
+
+                                    copyFileMenu.classList.remove(
+                                        "show"
+                                    );
+
+                                }
+
+                                if (copyFileToggle) {
+
+                                    copyFileToggle.classList.remove(
+                                        "open"
+                                    );
+
+                                }
+
+
+                                /*
+                                 * Trigger DataTables Print.
+                                 */
+
+                                personnelTable
+                                    .button(
+                                        ".buttons-print"
+                                    )
+                                    .trigger();
+
+                            }
+                        );
+
+                    }
+
+                }
+
+            }
+
+        }
+
+
+        /* =================================================
            ACTIVE SIDEBAR LINK
         ================================================= */
 
@@ -308,10 +795,6 @@
                 window.location.pathname;
 
 
-            /*
-             * Remove trailing slash.
-             */
-
             pathname =
                 pathname.replace(
                     /\/+$/,
@@ -319,21 +802,12 @@
                 );
 
 
-            /*
-             * Get filename.
-             */
-
             let page =
                 pathname
                     .split("/")
                     .pop()
                     .toLowerCase();
 
-
-            /*
-             * If there is no filename,
-             * assume index.php.
-             */
 
             if (
                 !page ||
@@ -353,7 +827,9 @@
         function cleanPageName(href) {
 
             if (!href) {
+
                 return "";
+
             }
 
 
@@ -421,12 +897,14 @@
 
 
                     if (!href) {
+
                         return;
+
                     }
 
 
                     /*
-                     * Ignore pure anchor links.
+                     * Ignore pure hash links.
                      */
 
                     if (
@@ -443,10 +921,6 @@
                             href
                         );
 
-
-                    /*
-                     * Compare actual PHP page.
-                     */
 
                     if (
                         linkPage &&
@@ -471,11 +945,6 @@
         }
 
 
-        /*
-         * Set active navigation item
-         * immediately when the page loads.
-         */
-
         setActiveSidebarLink();
 
 
@@ -489,13 +958,6 @@
                 link.addEventListener(
                     "click",
                     function () {
-
-                        /*
-                         * Set active state immediately.
-                         *
-                         * The browser will still perform
-                         * normal navigation.
-                         */
 
                         sidebarLinks.forEach(
                             function (item) {
@@ -514,8 +976,7 @@
 
 
                         /*
-                         * On mobile, close the sidebar
-                         * before navigating.
+                         * Close sidebar on mobile.
                          */
 
                         if (
@@ -552,10 +1013,6 @@
                         "click",
                         function () {
 
-                            /*
-                             * Close mobile sidebar.
-                             */
-
                             if (
                                 window.innerWidth <= 992
                             ) {
@@ -578,13 +1035,6 @@
         ================================================= */
 
         function handleResize() {
-
-            /*
-             * Desktop:
-             *
-             * Sidebar is fixed by CSS.
-             * Remove temporary mobile state.
-             */
 
             if (
                 window.innerWidth > 992
@@ -623,10 +1073,6 @@
         );
 
 
-        /*
-         * Run once when page loads.
-         */
-
         handleResize();
 
 
@@ -658,10 +1104,6 @@
 
         }
 
-
-        /*
-         * Watch sidebar class changes.
-         */
 
         if (sidebar) {
 
@@ -707,17 +1149,15 @@
 
 
             if (!href) {
+
                 return;
+
             }
 
 
             const hashIndex =
                 href.indexOf("#");
 
-
-            /*
-             * No hash.
-             */
 
             if (
                 hashIndex === -1
@@ -733,10 +1173,6 @@
                     hashIndex
                 );
 
-
-            /*
-             * Ignore empty hash.
-             */
 
             if (
                 hash === "#" ||
@@ -774,8 +1210,7 @@
 
 
             /*
-             * Only handle hashes belonging
-             * to the current PHP page.
+             * Only handle same-page hashes.
              */
 
             if (
@@ -789,6 +1224,7 @@
 
 
             let target;
+
 
             try {
 
@@ -811,16 +1247,8 @@
             }
 
 
-            /*
-             * Prevent normal jump.
-             */
-
             event.preventDefault();
 
-
-            /*
-             * Calculate topbar offset.
-             */
 
             const topbar =
                 document.querySelector(
@@ -834,32 +1262,22 @@
                     : 20;
 
 
-            /*
-             * Calculate target position.
-             */
-
             const targetPosition =
                 target.getBoundingClientRect().top +
                 window.scrollY -
                 offset;
 
 
-            /*
-             * Smooth scroll.
-             */
-
             window.scrollTo({
 
-                top: targetPosition,
+                top:
+                    targetPosition,
 
-                behavior: "smooth"
+                behavior:
+                    "smooth"
 
             });
 
-
-            /*
-             * Update browser URL.
-             */
 
             if (
                 window.history &&
@@ -875,10 +1293,6 @@
             }
 
 
-            /*
-             * Close mobile sidebar.
-             */
-
             if (
                 window.innerWidth <= 992
             ) {
@@ -889,11 +1303,6 @@
 
         }
 
-
-        /*
-         * Attach hash navigation only to
-         * same-page links.
-         */
 
         const hashLinks =
             document.querySelectorAll(
@@ -961,11 +1370,6 @@
             }
 
 
-            /*
-             * Small delay so the page layout
-             * is fully rendered.
-             */
-
             setTimeout(
                 function () {
 
@@ -989,9 +1393,11 @@
 
                     window.scrollTo({
 
-                        top: position,
+                        top:
+                            position,
 
-                        behavior: "smooth"
+                        behavior:
+                            "smooth"
 
                     });
 
@@ -1031,10 +1437,7 @@
             function () {
 
                 /*
-                 * Nothing to reset.
-                 *
-                 * Navigation state is reconstructed
-                 * automatically when the page loads.
+                 * Nothing required here.
                  */
 
             }
