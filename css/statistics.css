@@ -2,21 +2,20 @@
    CMO TRAINING SQUADRON
    STATISTICS PAGE CSS
    ---------------------------------------------------------
-   Statistics content only.
+   SHARED:
+   - Sidebar      -> dashboard.css
+   - Topbar       -> dashboard.css
+   - Mobile menu  -> dashboard.css
+   - Main wrapper -> dashboard.css
+   - Page content -> dashboard.css
 
-   SHARED UI:
-   - Sidebar       -> css/dashboard.css
-   - Topbar        -> css/dashboard.css
-   - Mobile menu   -> css/dashboard.css
-   - Global theme  -> css/dashboard.css
-
-   This file controls ONLY:
+   THIS FILE:
    - Statistics heading
-   - Database status
+   - Database badge
+   - Error message
    - Summary cards
-   - Charts
    - Chart panels
-   - Statistics responsive content
+   - Charts
    ========================================================= */
 
 
@@ -30,8 +29,7 @@
 
     min-width: 0;
 
-    background:
-        transparent !important;
+    background: transparent !important;
 
 }
 
@@ -66,46 +64,36 @@
 
 .statistics-heading h1 {
 
-    margin:
-        6px 0 8px;
+    margin: 6px 0 8px;
 
-    color:
-        #f8fafc;
+    color: #f8fafc;
 
-    font-size:
-        34px;
+    font-size: 34px;
 
-    font-weight:
-        800;
+    font-weight: 800;
 
-    line-height:
-        1.2;
+    line-height: 1.2;
 
-    letter-spacing:
-        -0.5px;
+    letter-spacing: -0.5px;
 
 }
 
 
 .statistics-heading p {
 
-    margin:
-        0;
+    margin: 0;
 
-    color:
-        #8fa3bd;
+    color: #8fa3bd;
 
-    font-size:
-        15px;
+    font-size: 15px;
 
-    line-height:
-        1.6;
+    line-height: 1.6;
 
 }
 
 
 /* =========================================================
-   DATABASE OVERVIEW BADGE
+   DATABASE OVERVIEW
    ========================================================= */
 
 .statistics-date {
@@ -120,42 +108,30 @@
 
     flex-shrink: 0;
 
-    min-height: 43px;
+    padding: 12px 17px;
 
-    padding:
-        12px 17px;
+    border: 1px solid #263b55;
 
-    border:
-        1px solid #263b55;
+    border-radius: 9px;
 
-    border-radius:
-        9px;
+    background: #111d2d;
 
-    background:
-        #111d2d;
+    color: #60a5fa;
 
-    color:
-        #60a5fa;
+    font-size: 13px;
 
-    font-size:
-        13px;
+    font-weight: 600;
 
-    font-weight:
-        600;
-
-    white-space:
-        nowrap;
+    white-space: nowrap;
 
 }
 
 
 .statistics-date i {
 
-    color:
-        #3b9cff;
+    color: #3b9cff;
 
-    font-size:
-        16px;
+    font-size: 16px;
 
 }
 
@@ -174,30 +150,23 @@
 
     width: 100%;
 
-    margin-bottom:
-        24px;
+    margin-bottom: 24px;
 
-    padding:
-        14px 18px;
+    padding: 14px 18px;
 
-    border:
-        1px solid
+    border: 1px solid
         rgba(239, 68, 68, 0.35);
 
-    border-radius:
-        10px;
+    border-radius: 10px;
 
     background:
         rgba(127, 29, 29, 0.18);
 
-    color:
-        #fca5a5;
+    color: #fca5a5;
 
-    font-size:
-        14px;
+    font-size: 14px;
 
-    font-weight:
-        600;
+    font-weight: 600;
 
 }
 
@@ -206,11 +175,9 @@
 
     flex-shrink: 0;
 
-    color:
-        #ef4444;
+    color: #ef4444;
 
-    font-size:
-        18px;
+    font-size: 18px;
 
 }
 
@@ -226,14 +193,11 @@
     grid-template-columns:
         repeat(4, minmax(0, 1fr));
 
-    gap:
-        20px;
+    gap: 20px;
 
-    width:
-        100%;
+    width: 100%;
 
-    margin-bottom:
-        25px;
+    margin-bottom: 25px;
 
 }
 
@@ -244,32 +208,23 @@
 
 .statistics-card {
 
-    position:
-        relative;
+    position: relative;
 
-    display:
-        flex;
+    display: flex;
 
-    align-items:
-        center;
+    align-items: center;
 
-    min-width:
-        0;
+    min-width: 0;
 
-    min-height:
-        145px;
+    min-height: 145px;
 
-    padding:
-        25px;
+    padding: 25px;
 
-    border:
-        1px solid #263b55;
+    border: 1px solid #263b55;
 
-    border-radius:
-        14px;
+    border-radius: 14px;
 
-    background:
-        #111d2d;
+    background: #111d2d;
 
     box-shadow:
         0 8px 25px
@@ -298,43 +253,34 @@
 
 
 /* =========================================================
-   STATISTICS CARD ICON
+   CARD ICON
    ========================================================= */
 
 .statistics-card-icon {
 
-    display:
-        flex;
+    display: flex;
 
-    align-items:
-        center;
+    align-items: center;
 
-    justify-content:
-        center;
+    justify-content: center;
 
-    width:
-        58px;
+    width: 58px;
 
-    height:
-        58px;
+    height: 58px;
 
-    flex-shrink:
-        0;
+    flex-shrink: 0;
 
-    margin-right:
-        18px;
+    margin-right: 18px;
 
-    border-radius:
-        12px;
+    border-radius: 12px;
 
-    font-size:
-        23px;
+    font-size: 23px;
 
 }
 
 
 /* =========================================================
-   BLUE CARD
+   BLUE
    ========================================================= */
 
 .blue-card .statistics-card-icon {
@@ -349,7 +295,7 @@
 
 
 /* =========================================================
-   CYAN CARD
+   CYAN
    ========================================================= */
 
 .cyan-card .statistics-card-icon {
@@ -364,7 +310,7 @@
 
 
 /* =========================================================
-   PURPLE CARD
+   PURPLE
    ========================================================= */
 
 .purple-card .statistics-card-icon {
@@ -379,7 +325,7 @@
 
 
 /* =========================================================
-   GREEN CARD
+   GREEN
    ========================================================= */
 
 .green-card .statistics-card-icon {
@@ -399,89 +345,66 @@
 
 .statistics-card-content {
 
-    min-width:
-        0;
+    min-width: 0;
 
-    overflow:
-        hidden;
+    overflow: hidden;
 
 }
 
 
 .statistics-card-content span {
 
-    display:
-        block;
+    display: block;
 
-    margin-bottom:
-        4px;
+    margin-bottom: 4px;
 
-    overflow:
-        hidden;
+    overflow: hidden;
 
-    color:
-        #7f95b0;
+    color: #7f95b0;
 
-    font-size:
-        11px;
+    font-size: 11px;
 
-    font-weight:
-        700;
+    font-weight: 700;
 
-    letter-spacing:
-        0.08em;
+    letter-spacing: 0.08em;
 
-    text-overflow:
-        ellipsis;
+    text-overflow: ellipsis;
 
-    white-space:
-        nowrap;
+    white-space: nowrap;
 
 }
 
 
 .statistics-card-content strong {
 
-    display:
-        block;
+    display: block;
 
-    margin-bottom:
-        3px;
+    margin-bottom: 3px;
 
-    color:
-        #f8fafc;
+    color: #f8fafc;
 
-    font-size:
-        30px;
+    font-size: 30px;
 
-    font-weight:
-        800;
+    font-weight: 800;
 
-    line-height:
-        1.1;
+    line-height: 1.1;
 
 }
 
 
 .statistics-card-content small {
 
-    display:
-        block;
+    display: block;
 
-    overflow:
-        hidden;
+    overflow: hidden;
 
-    color:
-        #7f95b0;
+    color: #7f95b0;
 
-    font-size:
-        12px;
+    font-size: 12px;
 
-    text-overflow:
-        ellipsis;
+    text-overflow: ellipsis;
 
-    white-space:
-        nowrap;
+    white-space: nowrap;
 
 }
 
@@ -492,20 +415,16 @@
 
 .statistics-grid {
 
-    display:
-        grid;
+    display: grid;
 
     grid-template-columns:
         repeat(2, minmax(0, 1fr));
 
-    gap:
-        22px;
+    gap: 22px;
 
-    width:
-        100%;
+    width: 100%;
 
-    min-width:
-        0;
+    min-width: 0;
 
 }
 
@@ -516,49 +435,24 @@
 
 .chart-panel {
 
-    min-width:
-        0;
+    min-width: 0;
 
-    padding:
-        24px;
+    padding: 24px;
 
-    border:
-        1px solid #263b55;
+    border: 1px solid #263b55;
 
-    border-radius:
-        14px;
+    border-radius: 14px;
 
-    background:
-        #111d2d;
+    background: #111d2d;
 
     box-shadow:
         0 8px 25px
         rgba(0, 0, 0, 0.18);
 
-    overflow:
-        hidden;
-
-    transition:
-        border-color 0.2s ease,
-        background 0.2s ease;
+    overflow: hidden;
 
 }
 
-
-.chart-panel:hover {
-
-    border-color:
-        #315172;
-
-    background:
-        #142238;
-
-}
-
-
-/* =========================================================
-   WIDE CHART PANEL
-   ========================================================= */
 
 .chart-panel-wide {
 
@@ -574,74 +468,56 @@
 
 .chart-panel-header {
 
-    display:
-        flex;
+    display: flex;
 
-    align-items:
-        center;
+    align-items: center;
 
-    justify-content:
-        space-between;
+    justify-content: space-between;
 
-    gap:
-        15px;
+    gap: 15px;
 
-    margin-bottom:
-        20px;
+    margin-bottom: 20px;
 
-    min-width:
-        0;
+    min-width: 0;
 
 }
 
 
 .chart-panel-header > div:first-child {
 
-    min-width:
-        0;
+    min-width: 0;
 
 }
 
 
 .chart-panel-header h2 {
 
-    margin:
-        5px 0 0;
+    margin: 5px 0 0;
 
-    color:
-        #f1f5f9;
+    color: #f1f5f9;
 
-    font-size:
-        20px;
+    font-size: 20px;
 
-    font-weight:
-        700;
+    font-weight: 700;
 
-    line-height:
-        1.3;
+    line-height: 1.3;
 
 }
 
 
 .chart-label {
 
-    display:
-        block;
+    display: block;
 
-    color:
-        #3b9cff;
+    color: #3b9cff;
 
-    font-size:
-        10px;
+    font-size: 10px;
 
-    font-weight:
-        700;
+    font-weight: 700;
 
-    letter-spacing:
-        0.09em;
+    letter-spacing: 0.09em;
 
-    line-height:
-        1.4;
+    line-height: 1.4;
 
 }
 
@@ -652,38 +528,27 @@
 
 .chart-icon {
 
-    display:
-        flex;
+    display: flex;
 
-    align-items:
-        center;
+    align-items: center;
 
-    justify-content:
-        center;
+    justify-content: center;
 
-    width:
-        40px;
+    width: 40px;
 
-    height:
-        40px;
+    height: 40px;
 
-    flex-shrink:
-        0;
+    flex-shrink: 0;
 
-    border:
-        1px solid #29445f;
+    border: 1px solid #29445f;
 
-    border-radius:
-        9px;
+    border-radius: 9px;
 
-    background:
-        #16253a;
+    background: #16253a;
 
-    color:
-        #3b9cff;
+    color: #3b9cff;
 
-    font-size:
-        17px;
+    font-size: 17px;
 
 }
 
@@ -694,33 +559,27 @@
 
 .chart-wrapper {
 
-    position:
-        relative;
+    position: relative;
 
-    width:
-        100%;
+    width: 100%;
 
-    height:
-        300px;
+    height: 300px;
 
-    min-width:
-        0;
+    min-width: 0;
 
 }
 
 
 .doughnut-wrapper {
 
-    height:
-        320px;
+    height: 320px;
 
 }
 
 
 .course-chart-wrapper {
 
-    height:
-        350px;
+    height: 350px;
 
 }
 
@@ -731,17 +590,13 @@
 
 .chart-wrapper canvas {
 
-    display:
-        block;
+    display: block;
 
-    width:
-        100% !important;
+    width: 100% !important;
 
-    max-width:
-        100%;
+    max-width: 100%;
 
-    max-height:
-        100%;
+    max-height: 100%;
 
 }
 
@@ -757,25 +612,6 @@
         grid-template-columns:
             repeat(2, minmax(0, 1fr));
 
-        gap:
-            17px;
-
-    }
-
-
-    .statistics-card {
-
-        padding:
-            21px;
-
-    }
-
-
-    .chart-panel {
-
-        padding:
-            21px;
-
     }
 
 }
@@ -789,22 +625,18 @@
 
     .statistics-heading {
 
-        align-items:
-            flex-start;
+        align-items: flex-start;
 
-        flex-direction:
-            column;
+        flex-direction: column;
 
-        gap:
-            18px;
+        gap: 18px;
 
     }
 
 
     .statistics-date {
 
-        align-self:
-            flex-start;
+        align-self: flex-start;
 
     }
 
@@ -819,16 +651,14 @@
 
     .statistics-grid {
 
-        grid-template-columns:
-            1fr;
+        grid-template-columns: 1fr;
 
     }
 
 
     .chart-panel-wide {
 
-        grid-column:
-            auto;
+        grid-column: auto;
 
     }
 
@@ -843,48 +673,35 @@
 
     .statistics-heading h1 {
 
-        font-size:
-            30px;
+        font-size: 30px;
 
     }
 
 
     .statistics-heading p {
 
-        font-size:
-            14px;
+        font-size: 14px;
 
     }
 
 
     .statistics-summary {
 
-        gap:
-            16px;
+        gap: 16px;
 
     }
 
 
     .statistics-card {
 
-        padding:
-            21px;
+        padding: 21px;
 
     }
 
 
     .chart-panel {
 
-        padding:
-            20px;
-
-    }
-
-
-    .chart-panel-header h2 {
-
-        font-size:
-            18px;
+        padding: 20px;
 
     }
 
@@ -899,107 +716,93 @@
 
     .statistics-heading {
 
-        margin-bottom:
-            24px;
+        margin-bottom: 24px;
 
     }
 
 
     .statistics-heading h1 {
 
-        font-size:
-            28px;
+        font-size: 28px;
 
     }
 
 
     .statistics-heading p {
 
-        font-size:
-            13px;
+        font-size: 13px;
 
     }
 
 
     .statistics-date {
 
-        width:
-            100%;
+        width: 100%;
 
     }
 
 
     .statistics-summary {
 
-        grid-template-columns:
-            1fr;
+        grid-template-columns: 1fr;
 
     }
 
 
     .statistics-card {
 
-        min-height:
-            125px;
+        min-height: 125px;
 
-        padding:
-            20px;
+        padding: 20px;
 
     }
 
 
     .statistics-card-content strong {
 
-        font-size:
-            26px;
+        font-size: 26px;
 
     }
 
 
     .chart-panel {
 
-        padding:
-            18px;
+        padding: 18px;
 
     }
 
 
     .chart-panel-header {
 
-        margin-bottom:
-            15px;
+        margin-bottom: 15px;
 
     }
 
 
     .chart-panel-header h2 {
 
-        font-size:
-            17px;
+        font-size: 17px;
 
     }
 
 
     .chart-wrapper {
 
-        height:
-            260px;
+        height: 260px;
 
     }
 
 
     .doughnut-wrapper {
 
-        height:
-            280px;
+        height: 280px;
 
     }
 
 
     .course-chart-wrapper {
 
-        height:
-            300px;
+        height: 300px;
 
     }
 
@@ -1014,209 +817,87 @@
 
     .statistics-heading h1 {
 
-        font-size:
-            25px;
+        font-size: 25px;
 
     }
 
 
     .statistics-card {
 
-        padding:
-            17px;
+        padding: 17px;
 
     }
 
 
     .statistics-card-icon {
 
-        width:
-            50px;
+        width: 50px;
 
-        height:
-            50px;
+        height: 50px;
 
-        margin-right:
-            14px;
+        margin-right: 14px;
 
-        font-size:
-            20px;
+        font-size: 20px;
 
     }
 
 
     .statistics-card-content span {
 
-        font-size:
-            10px;
+        font-size: 10px;
 
     }
 
 
     .statistics-card-content strong {
 
-        font-size:
-            24px;
+        font-size: 24px;
 
     }
 
 
     .statistics-card-content small {
 
-        font-size:
-            11px;
+        font-size: 11px;
 
     }
 
 
     .chart-panel {
 
-        padding:
-            15px;
+        padding: 15px;
 
     }
 
 
     .chart-icon {
 
-        width:
-            36px;
+        width: 36px;
 
-        height:
-            36px;
+        height: 36px;
 
-        font-size:
-            15px;
+        font-size: 15px;
 
     }
 
 
     .chart-wrapper {
 
-        height:
-            240px;
+        height: 240px;
 
     }
 
 
     .doughnut-wrapper {
 
-        height:
-            260px;
+        height: 260px;
 
     }
 
 
     .course-chart-wrapper {
 
-        height:
-            280px;
-
-    }
-
-}
-
-
-/* =========================================================
-   RESPONSIVE - 360px
-   ========================================================= */
-
-@media (max-width: 360px) {
-
-    .statistics-heading h1 {
-
-        font-size:
-            25px;
-
-    }
-
-
-    .statistics-card {
-
-        padding:
-            16px;
-
-    }
-
-
-    .statistics-card-icon {
-
-        width:
-            48px;
-
-        height:
-            48px;
-
-        margin-right:
-            12px;
-
-        font-size:
-            20px;
-
-    }
-
-
-    .statistics-card-content strong {
-
-        font-size:
-            23px;
-
-    }
-
-
-    .chart-panel {
-
-        padding:
-            14px;
-
-    }
-
-
-    .chart-panel-header h2 {
-
-        font-size:
-            16px;
-
-    }
-
-
-    .chart-wrapper {
-
-        height:
-            230px;
-
-    }
-
-
-    .doughnut-wrapper {
-
-        height:
-            250px;
-
-    }
-
-
-    .course-chart-wrapper {
-
-        height:
-            270px;
-
-    }
-
-}
-
-
-/* =========================================================
-   ACCESSIBILITY
-   ========================================================= */
-
-@media (prefers-reduced-motion: reduce) {
-
-    .statistics-card,
-    .chart-panel {
-
-        transition:
-            none !important;
+        height: 280px;
 
     }
 
