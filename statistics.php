@@ -20,6 +20,9 @@ if (!isset($_SESSION['username'])) {
 |--------------------------------------------------------------------------
 | DATABASE CONNECTION
 |--------------------------------------------------------------------------
+|
+| db.php handles the TiDB/MySQL PDO connection.
+|
 */
 
 require_once 'db.php';
@@ -145,7 +148,14 @@ try {
 
         FROM military_personnel
 
-        GROUP BY label
+        GROUP BY
+            COALESCE(
+                NULLIF(
+                    TRIM(rank),
+                    ''
+                ),
+                'Not Specified'
+            )
 
         ORDER BY total DESC
     ");
@@ -175,7 +185,14 @@ try {
 
         FROM military_personnel
 
-        GROUP BY label
+        GROUP BY
+            COALESCE(
+                NULLIF(
+                    TRIM(branch_of_service),
+                    ''
+                ),
+                'Not Specified'
+            )
 
         ORDER BY total DESC
     ");
@@ -205,7 +222,14 @@ try {
 
         FROM military_personnel
 
-        GROUP BY label
+        GROUP BY
+            COALESCE(
+                NULLIF(
+                    TRIM(standing),
+                    ''
+                ),
+                'Not Specified'
+            )
 
         ORDER BY total DESC
     ");
@@ -235,7 +259,14 @@ try {
 
         FROM military_personnel
 
-        GROUP BY label
+        GROUP BY
+            COALESCE(
+                NULLIF(
+                    TRIM(courses),
+                    ''
+                ),
+                'Not Specified'
+            )
 
         ORDER BY total DESC
     ");
@@ -248,6 +279,9 @@ try {
     |--------------------------------------------------------------------------
     | PERSONNEL BY YEAR
     |--------------------------------------------------------------------------
+    |
+    | TiDB/MySQL uses CHAR instead of PostgreSQL TEXT.
+    |
     */
 
     $stmt = $connection->query("
@@ -256,7 +290,7 @@ try {
             COALESCE(
                 NULLIF(
                     TRIM(
-                        CAST(year_graduated AS TEXT)
+                        CAST(year_graduated AS CHAR)
                     ),
                     ''
                 ),
@@ -267,12 +301,30 @@ try {
 
         FROM military_personnel
 
-        GROUP BY label
+        GROUP BY
+            COALESCE(
+                NULLIF(
+                    TRIM(
+                        CAST(year_graduated AS CHAR)
+                    ),
+                    ''
+                ),
+                'Not Specified'
+            )
 
         ORDER BY
 
             CASE
-                WHEN label = 'Not Specified'
+                WHEN
+                    COALESCE(
+                        NULLIF(
+                            TRIM(
+                                CAST(year_graduated AS CHAR)
+                            ),
+                            ''
+                        ),
+                        'Not Specified'
+                    ) = 'Not Specified'
                 THEN 1
                 ELSE 0
             END,
@@ -285,6 +337,10 @@ try {
 
 
 } catch (PDOException $e) {
+
+    /*
+     * Do not expose database error details.
+     */
 
     $databaseError = true;
 
@@ -410,10 +466,15 @@ foreach ($yearStatistics as $row) {
          SHARED DASHBOARD CSS
     ====================================================== -->
 
-   <link rel="stylesheet" href="css/dashboard.css?v=2">
-    <link rel="stylesheet" href="css/statistics.css?v=2">
+    <link
+        rel="stylesheet"
+        href="css/dashboard.css?v=2"
+    >
 
-
+    <link
+        rel="stylesheet"
+        href="css/statistics.css?v=2"
+    >
 
 
     <!-- =====================================================

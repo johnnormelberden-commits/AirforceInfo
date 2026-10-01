@@ -2,20 +2,28 @@
 
 /*
  * ==========================================================
- * POSTGRESQL DATABASE CONNECTION
- * ==========================================================
- *
- * These values come from your Render Environment Variables:
- *
- * DB_HOST
- * DB_PORT
- * DB_NAME
- * DB_USER
- * DB_PASSWORD
- *
- * Do NOT put your database password directly in this file.
+ * DATABASE CONNECTION
  * ==========================================================
  */
+
+require_once 'db.php';
+
+
+/*
+ * ==========================================================
+ * CHECK ID
+ * ==========================================================
+ */
+
+if (!isset($_GET['id']) || !is_numeric($_GET['id'])) {
+
+    header("Location: index.php");
+    exit;
+
+}
+
+$id = (int) $_GET['id'];
+
 
 try {
 

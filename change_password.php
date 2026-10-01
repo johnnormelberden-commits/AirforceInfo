@@ -1,112 +1,86 @@
 <?php
 
+/*
+|--------------------------------------------------------------------------
+| SESSION / LOGIN SECURITY
+|--------------------------------------------------------------------------
+*/
+
 session_start();
 
-/*
- * ==========================================================
- * CHECK LOGIN
- * ==========================================================
- */
+if (!isset($_SESSION['username']) || empty($_SESSION['username'])) {
 
-if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     header("Location: login.php");
     exit;
-}
-
-
-/*
- * ==========================================================
- * POSTGRESQL DATABASE CONNECTION
- * ==========================================================
- *
- * Render provides these through Environment Variables:
- *
- * DB_HOST
- * DB_PORT
- * DB_NAME
- * DB_USER
- * DB_PASSWORD
- *
- * Do NOT put the actual database password in this file.
- * ==========================================================
- */
-
-try {
-
-    $host = getenv('DB_HOST');
-    $port = getenv('DB_PORT') ?: '5432';
-    $database = getenv('DB_NAME');
-    $dbUsername = getenv('DB_USER');
-    $dbPassword = getenv('DB_PASSWORD');
-
-    if (
-        !$host ||
-        !$database ||
-        !$dbUsername ||
-        !$dbPassword
-    ) {
-        throw new Exception("Database configuration is missing.");
-    }
-
-    $conn = new PDO(
-        "pgsql:host={$host};port={$port};dbname={$database}",
-        $dbUsername,
-        $dbPassword
-    );
-
-    $conn->setAttribute(
-        PDO::ATTR_ERRMODE,
-        PDO::ERRMODE_EXCEPTION
-    );
-
-} catch (Exception $e) {
-
-    /*
-     * Do not expose database credentials or
-     * connection details to users.
-     */
-
-    die("Unable to connect to the database.");
 
 }
 
 
 /*
- * ==========================================================
- * GET CURRENT USER
- * ==========================================================
- */
+|--------------------------------------------------------------------------
+| DATABASE CONNECTION
+|--------------------------------------------------------------------------
+|
+| TiDB / MySQL
+|
+| These values come from your Render Environment Variables:
+|
+| DB_HOST
+| DB_PORT
+| DB_NAME
+| DB_USER
+| DB_PASSWORD
+|
+|--------------------------------------------------------------------------
+*/
 
-$username = $_SESSION['username'] ?? '';
+require_once __DIR__ . '/db.php';
+
+
+/*
+|--------------------------------------------------------------------------
+| GET CURRENT USER
+|--------------------------------------------------------------------------
+*/
+
+$username = $_SESSION['username'];
 
 if (empty($username)) {
+
+    session_unset();
     session_destroy();
+
     header("Location: login.php");
     exit;
+
 }
 
 
 /*
- * ==========================================================
- * FORM VARIABLES
- * ==========================================================
- */
+|--------------------------------------------------------------------------
+| FORM VARIABLES
+|--------------------------------------------------------------------------
+*/
 
 $currentPassword = "";
-$newPassword = "";
+$newPassword     = "";
 $confirmPassword = "";
 
-$errorMessage = "";
+$errorMessage   = "";
 $successMessage = "";
 
 
 /*
- * ==========================================================
- * HANDLE FORM SUBMISSION
- * ==========================================================
- */
+|--------------------------------------------------------------------------
+| HANDLE FORM SUBMISSION
+|--------------------------------------------------------------------------
+*/
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    /*
+     * Get submitted passwords.
+     */
 
     $currentPassword = $_POST['current_password'] ?? '';
     $newPassword     = $_POST['new_password'] ?? '';
@@ -114,42 +88,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
     /*
-     * ======================================================
-     * VALIDATION
-     * ======================================================
+     |--------------------------------------------------------------------------
+     | VALIDATION
+     |--------------------------------------------------------------------------
      */
 
     if (
-        empty($currentPassword) ||
-        empty($newPassword) ||
-        empty($confirmPassword)
+        $currentPassword === '' ||
+        $newPassword === '' ||
+        $confirmPassword === ''
     ) {
 
         $errorMessage = "All fields are required.";
 
     } elseif ($newPassword !== $confirmPassword) {
 
-        $errorMessage = "New password and confirmation do not match.";
+        $errorMessage =
+            "New password and confirmation do not match.";
 
     } elseif (strlen($newPassword) < 6) {
 
-        $errorMessage = "New password must be at least 6 characters.";
+        $errorMessage =
+            "New password must be at least 6 characters.";
 
     } elseif ($currentPassword === $newPassword) {
 
-        $errorMessage = "New password must be different from your current password.";
+        $errorMessage =
+            "New password must be different from your current password.";
 
     } else {
 
         try {
 
             /*
-             * ==================================================
-             * GET CURRENT PASSWORD HASH
-             * ==================================================
+             |--------------------------------------------------------------------------
+             | GET CURRENT PASSWORD HASH
+             |--------------------------------------------------------------------------
              */
 
-            $stmt = $conn->prepare(
+            $stmt = $connection->prepare(
                 "SELECT password
                  FROM users
                  WHERE username = :username
@@ -164,9 +141,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
             /*
-             * ==================================================
-             * CHECK USER
-             * ==================================================
+             |--------------------------------------------------------------------------
+             | CHECK USER
+             |--------------------------------------------------------------------------
              */
 
             if (!$user) {
@@ -176,9 +153,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             } else {
 
                 /*
-                 * ==================================================
-                 * VERIFY CURRENT PASSWORD
-                 * ==================================================
+                 |--------------------------------------------------------------------------
+                 | VERIFY CURRENT PASSWORD
+                 |--------------------------------------------------------------------------
                  */
 
                 if (!password_verify(
@@ -186,14 +163,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $user['password']
                 )) {
 
-                    $errorMessage = "Current password is incorrect.";
+                    $errorMessage =
+                        "Current password is incorrect.";
 
                 } else {
 
                     /*
-                     * ==================================================
-                     * HASH NEW PASSWORD
-                     * ==================================================
+                     |--------------------------------------------------------------------------
+                     | CREATE NEW PASSWORD HASH
+                     |--------------------------------------------------------------------------
                      */
 
                     $hashedPassword = password_hash(
@@ -203,12 +181,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
                     /*
-                     * ==================================================
-                     * UPDATE PASSWORD
-                     * ==================================================
+                     |--------------------------------------------------------------------------
+                     | UPDATE PASSWORD
+                     |--------------------------------------------------------------------------
                      */
 
-                    $update = $conn->prepare(
+                    $update = $connection->prepare(
                         "UPDATE users
                          SET password = :password
                          WHERE username = :username"
@@ -221,192 +199,203 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
                     /*
-                     * ==================================================
-                     * SUCCESS
-                     * ==================================================
+                     |--------------------------------------------------------------------------
+                     | SUCCESS
+                     |--------------------------------------------------------------------------
                      */
 
                     $successMessage =
                         "Password updated successfully.";
 
+
                     /*
-                     * Clear form fields
+                     * Clear password fields after success.
                      */
 
                     $currentPassword = "";
-                    $newPassword = "";
+                    $newPassword     = "";
                     $confirmPassword = "";
+
                 }
+
             }
 
         } catch (PDOException $e) {
 
             /*
-             * Do not expose database error details.
+             * Do not expose database details.
              */
 
             $errorMessage =
                 "Unable to update the password.";
+
         }
+
     }
+
 }
 
 ?>
 
 <!DOCTYPE html>
+
 <html lang="en">
 
 <head>
 
-  <meta charset="UTF-8">
+    <meta charset="UTF-8">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-  <title>Change Password</title>
+    <title>
+        Change Password
+    </title>
 
 
-  <!-- Bootstrap -->
+    <!-- =====================================================
+         BOOTSTRAP
+    ====================================================== -->
 
-  <link
-    rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
-  >
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+    >
 
 
-  <style>
+    <style>
 
-    body {
+        body {
 
-      background:
-        radial-gradient(
-          circle at top left,
-          #021631,
-          #05254d
-        );
+            background:
+                radial-gradient(
+                    circle at top left,
+                    #021631,
+                    #05254d
+                );
 
-      color: #e6edf3;
+            color: #e6edf3;
 
-      font-family: "Poppins", sans-serif;
+            font-family: "Poppins", sans-serif;
 
-      min-height: 100vh;
+            min-height: 100vh;
 
-      margin: 0;
+            margin: 0;
 
-      display: flex;
+            display: flex;
 
-      align-items: center;
+            align-items: center;
 
-      justify-content: center;
+            justify-content: center;
 
-    }
+        }
 
 
-    .container-main {
+        .container-main {
 
-      width: 100%;
+            width: 100%;
 
-      max-width: 500px;
+            max-width: 500px;
 
-      background: rgba(0, 0, 0, 0.7);
+            background: rgba(0, 0, 0, 0.7);
 
-      border-radius: 15px;
+            border-radius: 15px;
 
-      padding: 30px;
+            padding: 30px;
 
-      box-shadow:
-        0 0 25px rgba(0, 0, 0, 0.7);
+            box-shadow:
+                0 0 25px rgba(0, 0, 0, 0.7);
 
-      border: 1px solid #1f3b63;
+            border: 1px solid #1f3b63;
 
-    }
+        }
 
 
-    h3 {
+        h3 {
 
-      color: #58a6ff;
+            color: #58a6ff;
 
-      font-weight: 600;
+            font-weight: 600;
 
-    }
+        }
 
 
-    .form-label {
+        .form-label {
 
-      color: #d0e2ff;
+            color: #d0e2ff;
 
-      font-weight: 500;
+            font-weight: 500;
 
-    }
+        }
 
 
-    .form-control {
+        .form-control {
 
-      background-color: #050b16 !important;
+            background-color: #050b16 !important;
 
-      border: 1px solid #264b7c;
+            border: 1px solid #264b7c;
 
-      color: #ffffff !important;
+            color: #ffffff !important;
 
-    }
+        }
 
 
-    .form-control:focus {
+        .form-control:focus {
 
-      background-color: #071021 !important;
+            background-color: #071021 !important;
 
-      border-color: #ffd700;
+            border-color: #ffd700;
 
-      box-shadow:
-        0 0 8px rgba(255, 215, 0, 0.7);
+            box-shadow:
+                0 0 8px rgba(255, 215, 0, 0.7);
 
-      color: #ffffff !important;
+            color: #ffffff !important;
 
-    }
+        }
 
 
-    .form-control::placeholder {
+        .form-control::placeholder {
 
-      color: rgba(255, 255, 255, 0.5);
+            color: rgba(255, 255, 255, 0.5);
 
-    }
+        }
 
 
-    .btn-primary {
+        .btn-primary {
 
-      background-color: #0057b7;
+            background-color: #0057b7;
 
-      border: none;
+            border: none;
 
-    }
+        }
 
 
-    .btn-primary:hover {
+        .btn-primary:hover {
 
-      background-color: #003b88;
+            background-color: #003b88;
 
-      box-shadow:
-        0 0 10px rgba(255, 215, 0, 0.8);
+            box-shadow:
+                0 0 10px rgba(255, 215, 0, 0.8);
 
-    }
+        }
 
 
-    .btn-secondary {
+        .btn-secondary {
 
-      border: none;
+            border: none;
 
-    }
+        }
 
 
-    .alert {
+        .alert {
 
-      border-radius: 10px;
+            border-radius: 10px;
 
-    }
+        }
 
-  </style>
+    </style>
 
 </head>
 
@@ -416,149 +405,198 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 <div class="container-main">
 
-  <h3 class="mb-4 text-center">
-    Change Password
-  </h3>
+
+    <!-- =====================================================
+         TITLE
+    ====================================================== -->
+
+    <h3 class="mb-4 text-center">
+
+        Change Password
+
+    </h3>
 
 
-  <!-- CURRENT USER -->
+    <!-- =====================================================
+         CURRENT USER
+    ====================================================== -->
 
-  <div class="text-center mb-4">
+    <div class="text-center mb-4">
 
-    <span class="text-light">
-      Logged in as:
-    </span>
+        <span class="text-light">
 
-    <strong style="color:#ffd700;">
-      <?= htmlspecialchars($username); ?>
-    </strong>
+            Logged in as:
 
-  </div>
+        </span>
+
+        <strong style="color:#ffd700;">
+
+            <?= htmlspecialchars($username); ?>
+
+        </strong>
+
+    </div>
 
 
-  <!-- ERROR MESSAGE -->
+    <!-- =====================================================
+         ERROR MESSAGE
+    ====================================================== -->
 
-  <?php if (!empty($errorMessage)): ?>
+    <?php if (!empty($errorMessage)): ?>
 
-    <div
-      class="alert alert-danger"
-      role="alert"
+        <div
+            class="alert alert-danger"
+            role="alert"
+        >
+
+            <?= htmlspecialchars($errorMessage); ?>
+
+        </div>
+
+    <?php endif; ?>
+
+
+    <!-- =====================================================
+         SUCCESS MESSAGE
+    ====================================================== -->
+
+    <?php if (!empty($successMessage)): ?>
+
+        <div
+            class="alert alert-success"
+            role="alert"
+        >
+
+            <?= htmlspecialchars($successMessage); ?>
+
+        </div>
+
+    <?php endif; ?>
+
+
+    <!-- =====================================================
+         CHANGE PASSWORD FORM
+    ====================================================== -->
+
+    <form
+        method="post"
+        autocomplete="off"
     >
 
-      <?= htmlspecialchars($errorMessage); ?>
 
-    </div>
+        <!-- CURRENT PASSWORD -->
 
-  <?php endif; ?>
+        <div class="mb-3">
 
+            <label
+                for="current_password"
+                class="form-label"
+            >
 
-  <!-- SUCCESS MESSAGE -->
+                Current Password
 
-  <?php if (!empty($successMessage)): ?>
+            </label>
 
-    <div
-      class="alert alert-success"
-      role="alert"
-    >
+            <input
+                type="password"
+                id="current_password"
+                class="form-control"
+                name="current_password"
+                autocomplete="current-password"
+                required
+            >
 
-      <?= htmlspecialchars($successMessage); ?>
-
-    </div>
-
-  <?php endif; ?>
-
-
-  <!-- CHANGE PASSWORD FORM -->
-
-  <form method="post">
+        </div>
 
 
-    <!-- CURRENT PASSWORD -->
+        <!-- NEW PASSWORD -->
 
-    <div class="mb-3">
+        <div class="mb-3">
 
-      <label class="form-label">
-        Current Password
-      </label>
+            <label
+                for="new_password"
+                class="form-label"
+            >
 
-      <input
-        type="password"
-        class="form-control"
-        name="current_password"
-        autocomplete="current-password"
-        required
-      >
+                New Password
 
-    </div>
+            </label>
 
+            <input
+                type="password"
+                id="new_password"
+                class="form-control"
+                name="new_password"
+                minlength="6"
+                autocomplete="new-password"
+                required
+            >
 
-    <!-- NEW PASSWORD -->
+            <div class="form-text text-secondary">
 
-    <div class="mb-3">
+                Minimum 6 characters.
 
-      <label class="form-label">
-        New Password
-      </label>
+            </div>
 
-      <input
-        type="password"
-        class="form-control"
-        name="new_password"
-        minlength="6"
-        autocomplete="new-password"
-        required
-      >
-
-      <div class="form-text text-secondary">
-        Minimum 6 characters.
-      </div>
-
-    </div>
+        </div>
 
 
-    <!-- CONFIRM PASSWORD -->
+        <!-- CONFIRM PASSWORD -->
 
-    <div class="mb-4">
+        <div class="mb-4">
 
-      <label class="form-label">
-        Confirm New Password
-      </label>
+            <label
+                for="confirm_password"
+                class="form-label"
+            >
 
-      <input
-        type="password"
-        class="form-control"
-        name="confirm_password"
-        minlength="6"
-        autocomplete="new-password"
-        required
-      >
+                Confirm New Password
 
-    </div>
+            </label>
 
+            <input
+                type="password"
+                id="confirm_password"
+                class="form-control"
+                name="confirm_password"
+                minlength="6"
+                autocomplete="new-password"
+                required
+            >
 
-    <!-- BUTTONS -->
-
-    <div class="d-flex justify-content-between">
-
-      <a
-        href="index.php"
-        class="btn btn-secondary"
-      >
-        Back
-      </a>
+        </div>
 
 
-      <button
-        type="submit"
-        class="btn btn-primary"
-      >
-        Update Password
-      </button>
+        <!-- =====================================================
+             BUTTONS
+        ====================================================== -->
 
-    </div>
+        <div class="d-flex justify-content-between">
+
+            <a
+                href="index.php"
+                class="btn btn-secondary"
+            >
+
+                Back
+
+            </a>
 
 
-  </form>
+            <button
+                type="submit"
+                class="btn btn-primary"
+            >
+
+                Update Password
+
+            </button>
+
+        </div>
+
+
+    </form>
+
 
 </div>
 
