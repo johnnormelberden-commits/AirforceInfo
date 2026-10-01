@@ -9,8 +9,10 @@
 session_start();
 
 if (!isset($_SESSION['username'])) {
+
     header("Location: login.php");
     exit;
+
 }
 
 
@@ -18,6 +20,9 @@ if (!isset($_SESSION['username'])) {
 |--------------------------------------------------------------------------
 | DATABASE CONNECTION
 |--------------------------------------------------------------------------
+|
+| db.php handles the TiDB / MySQL PDO connection.
+|
 */
 
 require_once 'db.php';
@@ -25,19 +30,34 @@ require_once 'db.php';
 
 /*
 |--------------------------------------------------------------------------
-| DASHBOARD STATISTICS
+| DEFAULT VALUES
 |--------------------------------------------------------------------------
 */
 
 $totalPersonnel = 0;
-$totalCourses = 0;
-$totalBranches = 0;
+$totalCourses   = 0;
+$totalBranches  = 0;
+
+$personnel = [];
+
+$databaseError = false;
+$databaseErrorMessage = "";
+
+
+/*
+|--------------------------------------------------------------------------
+| LOAD DASHBOARD DATA
+|--------------------------------------------------------------------------
+*/
 
 try {
 
     /*
-     * Total military personnel
-     */
+    |--------------------------------------------------------------------------
+    | TOTAL PERSONNEL
+    |--------------------------------------------------------------------------
+    */
+
     $stmt = $connection->query("
         SELECT COUNT(*)
         FROM military_personnel
@@ -47,45 +67,94 @@ try {
 
 
     /*
-     * Total courses
-     */
+    |--------------------------------------------------------------------------
+    | TOTAL COURSES
+    |--------------------------------------------------------------------------
+    */
+
     $stmt = $connection->query("
         SELECT COUNT(DISTINCT courses)
         FROM military_personnel
         WHERE courses IS NOT NULL
-        AND courses <> ''
+        AND TRIM(courses) <> ''
     ");
 
     $totalCourses = (int) $stmt->fetchColumn();
 
 
     /*
-     * Total branches of service
-     */
+    |--------------------------------------------------------------------------
+    | TOTAL BRANCHES
+    |--------------------------------------------------------------------------
+    */
+
     $stmt = $connection->query("
         SELECT COUNT(DISTINCT branch_of_service)
         FROM military_personnel
         WHERE branch_of_service IS NOT NULL
-        AND branch_of_service <> ''
+        AND TRIM(branch_of_service) <> ''
     ");
 
     $totalBranches = (int) $stmt->fetchColumn();
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | GET PERSONNEL RECORDS
+    |--------------------------------------------------------------------------
+    |
+    | IMPORTANT:
+    | `rank` is enclosed in backticks because this is TiDB/MySQL syntax.
+    |
+    */
+
+    $stmt = $connection->query("
+        SELECT
+            id,
+            `rank`,
+            name,
+            serial_number,
+            branch_of_service,
+            courses,
+            year_graduated,
+            standing,
+            created_at,
+            updated_at
+        FROM military_personnel
+        ORDER BY id ASC
+    ");
+
+    $personnel = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+
 } catch (PDOException $e) {
 
     /*
-     * Keep dashboard working even if
-     * statistics cannot be loaded.
-     */
+    |--------------------------------------------------------------------------
+    | DATABASE ERROR
+    |--------------------------------------------------------------------------
+    |
+    | Do not expose database credentials or SQL details.
+    |
+    */
+
+    $databaseError = true;
+
+    $databaseErrorMessage =
+        "Unable to load personnel records from the database.";
 
     $totalPersonnel = 0;
-    $totalCourses = 0;
-    $totalBranches = 0;
+    $totalCourses   = 0;
+    $totalBranches  = 0;
+
+    $personnel = [];
+
 }
 
 ?>
 
 <!DOCTYPE html>
+
 <html lang="en">
 
 <head>
@@ -97,7 +166,9 @@ try {
         content="width=device-width, initial-scale=1.0"
     >
 
-    <title>CMO Training Squadron - Dashboard</title>
+    <title>
+        CMO Training Squadron - Dashboard
+    </title>
 
 
     <!-- =====================================================
@@ -155,10 +226,9 @@ try {
     ====================================================== -->
 
     <link
-    rel="stylesheet"
-    href="css/dashboard.css?v=2"
->
-
+        rel="stylesheet"
+        href="css/dashboard.css?v=2"
+    >
 
 </head>
 
@@ -510,7 +580,11 @@ try {
                 <div class="user-info">
 
                     <strong>
-                        <?= htmlspecialchars($_SESSION['username']); ?>
+                        <?= htmlspecialchars(
+                            $_SESSION['username'],
+                            ENT_QUOTES,
+                            'UTF-8'
+                        ); ?>
                     </strong>
 
                     <span>
@@ -557,7 +631,11 @@ try {
                     Welcome back,
 
                     <strong>
-                        <?= htmlspecialchars($_SESSION['username']); ?>
+                        <?= htmlspecialchars(
+                            $_SESSION['username'],
+                            ENT_QUOTES,
+                            'UTF-8'
+                        ); ?>
                     </strong>.
 
                     Here's an overview of the personnel database.
@@ -582,7 +660,7 @@ try {
 
 
         <!-- =================================================
-             SUCCESS MESSAGE
+             SUCCESS MESSAGES
         ================================================== -->
 
         <?php if (isset($_GET['deleted'])): ?>
@@ -592,6 +670,56 @@ try {
                 <i class="bi bi-check-circle-fill"></i>
 
                 Record deleted successfully.
+
+            </div>
+
+        <?php endif; ?>
+
+
+        <?php if (isset($_GET['updated'])): ?>
+
+            <div class="success-message">
+
+                <i class="bi bi-check-circle-fill"></i>
+
+                Record updated successfully.
+
+            </div>
+
+        <?php endif; ?>
+
+
+        <?php if (isset($_GET['created'])): ?>
+
+            <div class="success-message">
+
+                <i class="bi bi-check-circle-fill"></i>
+
+                Personnel record added successfully.
+
+            </div>
+
+        <?php endif; ?>
+
+
+        <!-- =================================================
+             DATABASE ERROR
+        ================================================== -->
+
+        <?php if ($databaseError): ?>
+
+            <div
+                class="alert alert-danger"
+                role="alert"
+            >
+
+                <i class="bi bi-exclamation-triangle-fill"></i>
+
+                <?= htmlspecialchars(
+                    $databaseErrorMessage,
+                    ENT_QUOTES,
+                    'UTF-8'
+                ); ?>
 
             </div>
 
@@ -792,45 +920,8 @@ try {
 
                     <tbody>
 
-                    <?php
 
-                    /*
-                     * ==================================================
-                     * GET PERSONNEL RECORDS
-                     * ==================================================
-                     */
-
-                    try {
-
-                        $sql = "
-
-                            SELECT
-
-                                id,
-                                rank,
-                                name,
-                                serial_number,
-                                branch_of_service,
-                                courses,
-                                year_graduated,
-                                standing,
-                                created_at,
-                                updated_at
-
-                            FROM military_personnel
-
-                            ORDER BY id ASC
-
-                        ";
-
-                        $stmt = $connection->query($sql);
-
-
-                        while (
-                            $row = $stmt->fetch(PDO::FETCH_ASSOC)
-                        ):
-
-                    ?>
+                    <?php foreach ($personnel as $row): ?>
 
 
                         <tr>
@@ -843,7 +934,9 @@ try {
                                 <span class="id-badge">
 
                                     <?= htmlspecialchars(
-                                        $row['id']
+                                        (string) $row['id'],
+                                        ENT_QUOTES,
+                                        'UTF-8'
                                     ); ?>
 
                                 </span>
@@ -858,7 +951,9 @@ try {
                                 <span class="rank-text">
 
                                     <?= htmlspecialchars(
-                                        $row['rank'] ?? ''
+                                        $row['rank'] ?? '',
+                                        ENT_QUOTES,
+                                        'UTF-8'
                                     ); ?>
 
                                 </span>
@@ -871,18 +966,22 @@ try {
                             <td class="person-name">
 
                                 <?= htmlspecialchars(
-                                    $row['name'] ?? ''
+                                    $row['name'] ?? '',
+                                    ENT_QUOTES,
+                                    'UTF-8'
                                 ); ?>
 
                             </td>
 
 
-                            <!-- SERIAL -->
+                            <!-- SERIAL NUMBER -->
 
                             <td>
 
                                 <?= htmlspecialchars(
-                                    $row['serial_number'] ?? ''
+                                    $row['serial_number'] ?? '',
+                                    ENT_QUOTES,
+                                    'UTF-8'
                                 ); ?>
 
                             </td>
@@ -893,29 +992,35 @@ try {
                             <td>
 
                                 <?= htmlspecialchars(
-                                    $row['branch_of_service'] ?? ''
+                                    $row['branch_of_service'] ?? '',
+                                    ENT_QUOTES,
+                                    'UTF-8'
                                 ); ?>
 
                             </td>
 
 
-                            <!-- COURSE -->
+                            <!-- COURSES -->
 
                             <td>
 
                                 <?= htmlspecialchars(
-                                    $row['courses'] ?? ''
+                                    $row['courses'] ?? '',
+                                    ENT_QUOTES,
+                                    'UTF-8'
                                 ); ?>
 
                             </td>
 
 
-                            <!-- YEAR -->
+                            <!-- YEAR GRADUATED -->
 
                             <td>
 
                                 <?= htmlspecialchars(
-                                    $row['year_graduated'] ?? ''
+                                    $row['year_graduated'] ?? '',
+                                    ENT_QUOTES,
+                                    'UTF-8'
                                 ); ?>
 
                             </td>
@@ -927,25 +1032,35 @@ try {
 
                                 <?php
 
-                                $standing = trim(
-                                    $row['standing'] ?? ''
-                                );
+                                $standing =
+                                    trim(
+                                        $row['standing'] ?? ''
+                                    );
 
-                                ?>
-
-                                <span
-                                    class="standing-badge
-                                    <?= strtolower(
-                                        str_replace(
-                                            ' ',
+                                $standingClass =
+                                    strtolower(
+                                        preg_replace(
+                                            '/[^a-zA-Z0-9]+/',
                                             '-',
                                             $standing
                                         )
+                                    );
+
+                                ?>
+
+
+                                <span
+                                    class="standing-badge <?= htmlspecialchars(
+                                        $standingClass,
+                                        ENT_QUOTES,
+                                        'UTF-8'
                                     ); ?>"
                                 >
 
                                     <?= htmlspecialchars(
-                                        $standing
+                                        $standing,
+                                        ENT_QUOTES,
+                                        'UTF-8'
                                     ); ?>
 
                                 </span>
@@ -959,16 +1074,31 @@ try {
 
                                 <?php
 
-                                if (!empty($row['created_at'])) {
+                                if (
+                                    !empty(
+                                        $row['created_at']
+                                    )
+                                ) {
 
-                                    echo htmlspecialchars(
-                                        date(
-                                            'M d, Y',
-                                            strtotime(
-                                                $row['created_at']
-                                            )
-                                        )
-                                    );
+                                    $createdTimestamp =
+                                        strtotime(
+                                            $row['created_at']
+                                        );
+
+                                    if (
+                                        $createdTimestamp !== false
+                                    ) {
+
+                                        echo htmlspecialchars(
+                                            date(
+                                                'M d, Y',
+                                                $createdTimestamp
+                                            ),
+                                            ENT_QUOTES,
+                                            'UTF-8'
+                                        );
+
+                                    }
 
                                 }
 
@@ -983,16 +1113,31 @@ try {
 
                                 <?php
 
-                                if (!empty($row['updated_at'])) {
+                                if (
+                                    !empty(
+                                        $row['updated_at']
+                                    )
+                                ) {
 
-                                    echo htmlspecialchars(
-                                        date(
-                                            'M d, Y',
-                                            strtotime(
-                                                $row['updated_at']
-                                            )
-                                        )
-                                    );
+                                    $updatedTimestamp =
+                                        strtotime(
+                                            $row['updated_at']
+                                        );
+
+                                    if (
+                                        $updatedTimestamp !== false
+                                    ) {
+
+                                        echo htmlspecialchars(
+                                            date(
+                                                'M d, Y',
+                                                $updatedTimestamp
+                                            ),
+                                            ENT_QUOTES,
+                                            'UTF-8'
+                                        );
+
+                                    }
 
                                 }
 
@@ -1011,7 +1156,9 @@ try {
                                     <!-- EDIT -->
 
                                     <a
-                                        href="edit.php?id=<?= urlencode($row['id']); ?>"
+                                        href="edit.php?id=<?= urlencode(
+                                            $row['id']
+                                        ); ?>"
                                         class="action-btn edit"
                                         title="Edit"
                                     >
@@ -1027,12 +1174,14 @@ try {
                                         type="button"
                                         class="action-btn delete btn-delete"
                                         data-id="<?= htmlspecialchars(
-                                            $row['id'],
-                                            ENT_QUOTES
+                                            (string) $row['id'],
+                                            ENT_QUOTES,
+                                            'UTF-8'
                                         ); ?>"
                                         data-name="<?= htmlspecialchars(
                                             $row['name'] ?? '',
-                                            ENT_QUOTES
+                                            ENT_QUOTES,
+                                            'UTF-8'
                                         ); ?>"
                                         title="Delete"
                                     >
@@ -1048,26 +1197,26 @@ try {
                         </tr>
 
 
-                    <?php
-
-                        endwhile;
+                    <?php endforeach; ?>
 
 
-                    } catch (PDOException $e) {
+                    <?php if (empty($personnel) && !$databaseError): ?>
 
-                        echo '<tr>';
+                        <tr>
 
-                        echo '<td colspan="11" class="database-error">';
+                            <td
+                                colspan="11"
+                                class="text-center py-4"
+                            >
 
-                        echo 'Unable to load personnel records from the database.';
+                                No personnel records found.
 
-                        echo '</td>';
+                            </td>
 
-                        echo '</tr>';
+                        </tr>
 
-                    }
+                    <?php endif; ?>
 
-                    ?>
 
                     </tbody>
 
@@ -1117,8 +1266,7 @@ try {
                     class="btn-close"
                     data-bs-dismiss="modal"
                     aria-label="Close"
-                >
-                </button>
+                ></button>
 
             </div>
 
@@ -1173,50 +1321,71 @@ try {
 
 <!-- jQuery -->
 
-<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script
+    src="https://code.jquery.com/jquery-3.7.1.min.js"
+></script>
 
 
 <!-- Bootstrap -->
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"></script>
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js"
+></script>
 
 
 <!-- =========================================================
      DATATABLES
 ========================================================= -->
 
-<script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+<script
+    src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"
+></script>
 
-<script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
+<script
+    src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"
+></script>
 
 
 <!-- =========================================================
      DATATABLE BUTTONS
 ========================================================= -->
 
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"></script>
+<script
+    src="https://cdn.datatables.net/buttons/2.4.2/js/dataTables.buttons.min.js"
+></script>
 
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"></script>
+<script
+    src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.bootstrap5.min.js"
+></script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script
+    src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"
+></script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+<script
+    src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"
+></script>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+<script
+    src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"
+></script>
 
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"></script>
+<script
+    src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.html5.min.js"
+></script>
 
-<script src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"></script>
+<script
+    src="https://cdn.datatables.net/buttons/2.4.2/js/buttons.print.min.js"
+></script>
 
 
 <!-- =========================================================
-     CUSTOM JAVASCRIPT
-     
-     All dashboard JavaScript is now located in:
-     js/dashboard.js
+     CUSTOM DASHBOARD JAVASCRIPT
 ========================================================= -->
 
-<script src="js/dashboard.js"></script>
+<script
+    src="js/dashboard.js"
+></script>
 
 
 </body>
