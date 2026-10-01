@@ -132,10 +132,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         } catch (PDOException $e) {
 
-            $errorMessage =
-                "Unable to save the personnel information.";
+    $errorMessage =
+        "Database error: " . $e->getMessage();
 
-        }
+}
+
 
     }
 
