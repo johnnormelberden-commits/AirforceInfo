@@ -3,31 +3,22 @@
 session_start();
 
 /*
- * ==========================================================
- * DATABASE CONNECTION
- * ==========================================================
- *
- * The PostgreSQL connection is handled by db.php.
- *
- * db.php uses these Render Environment Variables:
- *
- * DB_HOST
- * DB_PORT
- * DB_NAME
- * DB_USER
- * DB_PASSWORD
- *
- * ==========================================================
- */
+|--------------------------------------------------------------------------
+| DATABASE CONNECTION
+|--------------------------------------------------------------------------
+|
+| db.php handles the TiDB / MySQL PDO connection.
+|
+*/
 
 require_once 'db.php';
 
 
 /*
- * ==========================================================
- * GET LOGIN FORM VALUES
- * ==========================================================
- */
+|--------------------------------------------------------------------------
+| GET LOGIN FORM VALUES
+|--------------------------------------------------------------------------
+*/
 
 $username = trim($_POST['username'] ?? '');
 $password = $_POST['password'] ?? '';
@@ -36,17 +27,41 @@ $remember = isset($_POST['remember']);
 
 
 /*
- * ==========================================================
- * CHECK USERNAME
- * ==========================================================
- */
+|--------------------------------------------------------------------------
+| BASIC VALIDATION
+|--------------------------------------------------------------------------
+*/
+
+if ($username === '' || $password === '') {
+
+    header("Location: login.php?error=1");
+    exit;
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| LOGIN
+|--------------------------------------------------------------------------
+*/
 
 try {
 
+    /*
+     * Find the user by username.
+     *
+     * Backticks around username are used because this
+     * avoids possible conflicts with SQL keywords.
+     */
+
     $stmt = $connection->prepare(
-        "SELECT id, username, password
+        "SELECT
+            id,
+            username,
+            password
          FROM users
-         WHERE username = :username
+         WHERE `username` = :username
          LIMIT 1"
     );
 
@@ -63,18 +78,42 @@ try {
      * ======================================================
      */
 
-    if ($user && password_verify($password, $user['password'])) {
+    if (
+        $user &&
+        isset($user['password']) &&
+        password_verify(
+            $password,
+            $user['password']
+        )
+    ) {
 
         /*
-         * Login successful
+         * ==================================================
+         * REGENERATE SESSION ID
+         * ==================================================
+         *
+         * Prevents session fixation after login.
          */
-        $_SESSION['logged_in'] = true;
-        $_SESSION['username'] = $user['username'];
+
+        session_regenerate_id(true);
 
 
         /*
          * ==================================================
-         * REMEMBER ME
+         * SET LOGIN SESSION
+         * ==================================================
+         */
+
+        $_SESSION['logged_in'] = true;
+
+        $_SESSION['username'] = $user['username'];
+
+        $_SESSION['user_id'] = (int) $user['id'];
+
+
+        /*
+         * ==================================================
+         * REMEMBER ME COOKIE
          * ==================================================
          */
 
@@ -84,8 +123,28 @@ try {
                 "remember_user",
                 $user['username'],
                 [
-                    'expires' => time() + (86400 * 30),
-                    'path' => '/',
+                    'expires'  => time() + (86400 * 30),
+                    'path'     => '/',
+                    'secure'   => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
+                    'httponly' => true,
+                    'samesite' => 'Lax'
+                ]
+            );
+
+        } else {
+
+            /*
+             * Remove an existing Remember Me cookie
+             * when the user does not select Remember Me.
+             */
+
+            setcookie(
+                "remember_user",
+                "",
+                [
+                    'expires'  => time() - 3600,
+                    'path'     => '/',
+                    'secure'   => (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off'),
                     'httponly' => true,
                     'samesite' => 'Lax'
                 ]
@@ -96,7 +155,7 @@ try {
 
         /*
          * ==================================================
-         * REDIRECT AFTER SUCCESSFUL LOGIN
+         * LOGIN SUCCESS
          * ==================================================
          */
 
@@ -108,7 +167,7 @@ try {
 
     /*
      * ======================================================
-     * INVALID USERNAME OR PASSWORD
+     * INVALID LOGIN
      * ======================================================
      */
 
@@ -119,8 +178,17 @@ try {
 } catch (PDOException $e) {
 
     /*
-     * Do not expose database error details.
+     * Do not expose database errors to users.
+     *
+     * During development, you can temporarily log
+     * $e->getMessage() to your server logs.
      */
-    die("Unable to process login.");
+
+    error_log(
+        "Login database error: " . $e->getMessage()
+    );
+
+    header("Location: login.php?error=db");
+    exit;
 
 }
