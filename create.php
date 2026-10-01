@@ -85,28 +85,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
              * ==================================================
              */
 
-            $sql = "
-                INSERT INTO military_personnel
-                (
-                    rank,
-                    name,
-                    serial_number,
-                    branch_of_service,
-                    courses,
-                    year_graduated,
-                    standing
-                )
-                VALUES
-                (
-                    :rank,
-                    :name,
-                    :serial_number,
-                    :branch_of_service,
-                    :courses,
-                    :year_graduated,
-                    :standing
-                )
-            ";
+           $sql = "
+    INSERT INTO military_personnel
+    (
+        `rank`,
+        `name`,
+        `serial_number`,
+        `branch_of_service`,
+        `courses`,
+        `year_graduated`,
+        `standing`
+    )
+    VALUES
+    (
+        :rank,
+        :name,
+        :serial_number,
+        :branch_of_service,
+        :courses,
+        :year_graduated,
+        :standing
+    )
+";
+
 
             $stmt = $connection->prepare($sql);
 

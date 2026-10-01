@@ -88,7 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
         $stmt = $connection->prepare(
             "SELECT
                 id,
-                rank,
+                `rank`,
                 name,
                 serial_number,
                 branch_of_service,
@@ -166,7 +166,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
     /*
-     * Validate ID.
+     * ==========================================================
+     * VALIDATE ID
+     * ==========================================================
      */
 
     if (!is_numeric($id)) {
@@ -179,7 +181,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
         /*
-         * Validate ID value.
+         * ID must be greater than zero.
          */
 
         if ($id <= 0) {
@@ -190,7 +192,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
         /*
-         * Validate required fields.
+         * ======================================================
+         * VALIDATE REQUIRED FIELDS
+         * ======================================================
          */
 
         elseif (
@@ -209,7 +213,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
         /*
-         * Update database.
+         * ======================================================
+         * UPDATE DATABASE
+         * ======================================================
          */
 
         else {
@@ -217,7 +223,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             try {
 
                 /*
-                 * Make sure the record exists.
+                 * ==================================================
+                 * CHECK IF RECORD EXISTS
+                 * ==================================================
                  */
 
                 $checkStmt = $connection->prepare(
@@ -231,6 +239,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     ':id' => $id
                 ]);
 
+
                 if (!$checkStmt->fetch()) {
 
                     $errorMessage =
@@ -240,21 +249,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
                     /*
-                     * Update personnel record.
+                     * ==================================================
+                     * UPDATE PERSONNEL RECORD
+                     * ==================================================
                      *
-                     * No updated_at column is required.
+                     * IMPORTANT:
+                     * `rank` is enclosed in backticks because
+                     * RANK can conflict with SQL syntax/functions.
+                     *
+                     * updated_at is also updated automatically here.
                      */
 
                     $sql = "
                         UPDATE military_personnel
                         SET
-                            rank = :rank,
+                            `rank` = :rank,
                             name = :name,
                             serial_number = :serial_number,
                             branch_of_service = :branch_of_service,
                             courses = :courses,
                             year_graduated = :year_graduated,
-                            standing = :standing
+                            standing = :standing,
+                            updated_at = CURRENT_TIMESTAMP
                         WHERE id = :id
                     ";
 
@@ -275,7 +291,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
                     /*
-                     * Redirect after successful update.
+                     * ==================================================
+                     * SUCCESS
+                     * ==================================================
                      */
 
                     header("Location: index.php?updated=1");
@@ -1231,7 +1249,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <option
                                 value="Others"
                                 <?= ($branch_of_service === 'Others') ? 'selected' : ''; ?>
-                            >
+                                >
                                 Others
                             </option>
 
