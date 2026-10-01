@@ -1,11 +1,7 @@
 FROM php:8.2-apache
 
-# Install PostgreSQL development libraries
-RUN apt-get update \
-    && apt-get install -y libpq-dev \
-    && docker-php-ext-install pdo pdo_pgsql \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+# Install MySQL PDO driver for TiDB
+RUN docker-php-ext-install pdo pdo_mysql
 
 # Copy application files
 COPY . /var/www/html/
