@@ -53,6 +53,7 @@ try {
 
 } catch (PDOException $e) {
 
-    die("Unable to connect to the database.");
+    die("Database error: " . $e->getMessage());
 
 }
+
