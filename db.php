@@ -1,34 +1,10 @@
 <?php
 
-/*
- * ==========================================================
- * POSTGRESQL DATABASE CONNECTION
- * ==========================================================
- *
- * These values are provided by Render Environment Variables:
- *
- * DB_HOST
- * DB_PORT
- * DB_NAME
- * DB_USER
- * DB_PASSWORD
- *
- * Do NOT put your actual database password in this file.
- * ==========================================================
- */
-
 $host = getenv('DB_HOST');
-$port = getenv('DB_PORT') ?: '5432';
+$port = getenv('DB_PORT') ?: '4000';
 $dbname = getenv('DB_NAME');
 $user = getenv('DB_USER');
 $password = getenv('DB_PASSWORD');
-
-
-/*
- * ==========================================================
- * CHECK DATABASE CONFIGURATION
- * ==========================================================
- */
 
 if (
     empty($host) ||
@@ -39,31 +15,32 @@ if (
     die("Database configuration is missing.");
 }
 
-
 /*
- * ==========================================================
- * CONNECT TO POSTGRESQL
- * ==========================================================
+ * TiDB Cloud TLS certificate
  */
+$caFile = __DIR__ . '/isrgrootx1.pem';
+
+if (!file_exists($caFile)) {
+    die("TiDB CA certificate is missing.");
+}
 
 try {
 
     $connection = new PDO(
-        "pgsql:host={$host};port={$port};dbname={$dbname}",
+        "mysql:host={$host};port={$port};dbname={$dbname};charset=utf8mb4",
         $user,
         $password,
         [
             PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
-            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+            PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+            PDO::ATTR_EMULATE_PREPARES => false,
+
+            PDO::MYSQL_ATTR_SSL_CA => $caFile,
+            PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT => true
         ]
     );
 
 } catch (PDOException $e) {
-
-    /*
-     * Do not expose database credentials
-     * or detailed connection errors.
-     */
 
     die("Unable to connect to the database.");
 
