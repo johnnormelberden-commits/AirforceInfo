@@ -2,10 +2,6 @@
 
 declare(strict_types=1);
 
-use PHPMailer\PHPMailer\Exception as PHPMailerException;
-use PHPMailer\PHPMailer\PHPMailer;
-
-
 /*
 |--------------------------------------------------------------------------
 | SESSION
@@ -19,13 +15,39 @@ if (session_status() === PHP_SESSION_NONE) {
 
 /*
 |--------------------------------------------------------------------------
-| LOAD REQUIRED FILES
+| LOAD DATABASE
 |--------------------------------------------------------------------------
 */
 
 require_once __DIR__ . '/db.php';
+
+
+/*
+|--------------------------------------------------------------------------
+| LOAD MAIL CONFIGURATION
+|--------------------------------------------------------------------------
+*/
+
 require_once __DIR__ . '/mail_config.php';
+
+
+/*
+|--------------------------------------------------------------------------
+| LOAD PHPMailer
+|--------------------------------------------------------------------------
+*/
+
 require_once __DIR__ . '/vendor/autoload.php';
+
+
+/*
+|--------------------------------------------------------------------------
+| PHPMailer
+|--------------------------------------------------------------------------
+*/
+
+use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\PHPMailer;
 
 
 /*
@@ -34,25 +56,9 @@ require_once __DIR__ . '/vendor/autoload.php';
 |--------------------------------------------------------------------------
 */
 
-$username = trim(
-    (string) ($_POST['username'] ?? '')
-);
-
-$password = (string) ($_POST['password'] ?? '');
-
+$username = trim((string)($_POST['username'] ?? ''));
+$password = (string)($_POST['password'] ?? '');
 $remember = isset($_POST['remember']);
-
-
-/*
-|--------------------------------------------------------------------------
-| VALIDATE REQUEST
-|--------------------------------------------------------------------------
-*/
-
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-    header('Location: login.php');
-    exit;
-}
 
 
 /*
@@ -63,26 +69,14 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 if ($username === '' || $password === '') {
 
-    header(
-        'Location: login.php?error=empty'
-    );
-
+    header('Location: login.php?error=empty');
     exit;
 }
 
 
-/*
-|--------------------------------------------------------------------------
-| VALIDATE EMAIL
-|--------------------------------------------------------------------------
-*/
-
 if (!filter_var($username, FILTER_VALIDATE_EMAIL)) {
 
-    header(
-        'Location: login.php?error=invalid_email'
-    );
-
+    header('Location: login.php?error=email');
     exit;
 }
 
@@ -97,20 +91,15 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | FIND USER
+    | FIND USER IN TiDB
     |--------------------------------------------------------------------------
     */
 
     $stmt = $connection->prepare(
-        "
-        SELECT
-            id,
-            username,
-            password
-        FROM users
-        WHERE username = :username
-        LIMIT 1
-        "
+        "SELECT id, username, password
+         FROM users
+         WHERE username = :username
+         LIMIT 1"
     );
 
     $stmt->execute([
@@ -122,23 +111,24 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | CHECK USER + PASSWORD
+    | CHECK USERNAME AND PLAIN-TEXT PASSWORD
     |--------------------------------------------------------------------------
+    |
+    | IMPORTANT:
+    | This intentionally does NOT use password_verify().
+    |
     */
 
     if (
         !$user ||
         !isset($user['password']) ||
-        !password_verify(
-            $password,
-            (string) $user['password']
+        !hash_equals(
+            (string)$user['password'],
+            $password
         )
     ) {
 
-        header(
-            'Location: login.php?error=1'
-        );
-
+        header('Location: login.php?error=1');
         exit;
     }
 
@@ -149,10 +139,7 @@ try {
     |--------------------------------------------------------------------------
     */
 
-    $otp = (string) random_int(
-        100000,
-        999999
-    );
+    $otp = (string) random_int(100000, 999999);
 
 
     /*
@@ -182,13 +169,11 @@ try {
 
     $_SESSION['otp_attempts'] = 0;
 
-    $_SESSION['otp_user_id'] = (int) $user['id'];
+    $_SESSION['otp_user_id'] = (int)$user['id'];
 
-    $_SESSION['otp_username'] =
-        (string) $user['username'];
+    $_SESSION['otp_username'] = $user['username'];
 
-    $_SESSION['otp_remember'] =
-        $remember;
+    $_SESSION['otp_remember'] = $remember;
 
 
     /*
@@ -224,15 +209,6 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | CHARACTER SET
-    |--------------------------------------------------------------------------
-    */
-
-    $mail->CharSet = 'UTF-8';
-
-
-    /*
-    |--------------------------------------------------------------------------
     | SENDER
     |--------------------------------------------------------------------------
     */
@@ -250,7 +226,7 @@ try {
     */
 
     $mail->addAddress(
-        (string) $user['username']
+        $user['username']
     );
 
 
@@ -262,19 +238,21 @@ try {
 
     $mail->isHTML(true);
 
+    $mail->CharSet = 'UTF-8';
+
     $mail->Subject =
         'CMO Information System - Verification Code';
 
 
     /*
     |--------------------------------------------------------------------------
-    | SAFE OTP FOR HTML
+    | ESCAPE OTP
     |--------------------------------------------------------------------------
     */
 
     $safeOtp = htmlspecialchars(
         $otp,
-        ENT_QUOTES | ENT_SUBSTITUTE,
+        ENT_QUOTES,
         'UTF-8'
     );
 
@@ -358,8 +336,8 @@ try {
             font-size:14px;
             line-height:1.6;
         ">
-            Someone is attempting to sign in to
-            your CMO Information System account.
+            Someone is attempting to sign in to your
+            CMO Information System account.
         </p>
 
         <p style="
@@ -411,7 +389,6 @@ try {
             <strong>10 minutes</strong>.
         </p>
 
-
         <p style="
             font-size:13px;
             color:#6b7c93;
@@ -442,6 +419,7 @@ try {
 </div>
 
 </body>
+
 </html>
 ';
 
@@ -473,27 +451,41 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | OTP EMAIL SUCCESS
+    | OTP SENT
     |--------------------------------------------------------------------------
     */
 
-    header(
-        'Location: verify-otp.php'
-    );
-
+    header('Location: verify_otp.php');
     exit;
 
 
-} catch (PHPMailerException $e) {
+} catch (PDOException $e) {
 
     /*
     |--------------------------------------------------------------------------
-    | PHPMailer ERROR
+    | DATABASE ERROR
     |--------------------------------------------------------------------------
     */
 
     error_log(
-        'OTP email error: ' .
+        'TiDB login error: ' .
+        $e->getMessage()
+    );
+
+    header('Location: login.php?error=db');
+    exit;
+
+
+} catch (Exception $e) {
+
+    /*
+    |--------------------------------------------------------------------------
+    | SMTP ERROR
+    |--------------------------------------------------------------------------
+    */
+
+    error_log(
+        'PHPMailer OTP error: ' .
         $e->getMessage()
     );
 
@@ -514,51 +506,6 @@ try {
     );
 
 
-    header(
-        'Location: login.php?error=email'
-    );
-
-    exit;
-
-
-} catch (PDOException $e) {
-
-    /*
-    |--------------------------------------------------------------------------
-    | DATABASE ERROR
-    |--------------------------------------------------------------------------
-    */
-
-    error_log(
-        'Login database error: ' .
-        $e->getMessage()
-    );
-
-
-    header(
-        'Location: login.php?error=db'
-    );
-
-    exit;
-
-
-} catch (Throwable $e) {
-
-    /*
-    |--------------------------------------------------------------------------
-    | GENERAL ERROR
-    |--------------------------------------------------------------------------
-    */
-
-    error_log(
-        'Login system error: ' .
-        $e->getMessage()
-    );
-
-
-    header(
-        'Location: login.php?error=system'
-    );
-
+    header('Location: login.php?error=email');
     exit;
 }
