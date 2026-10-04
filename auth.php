@@ -6,23 +6,12 @@ session_start();
 |--------------------------------------------------------------------------
 | DATABASE CONNECTION
 |--------------------------------------------------------------------------
+|
+| db.php handles the TiDB / MySQL PDO connection.
+|
 */
 
 require_once 'db.php';
-
-
-/*
-|--------------------------------------------------------------------------
-| ONLY ACCEPT POST REQUESTS
-|--------------------------------------------------------------------------
-*/
-
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-
-    header("Location: login.php");
-    exit;
-
-}
 
 
 /*
@@ -53,17 +42,13 @@ if ($username === '' || $password === '') {
 
 /*
 |--------------------------------------------------------------------------
-| BASIC EMAIL VALIDATION
+| VALIDATE EMAIL
 |--------------------------------------------------------------------------
-|
-| Since username is the email address, make sure it is a valid
-| email format before querying the database.
-|
 */
 
 if (!filter_var($username, FILTER_VALIDATE_EMAIL)) {
 
-    header("Location: login.php?error=1");
+    header("Location: login.php?error=email");
     exit;
 
 }
@@ -78,9 +63,11 @@ if (!filter_var($username, FILTER_VALIDATE_EMAIL)) {
 try {
 
     /*
-     * ==============================================================
-     * FIND USER
-     * ==============================================================
+     * ======================================================
+     * FIND USER BY EMAIL
+     * ======================================================
+     *
+     * The username column contains the user's email address.
      */
 
     $stmt = $connection->prepare(
@@ -101,9 +88,9 @@ try {
 
 
     /*
-     * ==============================================================
+     * ======================================================
      * VERIFY PASSWORD
-     * ==============================================================
+     * ======================================================
      */
 
     if (
@@ -115,10 +102,6 @@ try {
         )
     ) {
 
-        /*
-         * Do not reveal whether the email exists.
-         */
-
         header("Location: login.php?error=1");
         exit;
 
@@ -126,73 +109,54 @@ try {
 
 
     /*
-     * ==============================================================
-     * GENERATE OTP
-     * ==============================================================
+     * ======================================================
+     * PASSWORD IS CORRECT
+     * ======================================================
      *
-     * random_int() is cryptographically secure.
+     * IMPORTANT:
      *
-     * Generates a 6-digit code.
+     * We DO NOT log the user in yet.
      *
+     * The user must successfully enter the OTP first.
+     */
+
+
+    /*
+     * ======================================================
+     * GENERATE 6-DIGIT OTP
+     * ======================================================
      */
 
     $otp = (string) random_int(100000, 999999);
 
 
     /*
-     * ==============================================================
-     * HASH OTP
-     * ==============================================================
+     * ======================================================
+     * OTP EXPIRATION
+     * ======================================================
      *
-     * We do NOT store the actual OTP in the session.
-     *
-     * Only the hash is stored.
-     *
+     * OTP will remain valid for 10 minutes.
      */
 
-    $otp_hash = password_hash(
+    $otpExpires = time() + (10 * 60);
+
+
+    /*
+     * ======================================================
+     * STORE OTP INFORMATION IN SESSION
+     * ======================================================
+     *
+     * We store a HASH of the OTP instead of the actual OTP.
+     */
+
+    $_SESSION['otp_hash'] = password_hash(
         $otp,
         PASSWORD_DEFAULT
     );
 
+    $_SESSION['otp_expires'] = $otpExpires;
 
-    /*
-     * ==============================================================
-     * OTP EXPIRATION
-     * ==============================================================
-     *
-     * OTP is valid for 5 minutes.
-     *
-     */
-
-    $otp_expires = time() + (5 * 60);
-
-
-    /*
-     * ==============================================================
-     * CLEAR OLD AUTHENTICATION STATE
-     * ==============================================================
-     *
-     * The user is NOT logged in yet.
-     *
-     */
-
-    unset(
-        $_SESSION['logged_in'],
-        $_SESSION['username'],
-        $_SESSION['user_id']
-    );
-
-
-    /*
-     * ==============================================================
-     * STORE TEMPORARY LOGIN INFORMATION
-     * ==============================================================
-     */
-
-    $_SESSION['otp_hash'] = $otp_hash;
-
-    $_SESSION['otp_expires'] = $otp_expires;
+    $_SESSION['otp_attempts'] = 0;
 
     $_SESSION['otp_user_id'] = (int) $user['id'];
 
@@ -200,157 +164,395 @@ try {
 
     $_SESSION['otp_remember'] = $remember;
 
-    /*
-     * Track failed OTP attempts.
-     */
-
-    $_SESSION['otp_attempts'] = 0;
-
 
     /*
-     * ==============================================================
+     * ======================================================
      * SEND OTP EMAIL
-     * ==============================================================
-     */
-
-    $recipient = $user['username'];
-
-    $subject = "CMO Information System - Verification Code";
-
-
-    /*
-     * Plain-text email.
-     */
-
-    $message =
-
-        "CMO INFORMATION SYSTEM\n" .
-        "=======================\n\n" .
-
-        "Your verification code is:\n\n" .
-
-        $otp . "\n\n" .
-
-        "This verification code will expire in 5 minutes.\n\n" .
-
-        "If you did not attempt to sign in to the CMO Information System, " .
-        "please ignore this email and contact your system administrator.\n\n" .
-
-        "Philippine Air Force\n" .
-        "CMO Information System";
-
-
-    /*
-     * ==============================================================
-     * EMAIL HEADERS
-     * ==============================================================
+     * ======================================================
+     *
+     * This uses PHPMailer with your Gmail account.
      *
      * IMPORTANT:
      *
-     * Change this address to an email address belonging to your
-     * organization/domain.
+     * Before using this code, PHPMailer must be installed
+     * in your project.
+     *
+     * If your project uses Composer:
+     *
+     * composer require phpmailer/phpmailer
      *
      */
 
-    $headers = [];
+    require_once __DIR__ . '/vendor/autoload.php';
 
-    $headers[] = "From: CMO Information System <no-reply@yourdomain.com>";
-
-    $headers[] = "Reply-To: no-reply@yourdomain.com";
-
-    $headers[] = "MIME-Version: 1.0";
-
-    $headers[] = "Content-Type: text/plain; charset=UTF-8";
+    use PHPMailer\PHPMailer\PHPMailer;
+    use PHPMailer\PHPMailer\Exception;
 
 
     /*
-     * ==============================================================
-     * SEND EMAIL
-     * ==============================================================
+     * ======================================================
+     * CREATE MAILER
+     * ======================================================
      */
 
-    $mail_sent = mail(
-        $recipient,
-        $subject,
-        $message,
-        implode("\r\n", $headers)
+    $mail = new PHPMailer(true);
+
+
+    /*
+     * ======================================================
+     * GMAIL SMTP CONFIGURATION
+     * ======================================================
+     */
+
+    $mail->isSMTP();
+
+    $mail->Host = 'smtp.gmail.com';
+
+    $mail->SMTPAuth = true;
+
+    /*
+     * ======================================================
+     * YOUR GMAIL ACCOUNT
+     * ======================================================
+     *
+     * CHANGE THIS.
+     *
+     * Example:
+     *
+     * $mail->Username = 'yourcmoaccount@gmail.com';
+     *
+     */
+
+    $mail->Username = 'YOUR_GMAIL@gmail.com';
+
+
+    /*
+     * ======================================================
+     * GMAIL APP PASSWORD
+     * ======================================================
+     *
+     * Put the 16-character Google App Password here.
+     *
+     * DO NOT use your normal Gmail password.
+     *
+     * Example:
+     *
+     * $mail->Password = 'abcdefghijklmnop';
+     *
+     */
+
+    $mail->Password = 'YOUR_16_CHARACTER_APP_PASSWORD';
+
+
+    /*
+     * ======================================================
+     * SMTP ENCRYPTION
+     * ======================================================
+     */
+
+    $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+
+    $mail->Port = 587;
+
+
+    /*
+     * ======================================================
+     * EMAIL SENDER
+     * ======================================================
+     *
+     * This should normally be the same Gmail account
+     * configured above.
+     */
+
+    $mail->setFrom(
+        'YOUR_GMAIL@gmail.com',
+        'CMO Information System'
     );
 
 
     /*
-     * ==============================================================
-     * EMAIL FAILED
-     * ==============================================================
+     * ======================================================
+     * EMAIL RECIPIENT
+     * ======================================================
+     *
+     * VERY IMPORTANT:
+     *
+     * $username is the email entered by the user.
+     *
+     * Example:
+     *
+     * User enters:
+     * lemron@gmail.com
+     *
+     * Then:
+     *
+     * $mail->addAddress($username);
+     *
+     * sends the OTP to:
+     *
+     * lemron@gmail.com
      */
 
-    if (!$mail_sent) {
-
-        /*
-         * Remove temporary OTP information.
-         */
-
-        unset(
-            $_SESSION['otp_hash'],
-            $_SESSION['otp_expires'],
-            $_SESSION['otp_user_id'],
-            $_SESSION['otp_username'],
-            $_SESSION['otp_remember'],
-            $_SESSION['otp_attempts']
-        );
-
-
-        error_log(
-            "OTP email failed for user: " . $recipient
-        );
-
-
-        header("Location: login.php?error=email");
-        exit;
-
-    }
+    $mail->addAddress(
+        $username
+    );
 
 
     /*
-     * ==============================================================
-     * OTP SUCCESSFULLY SENT
-     * ==============================================================
+     * ======================================================
+     * EMAIL CONTENT
+     * ======================================================
      */
 
-    header("Location: verify-otp.php");
+    $mail->isHTML(true);
+
+    $mail->Subject = 'CMO Information System - Verification Code';
+
+
+    $mail->Body = '
+
+    <!DOCTYPE html>
+
+    <html>
+
+    <head>
+
+        <meta charset="UTF-8">
+
+    </head>
+
+    <body style="
+        margin:0;
+        padding:0;
+        background:#f4f7fb;
+        font-family:Arial,Helvetica,sans-serif;
+    ">
+
+        <div style="
+            max-width:600px;
+            margin:40px auto;
+            background:#ffffff;
+            border-radius:12px;
+            overflow:hidden;
+            border:1px solid #e2e8f0;
+        ">
+
+            <div style="
+                background:#0b5796;
+                padding:25px;
+                text-align:center;
+                color:#ffffff;
+            ">
+
+                <h2 style="
+                    margin:0;
+                    font-size:22px;
+                ">
+                    CMO Information System
+                </h2>
+
+                <p style="
+                    margin:8px 0 0;
+                    color:#dceeff;
+                    font-size:13px;
+                ">
+                    Philippine Air Force
+                </p>
+
+            </div>
+
+
+            <div style="
+                padding:35px;
+                color:#24364c;
+            ">
+
+                <h3 style="
+                    margin-top:0;
+                    font-size:20px;
+                ">
+                    Verification Code
+                </h3>
+
+                <p style="
+                    font-size:14px;
+                    line-height:1.6;
+                ">
+                    Someone is attempting to sign in to your
+                    CMO Information System account.
+                </p>
+
+                <p style="
+                    font-size:14px;
+                    line-height:1.6;
+                ">
+                    Use the verification code below to
+                    complete your login:
+                </p>
+
+
+                <div style="
+                    margin:30px 0;
+                    padding:20px;
+                    background:#eef7ff;
+                    border:1px solid #cfe8ff;
+                    border-radius:10px;
+                    text-align:center;
+                ">
+
+                    <div style="
+                        color:#6b7c93;
+                        font-size:11px;
+                        margin-bottom:8px;
+                        text-transform:uppercase;
+                        letter-spacing:1px;
+                    ">
+                        Your verification code
+                    </div>
+
+                    <div style="
+                        color:#0b5796;
+                        font-size:36px;
+                        font-weight:bold;
+                        letter-spacing:8px;
+                    ">
+                        ' . htmlspecialchars($otp) . '
+                    </div>
+
+                </div>
+
+
+                <p style="
+                    font-size:13px;
+                    color:#6b7c93;
+                    line-height:1.6;
+                ">
+                    This code will expire in
+                    <strong>10 minutes</strong>.
+                </p>
+
+
+                <p style="
+                    font-size:13px;
+                    color:#6b7c93;
+                    line-height:1.6;
+                ">
+                    If you did not attempt to sign in,
+                    you can safely ignore this email.
+                </p>
+
+            </div>
+
+
+            <div style="
+                padding:18px 35px;
+                background:#f8fafc;
+                border-top:1px solid #edf0f3;
+                text-align:center;
+                color:#8d99a6;
+                font-size:11px;
+            ">
+
+                CMO Information System<br>
+                Philippine Air Force
+
+            </div>
+
+        </div>
+
+    </body>
+
+    </html>
+    ';
+
+
+    /*
+     * ======================================================
+     * PLAIN TEXT EMAIL
+     * ======================================================
+     *
+     * Useful when the recipient's mail client does not
+     * display HTML emails.
+     */
+
+    $mail->AltBody =
+        "CMO Information System\n\n" .
+        "Your verification code is: " . $otp . "\n\n" .
+        "This code will expire in 10 minutes.\n\n" .
+        "If you did not attempt to sign in, " .
+        "you can safely ignore this email.";
+
+
+    /*
+     * ======================================================
+     * SEND EMAIL
+     * ======================================================
+     */
+
+    $mail->send();
+
+
+    /*
+     * ======================================================
+     * OTP EMAIL SENT SUCCESSFULLY
+     * ======================================================
+     *
+     * The user is NOT logged in yet.
+     *
+     * Send them to the OTP verification page.
+     */
+
+    header("Location: verify_otp.php");
+    exit;
+
+
+} catch (Exception $e) {
+
+    /*
+     * ======================================================
+     * EMAIL ERROR
+     * ======================================================
+     *
+     * Do not expose SMTP credentials or technical details
+     * to the user.
+     */
+
+    error_log(
+        "OTP email error: " . $e->getMessage()
+    );
+
+
+    /*
+     * Clear OTP session information because
+     * the email was not successfully sent.
+     */
+
+    unset($_SESSION['otp_hash']);
+    unset($_SESSION['otp_expires']);
+    unset($_SESSION['otp_attempts']);
+    unset($_SESSION['otp_user_id']);
+    unset($_SESSION['otp_username']);
+    unset($_SESSION['otp_remember']);
+
+
+    header("Location: login.php?error=email");
     exit;
 
 
 } catch (PDOException $e) {
 
     /*
-     * ==============================================================
+     * ======================================================
      * DATABASE ERROR
-     * ==============================================================
-     *
-     * Do not expose database details to the user.
-     *
+     * ======================================================
      */
 
     error_log(
         "Login database error: " . $e->getMessage()
     );
 
+
     header("Location: login.php?error=db");
-    exit;
-
-} catch (Throwable $e) {
-
-    /*
-     * ==============================================================
-     * GENERAL ERROR
-     * ==============================================================
-     */
-
-    error_log(
-        "Login/OTP error: " . $e->getMessage()
-    );
-
-    header("Location: login.php?error=1");
     exit;
 
 }
