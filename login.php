@@ -1,17 +1,33 @@
 <?php
+
 session_start();
 
-if (isset($_COOKIE['remember_user'])) {
+/*
+|--------------------------------------------------------------------------
+| REMEMBERED USER
+|--------------------------------------------------------------------------
+|
+| IMPORTANT:
+| The Remember Me cookie should only be created AFTER OTP verification.
+|
+| Therefore, if a remember_user cookie exists, the user can be
+| automatically logged in.
+|
+*/
+
+if (isset($_COOKIE['remember_user']) && $_COOKIE['remember_user'] !== '') {
+
     $_SESSION['logged_in'] = true;
     $_SESSION['username'] = $_COOKIE['remember_user'];
 
     header("Location: index.php");
     exit;
 }
-?>
 
+?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 
 <meta charset="UTF-8">
@@ -624,6 +640,16 @@ body {
 
 
 /* =========================================
+   EMAIL INPUT
+========================================= */
+
+.email-input {
+
+    padding-right: 15px;
+}
+
+
+/* =========================================
    PASSWORD TOGGLE
 ========================================= */
 
@@ -652,6 +678,52 @@ body {
 .password-toggle:hover {
 
     color: #1764ae;
+}
+
+
+/* =========================================
+   REMEMBER ME
+========================================= */
+
+.remember-row {
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    margin-top: -5px;
+
+    margin-bottom: 18px;
+
+    font-size: 10px;
+}
+
+
+.remember-label {
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 7px;
+
+    color: #7d8b9b;
+
+    cursor: pointer;
+}
+
+
+.remember-label input {
+
+    width: 14px;
+
+    height: 14px;
+
+    accent-color: #176bb5;
+
+    cursor: pointer;
 }
 
 
@@ -784,6 +856,31 @@ body {
         1px solid #ffd6d6;
 
     color: #d63939;
+
+    font-size: 11px;
+
+    text-align: center;
+}
+
+
+/* =========================================
+   OTP SENT MESSAGE
+========================================= */
+
+.info-message {
+
+    margin-top: 15px;
+
+    padding: 10px 12px;
+
+    border-radius: 8px;
+
+    background: #eef7ff;
+
+    border:
+        1px solid #cfe8ff;
+
+    color: #1764ae;
 
     font-size: 11px;
 
@@ -1035,8 +1132,9 @@ body {
 
                 <p class="login-subtitle">
 
-                    Sign in with your authorized account
-                    to access the CMO Information System.
+                    Sign in with your authorized email
+                    and password. A verification code
+                    will be sent to your email.
 
                 </p>
 
@@ -1048,20 +1146,20 @@ body {
                 <form
                     action="auth.php"
                     method="POST"
+                    autocomplete="on"
                 >
 
 
-                    <!-- USERNAME -->
+                    <!-- EMAIL / USERNAME -->
 
                     <div>
-
 
                         <label
                             for="username"
                             class="form-label"
                         >
 
-                            Username
+                            Email Address
 
                         </label>
 
@@ -1070,23 +1168,24 @@ body {
 
 
                             <i
-                                class="bi bi-person input-icon"
+                                class="bi bi-envelope input-icon"
                             ></i>
 
 
                             <input
-                                type="text"
+                                type="email"
                                 id="username"
                                 name="username"
-                                class="form-control"
-                                placeholder="Enter your username"
+                                class="form-control email-input"
+                                placeholder="Enter your email address"
                                 required
                                 autocomplete="username"
+                                inputmode="email"
+                                maxlength="254"
                             >
 
 
                         </div>
-
 
                     </div>
 
@@ -1094,7 +1193,6 @@ body {
                     <!-- PASSWORD -->
 
                     <div>
-
 
                         <label
                             for="password"
@@ -1144,6 +1242,28 @@ body {
 
                         </div>
 
+                    </div>
+
+
+                    <!-- REMEMBER ME -->
+
+                    <div class="remember-row">
+
+                        <label
+                            class="remember-label"
+                            for="remember"
+                        >
+
+                            <input
+                                type="checkbox"
+                                id="remember"
+                                name="remember"
+                                value="1"
+                            >
+
+                            Remember me
+
+                        </label>
 
                     </div>
 
@@ -1155,7 +1275,7 @@ body {
                         class="btn-login"
                     >
 
-                        Sign in securely
+                        Continue securely
 
                         <i class="bi bi-arrow-right"></i>
 
@@ -1166,20 +1286,69 @@ body {
 
 
                 <!-- =================================
-                     LOGIN ERROR
+                     ERROR MESSAGE
                 ================================== -->
 
                 <?php if (isset($_GET['error'])): ?>
 
-                    <div class="error-message">
+    <div class="error-message">
 
-                        <i class="bi bi-exclamation-circle"></i>
+        <i class="bi bi-exclamation-circle"></i>
 
-                        Invalid username or password.
+        <?php
 
-                    </div>
+        $error = $_GET['error'];
 
-                <?php endif; ?>
+        switch ($error) {
+
+            case 'empty':
+
+                echo 'Please enter your email address and password.';
+
+                break;
+
+
+            case 'email':
+
+                echo 'We could not send the verification code. Please try again later.';
+
+                break;
+
+
+            case 'otp_expired':
+
+                echo 'Your verification code has expired. Please sign in again.';
+
+                break;
+
+
+            case 'otp_attempts':
+
+                echo 'Too many incorrect verification attempts. Please sign in again.';
+
+                break;
+
+
+            case 'db':
+
+                echo 'A system error occurred. Please try again later.';
+
+                break;
+
+
+            default:
+
+                echo 'Invalid email address or password.';
+
+                break;
+        }
+
+        ?>
+
+    </div>
+
+<?php endif; ?>
+
 
 
                 <!-- =================================
@@ -1190,8 +1359,8 @@ body {
 
                     <i class="bi bi-shield-lock-fill"></i>
 
-                    Your session is protected and access
-                    is restricted to authorized personnel.
+                    Your session is protected with
+                    two-step verification.
 
                 </div>
 
@@ -1262,4 +1431,5 @@ function togglePassword() {
 
 
 </body>
+
 </html>
