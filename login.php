@@ -1900,14 +1900,106 @@ loginForm.addEventListener(
             |--------------------------------------------------------------------------
             */
 
-            if (!response.ok) {
+           /*
+|--------------------------------------------------------------------------
+| CHECK RESPONSE
+|--------------------------------------------------------------------------
+*/
 
-                throw new Error(
-                    "The login server returned HTTP " +
-                    response.status +
-                    ". Check the PHP error log."
-                );
-            }
+if (!responseText.trim()) {
+
+    throw new Error(
+        "auth.php returned an empty response."
+    );
+}
+
+
+let result;
+
+try {
+
+    result = JSON.parse(responseText);
+
+} catch (jsonError) {
+
+    console.error(
+        "INVALID JSON FROM AUTH.PHP:",
+        responseText
+    );
+
+    throw new Error(
+        "auth.php returned an invalid response. " +
+        "Please check the PHP error log."
+    );
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| APPLICATION ERROR
+|--------------------------------------------------------------------------
+*/
+
+if (result.success !== true) {
+
+    otpStatus.className =
+        "otp-status error";
+
+    otpStatus.innerHTML =
+        '<i class="bi bi-exclamation-circle-fill"></i> ' +
+        escapeHtml(
+            result.message ||
+            "Unable to process the login request."
+        );
+
+    resetLoginButton();
+
+    return;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| SUCCESS
+|--------------------------------------------------------------------------
+*/
+
+otpStatus.className =
+    "otp-status success";
+
+otpStatus.innerHTML =
+    '<i class="bi bi-check-circle-fill"></i> ' +
+    'Verification code sent successfully.';
+
+
+if (result.email) {
+
+    otpDescription.innerHTML =
+        'A 6-digit verification code was sent to<br>' +
+        '<strong>' +
+        escapeHtml(result.email) +
+        '</strong>.<br>' +
+        'Please enter the code below.';
+
+} else {
+
+    otpDescription.innerHTML =
+        'A 6-digit verification code was sent to ' +
+        'your registered email address.<br>' +
+        'Please enter the code below.';
+}
+
+
+otpInput.disabled = false;
+
+otpSubmit.disabled = true;
+
+setTimeout(
+    function () {
+        otpInput.focus();
+    },
+    150
+);
 
 
             /*

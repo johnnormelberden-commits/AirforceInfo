@@ -14,7 +14,7 @@ define(
 
 define(
     'MAIL_FROM_EMAIL',
-    'cmoinformationsystem@gmail.com'
+    SMTP_USERNAME
 );
 
 define(

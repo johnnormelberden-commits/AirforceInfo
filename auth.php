@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 /*
 |--------------------------------------------------------------------------
-| SESSION
+| START SESSION
 |--------------------------------------------------------------------------
 */
 
@@ -30,18 +30,24 @@ use PHPMailer\PHPMailer\Exception as PHPMailerException;
 
 /*
 |--------------------------------------------------------------------------
-| AJAX DETECTION
+| AJAX REQUEST
 |--------------------------------------------------------------------------
 */
 
 $isAjax =
     isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
-    strtolower((string) $_SERVER['HTTP_X_REQUESTED_WITH']) === 'xmlhttprequest';
+    strtolower((string)$_SERVER['HTTP_X_REQUESTED_WITH']) ===
+    'xmlhttprequest';
 
 
 /*
 |--------------------------------------------------------------------------
 | JSON RESPONSE
+|--------------------------------------------------------------------------
+|
+| IMPORTANT:
+| Always return HTTP 200 for AJAX application responses.
+| The "success" field tells JavaScript whether login succeeded.
 |--------------------------------------------------------------------------
 */
 
@@ -51,14 +57,11 @@ function jsonResponse(
     array $extra = []
 ): never {
 
-    /*
-     * Make absolutely sure no previous output corrupts JSON.
-     */
     while (ob_get_level() > 0) {
         ob_end_clean();
     }
 
-    http_response_code($success ? 200 : 400);
+    http_response_code(200);
 
     header('Content-Type: application/json; charset=UTF-8');
     header('Cache-Control: no-store, no-cache, must-revalidate');
@@ -82,7 +85,7 @@ function jsonResponse(
 
 /*
 |--------------------------------------------------------------------------
-| NORMAL REDIRECT ERROR
+| REDIRECT ERROR
 |--------------------------------------------------------------------------
 */
 
@@ -99,7 +102,7 @@ function redirectError(string $error): never
 
 /*
 |--------------------------------------------------------------------------
-| ONLY POST REQUESTS
+| ONLY POST
 |--------------------------------------------------------------------------
 */
 
@@ -119,7 +122,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 /*
 |--------------------------------------------------------------------------
-| GET INPUT
+| GET LOGIN DATA
 |--------------------------------------------------------------------------
 */
 
@@ -138,7 +141,7 @@ $remember =
 
 /*
 |--------------------------------------------------------------------------
-| VALIDATE EMPTY INPUT
+| EMPTY INPUT
 |--------------------------------------------------------------------------
 */
 
@@ -157,11 +160,18 @@ if ($username === '' || $password === '') {
 
 /*
 |--------------------------------------------------------------------------
-| VALIDATE EMAIL
+| NORMALIZE EMAIL
 |--------------------------------------------------------------------------
 */
 
 $username = strtolower($username);
+
+
+/*
+|--------------------------------------------------------------------------
+| VALIDATE EMAIL
+|--------------------------------------------------------------------------
+*/
 
 if (!filter_var($username, FILTER_VALIDATE_EMAIL)) {
 
@@ -178,7 +188,7 @@ if (!filter_var($username, FILTER_VALIDATE_EMAIL)) {
 
 /*
 |--------------------------------------------------------------------------
-| DATABASE AUTHENTICATION
+| DATABASE
 |--------------------------------------------------------------------------
 */
 
@@ -186,7 +196,7 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | CHECK DATABASE CONNECTION
+    | VERIFY DATABASE CONNECTION
     |--------------------------------------------------------------------------
     */
 
@@ -196,7 +206,7 @@ try {
     ) {
 
         throw new RuntimeException(
-            'Database connection is not available.'
+            'The database connection variable $connection is not available.'
         );
     }
 
@@ -225,25 +235,19 @@ try {
     ]);
 
 
-    $user = $stmt->fetch(
-        PDO::FETCH_ASSOC
-    );
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 
     /*
     |--------------------------------------------------------------------------
-    | INVALID USER
+    | USER NOT FOUND
     |--------------------------------------------------------------------------
     */
 
     if (!$user) {
 
-        /*
-         * This message is intentionally generic.
-         * Do not reveal whether the email exists.
-         */
-
         if ($isAjax) {
+
             jsonResponse(
                 false,
                 'The email address or password is incorrect.'
@@ -256,29 +260,31 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | DATABASE PASSWORD
+    | GET HASHED PASSWORD
     |--------------------------------------------------------------------------
     */
 
     $databasePassword =
-        trim((string)($user['password'] ?? ''));
+        trim(
+            (string)($user['password'] ?? '')
+        );
 
 
     /*
     |--------------------------------------------------------------------------
-    | VERIFY HASHED PASSWORD
+    | VERIFY PASSWORD
     |--------------------------------------------------------------------------
     |
-    | IMPORTANT:
+    | Your database contains password_hash() output.
     |
-    | Your database password is HASHED.
+    | Therefore DO NOT use:
     |
-    | Therefore:
+    | hash_equals()
+    |
+    | Use:
     |
     | password_verify()
-    |
-    | MUST be used.
-    |
+    |--------------------------------------------------------------------------
     */
 
     if (
@@ -290,6 +296,7 @@ try {
     ) {
 
         if ($isAjax) {
+
             jsonResponse(
                 false,
                 'The email address or password is incorrect.'
@@ -302,12 +309,8 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | OPTIONAL HASH UPGRADE
+    | PASSWORD HASH UPGRADE
     |--------------------------------------------------------------------------
-    |
-    | If PHP recommends a stronger hash later,
-    | automatically update it.
-    |
     */
 
     if (
@@ -317,11 +320,10 @@ try {
         )
     ) {
 
-        $newHash =
-            password_hash(
-                $password,
-                PASSWORD_DEFAULT
-            );
+        $newHash = password_hash(
+            $password,
+            PASSWORD_DEFAULT
+        );
 
 
         $update = $connection->prepare(
@@ -342,7 +344,7 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | CLEAR OLD OTP DATA
+    | CLEAR OLD OTP
     |--------------------------------------------------------------------------
     */
 
@@ -374,13 +376,12 @@ try {
     |--------------------------------------------------------------------------
     */
 
-    $otpExpires =
-        time() + (10 * 60);
+    $otpExpires = time() + (10 * 60);
 
 
     /*
     |--------------------------------------------------------------------------
-    | STORE OTP SECURELY
+    | SAVE OTP SESSION
     |--------------------------------------------------------------------------
     */
 
@@ -408,7 +409,7 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | CREATE PHPMailer
+    | CREATE MAILER
     |--------------------------------------------------------------------------
     */
 
@@ -417,46 +418,33 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | SMTP CONFIGURATION
+    | SMTP
     |--------------------------------------------------------------------------
     */
 
     $mail->isSMTP();
 
-    $mail->Host =
-        'smtp.gmail.com';
+    $mail->Host = 'smtp.gmail.com';
 
-    $mail->SMTPAuth =
-        true;
+    $mail->SMTPAuth = true;
 
-    $mail->Username =
-        SMTP_USERNAME;
+    $mail->Username = SMTP_USERNAME;
 
-    $mail->Password =
-        SMTP_PASSWORD;
+    $mail->Password = SMTP_PASSWORD;
 
     $mail->SMTPSecure =
         PHPMailer::ENCRYPTION_STARTTLS;
 
-    $mail->Port =
-        587;
+    $mail->Port = 587;
 
-    $mail->CharSet =
-        'UTF-8';
+    $mail->CharSet = 'UTF-8';
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | SMTP TIMEOUT
-    |--------------------------------------------------------------------------
-    */
-
-    $mail->Timeout = 15;
+    $mail->Timeout = 20;
 
 
     /*
     |--------------------------------------------------------------------------
-    | FROM
+    | FROM ADDRESS
     |--------------------------------------------------------------------------
     */
 
@@ -493,12 +481,11 @@ try {
     |--------------------------------------------------------------------------
     */
 
-    $safeOtp =
-        htmlspecialchars(
-            $otp,
-            ENT_QUOTES | ENT_SUBSTITUTE,
-            'UTF-8'
-        );
+    $safeOtp = htmlspecialchars(
+        $otp,
+        ENT_QUOTES | ENT_SUBSTITUTE,
+        'UTF-8'
+    );
 
 
     $mail->isHTML(true);
@@ -506,10 +493,15 @@ try {
 
     $mail->Body = '
 <!DOCTYPE html>
+
 <html>
+
 <head>
+
 <meta charset="UTF-8">
+
 <title>CMO Verification Code</title>
+
 </head>
 
 <body style="
@@ -651,6 +643,7 @@ Philippine Air Force
 </div>
 
 </body>
+
 </html>
 ';
 
@@ -666,14 +659,14 @@ Philippine Air Force
         "Your verification code is: " .
         $otp .
         "\n\n" .
-        "This code will expire in 10 minutes.\n\n" .
+        "This code expires in 10 minutes.\n\n" .
         "If you did not attempt to sign in, " .
         "you can safely ignore this email.";
 
 
     /*
     |--------------------------------------------------------------------------
-    | SEND EMAIL
+    | SEND
     |--------------------------------------------------------------------------
     */
 
@@ -682,7 +675,7 @@ Philippine Air Force
 
     /*
     |--------------------------------------------------------------------------
-    | AJAX SUCCESS
+    | SUCCESS
     |--------------------------------------------------------------------------
     */
 
@@ -699,18 +692,18 @@ Philippine Air Force
     }
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | NORMAL REQUEST
-    |--------------------------------------------------------------------------
-    */
-
     header(
         'Location: login.php?otp=1'
     );
 
     exit;
 
+
+/*
+|--------------------------------------------------------------------------
+| DATABASE ERROR
+|--------------------------------------------------------------------------
+*/
 
 } catch (PDOException $e) {
 
@@ -742,10 +735,16 @@ Philippine Air Force
     redirectError('db');
 
 
+/*
+|--------------------------------------------------------------------------
+| PHPMailer ERROR
+|--------------------------------------------------------------------------
+*/
+
 } catch (PHPMailerException $e) {
 
     error_log(
-        'CMO AUTH MAIL ERROR: ' .
+        'CMO AUTH SMTP ERROR: ' .
         $e->getMessage()
     );
 
@@ -764,7 +763,7 @@ Philippine Air Force
 
         jsonResponse(
             false,
-            'The verification email could not be sent. Please check the SMTP configuration.'
+            'The verification email could not be sent. Please check your SMTP settings.'
         );
     }
 
@@ -772,32 +771,20 @@ Philippine Air Force
     redirectError('email');
 
 
-} catch (Throwable $e) {
+/*
+|--------------------------------------------------------------------------
+| GENERAL ERROR
+|--------------------------------------------------------------------------
+*/
 
-    /*
-    |--------------------------------------------------------------------------
-    | THIS IS VERY IMPORTANT
-    |--------------------------------------------------------------------------
-    |
-    | This catches PHP errors such as:
-    |
-    | - TypeError
-    | - RuntimeException
-    | - Error
-    | - Unexpected application errors
-    |
-    | Without this, auth.php could output an HTML PHP error page.
-    |
-    | Then login.php would fail at response.json().
-    |
-    */
+} catch (Throwable $e) {
 
     error_log(
         'CMO AUTH GENERAL ERROR: ' .
         $e->getMessage() .
-        ' in ' .
+        ' | FILE: ' .
         $e->getFile() .
-        ':' .
+        ' | LINE: ' .
         $e->getLine()
     );
 
