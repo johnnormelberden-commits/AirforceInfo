@@ -1,4 +1,3 @@
-```php
 <?php
 declare(strict_types=1);
 
@@ -43,4 +42,3 @@ define(
     'MAIL_FROM_NAME',
     'CMO Information System'
 );
-```
