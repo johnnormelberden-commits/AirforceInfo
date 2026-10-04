@@ -1,18 +1,8 @@
 <?php
-declare(strict_types=1);
 
 /*
 |--------------------------------------------------------------------------
 | GMAIL SMTP CONFIGURATION
-|--------------------------------------------------------------------------
-|
-| Use a Google App Password here.
-|
-| IMPORTANT:
-| Do NOT use your normal Gmail account password.
-|
-| Generate a NEW App Password because the previous one
-| was exposed.
 |--------------------------------------------------------------------------
 */
 
@@ -23,7 +13,7 @@ define(
 
 define(
     'SMTP_PASSWORD',
-    'wlan jksx woie wftc '
+    'yzvv pmsv uvyg bldy'
 );
 
 
