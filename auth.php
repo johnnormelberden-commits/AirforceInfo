@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 /*
 |--------------------------------------------------------------------------
 | SESSION
@@ -25,7 +24,7 @@ require_once __DIR__ . '/db.php';
 
 /*
 |--------------------------------------------------------------------------
-| LOAD MAIL CONFIG
+| LOAD MAIL CONFIGURATION
 |--------------------------------------------------------------------------
 */
 
@@ -53,14 +52,13 @@ use PHPMailer\PHPMailer\PHPMailer;
 
 /*
 |--------------------------------------------------------------------------
-| ONLY ALLOW POST
+| ONLY POST REQUEST
 |--------------------------------------------------------------------------
 */
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
     header('Location: login.php');
-
     exit;
 }
 
@@ -84,14 +82,13 @@ $remember = isset($_POST['remember']);
 
 /*
 |--------------------------------------------------------------------------
-| VALIDATE EMPTY INPUT
+| VALIDATE INPUT
 |--------------------------------------------------------------------------
 */
 
 if ($username === '' || $password === '') {
 
     header('Location: login.php?error=empty');
-
     exit;
 }
 
@@ -108,7 +105,6 @@ if (!filter_var(
 )) {
 
     header('Location: login.php?error=invalid_email');
-
     exit;
 }
 
@@ -121,6 +117,12 @@ if (!filter_var(
 
 try {
 
+    /*
+    |--------------------------------------------------------------------------
+    | FIND USER
+    |--------------------------------------------------------------------------
+    */
+
     $stmt = $connection->prepare(
         "SELECT
             id,
@@ -131,27 +133,23 @@ try {
          LIMIT 1"
     );
 
-
     $stmt->execute([
         ':username' => $username
     ]);
 
-
-    $user = $stmt->fetch(
-        PDO::FETCH_ASSOC
-    );
+    $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
 
     /*
     |--------------------------------------------------------------------------
-    | USER DOES NOT EXIST
+    | USER NOT FOUND
     |--------------------------------------------------------------------------
     */
 
     if (!$user) {
 
         header(
-            'Location: login.php?error=1'
+            'Location: login.php?error=invalid'
         );
 
         exit;
@@ -165,7 +163,9 @@ try {
     |
     | TESTING ONLY
     |
-    | This intentionally compares the password directly.
+    | Database:
+    |
+    | password = potenciana24
     |
     */
 
@@ -179,11 +179,27 @@ try {
     )) {
 
         header(
-            'Location: login.php?error=1'
+            'Location: login.php?error=invalid'
         );
 
         exit;
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | REMOVE OLD OTP SESSION
+    |--------------------------------------------------------------------------
+    */
+
+    unset(
+        $_SESSION['otp_hash'],
+        $_SESSION['otp_expires'],
+        $_SESSION['otp_attempts'],
+        $_SESSION['otp_user_id'],
+        $_SESSION['otp_username'],
+        $_SESSION['otp_remember']
+    );
 
 
     /*
@@ -204,7 +220,7 @@ try {
     |--------------------------------------------------------------------------
     |
     | 10 minutes
-    |--------------------------------------------------------------------------
+    |
     */
 
     $otpExpires =
@@ -213,8 +229,13 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | STORE PENDING OTP LOGIN
+    | STORE OTP SESSION
     |--------------------------------------------------------------------------
+    |
+    | IMPORTANT:
+    |
+    | We store the HASH, not the actual OTP.
+    |
     */
 
     $_SESSION['otp_hash'] =
@@ -223,22 +244,17 @@ try {
             PASSWORD_DEFAULT
         );
 
-
     $_SESSION['otp_expires'] =
         $otpExpires;
-
 
     $_SESSION['otp_attempts'] =
         0;
 
-
     $_SESSION['otp_user_id'] =
         (int)$user['id'];
 
-
     $_SESSION['otp_username'] =
         (string)$user['username'];
-
 
     $_SESSION['otp_remember'] =
         $remember;
@@ -255,11 +271,18 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | GMAIL SMTP
+    | ENABLE SMTP
     |--------------------------------------------------------------------------
     */
 
     $mail->isSMTP();
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | GMAIL SMTP
+    |--------------------------------------------------------------------------
+    */
 
     $mail->Host =
         'smtp.gmail.com';
@@ -285,7 +308,7 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | FROM
+    | FROM ADDRESS
     |--------------------------------------------------------------------------
     */
 
@@ -297,7 +320,7 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | TO
+    | RECIPIENT
     |--------------------------------------------------------------------------
     */
 
@@ -308,7 +331,7 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | SUBJECT
+    | EMAIL SUBJECT
     |--------------------------------------------------------------------------
     */
 
@@ -318,7 +341,16 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | SAFE OTP
+    | HTML EMAIL
+    |--------------------------------------------------------------------------
+    */
+
+    $mail->isHTML(true);
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | ESCAPE OTP
     |--------------------------------------------------------------------------
     */
 
@@ -331,20 +363,25 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | HTML EMAIL
+    | EMAIL BODY
     |--------------------------------------------------------------------------
     */
-
-    $mail->isHTML(true);
 
     $mail->Body = '
 <!DOCTYPE html>
 
-<html>
+<html lang="en">
 
 <head>
 
 <meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+
+<title>CMO Verification Code</title>
 
 </head>
 
@@ -364,140 +401,140 @@ border-radius:12px;
 overflow:hidden;
 ">
 
-<div style="
-background:#0b5796;
-color:#ffffff;
-padding:25px;
-text-align:center;
-">
+    <div style="
+    background:#0b5796;
+    color:#ffffff;
+    padding:25px;
+    text-align:center;
+    ">
 
-<h2 style="
-margin:0;
-font-size:22px;
-">
+        <h2 style="
+        margin:0;
+        font-size:22px;
+        ">
+            CMO Information System
+        </h2>
 
-CMO Information System
+        <p style="
+        margin:8px 0 0;
+        font-size:13px;
+        ">
+            Philippine Air Force
+        </p>
 
-</h2>
-
-<p style="
-margin:8px 0 0;
-font-size:13px;
-">
-
-Philippine Air Force
-
-</p>
-
-</div>
+    </div>
 
 
-<div style="
-padding:35px;
-color:#24364c;
-">
+    <div style="
+    padding:35px;
+    color:#24364c;
+    ">
 
-<h3>
-Verification Code
-</h3>
-
-
-<p style="
-font-size:14px;
-line-height:1.6;
-">
-
-A login attempt was made for your
-CMO Information System account.
-
-</p>
+        <h3 style="
+        margin-top:0;
+        ">
+            Verification Code
+        </h3>
 
 
-<p style="
-font-size:14px;
-line-height:1.6;
-">
+        <p style="
+        font-size:14px;
+        line-height:1.6;
+        ">
 
-Enter the following verification code
-to complete your login:
+            A login attempt was made for your
+            CMO Information System account.
 
-</p>
-
-
-<div style="
-margin:30px 0;
-padding:20px;
-background:#eef7ff;
-border:1px solid #cfe8ff;
-border-radius:10px;
-text-align:center;
-">
-
-<div style="
-color:#6b7c93;
-font-size:11px;
-margin-bottom:8px;
-text-transform:uppercase;
-letter-spacing:1px;
-">
-
-Verification Code
-
-</div>
+        </p>
 
 
-<div style="
-color:#0b5796;
-font-size:36px;
-font-weight:bold;
-letter-spacing:8px;
-">
+        <p style="
+        font-size:14px;
+        line-height:1.6;
+        ">
 
-' . $safeOtp . '
+            Enter the verification code below
+            to complete your login.
 
-</div>
-
-</div>
+        </p>
 
 
-<p style="
-font-size:13px;
-color:#6b7c93;
-">
+        <div style="
+        margin:30px 0;
+        padding:20px;
+        background:#eef7ff;
+        border:1px solid #cfe8ff;
+        border-radius:10px;
+        text-align:center;
+        ">
 
-This code expires in
-<strong>10 minutes</strong>.
+            <div style="
+            color:#6b7c93;
+            font-size:11px;
+            margin-bottom:8px;
+            text-transform:uppercase;
+            letter-spacing:1px;
+            ">
 
-</p>
+                Verification Code
 
-
-<p style="
-font-size:13px;
-color:#6b7c93;
-">
-
-If you did not attempt to sign in,
-you can safely ignore this email.
-
-</p>
-
-</div>
+            </div>
 
 
-<div style="
-padding:18px;
-background:#f8fafc;
-border-top:1px solid #edf0f3;
-text-align:center;
-color:#8d99a6;
-font-size:11px;
-">
+            <div style="
+            color:#0b5796;
+            font-size:36px;
+            font-weight:bold;
+            letter-spacing:8px;
+            ">
 
-CMO Information System
-<br>
-Philippine Air Force
+                ' . $safeOtp . '
 
-</div>
+            </div>
+
+        </div>
+
+
+        <p style="
+        font-size:13px;
+        color:#6b7c93;
+        line-height:1.6;
+        ">
+
+            This verification code will expire in
+            <strong>10 minutes</strong>.
+
+        </p>
+
+
+        <p style="
+        font-size:13px;
+        color:#6b7c93;
+        line-height:1.6;
+        ">
+
+            If you did not attempt to sign in,
+            you can safely ignore this email.
+
+        </p>
+
+    </div>
+
+
+    <div style="
+    padding:18px;
+    background:#f8fafc;
+    border-top:1px solid #edf0f3;
+    text-align:center;
+    color:#8d99a6;
+    font-size:11px;
+    ">
+
+        CMO Information System
+        <br>
+        Philippine Air Force
+
+    </div>
 
 </div>
 
@@ -534,10 +571,13 @@ Philippine Air Force
 
     /*
     |--------------------------------------------------------------------------
-    | REDIRECT BACK TO LOGIN
+    | EMAIL SENT SUCCESSFULLY
     |--------------------------------------------------------------------------
     |
-    | The OTP popup will now appear on login.php.
+    | Return to login page.
+    |
+    | login.php must detect ?otp=1 and display
+    | the OTP modal.
     |
     */
 
@@ -562,6 +602,16 @@ Philippine Air Force
     );
 
 
+    unset(
+        $_SESSION['otp_hash'],
+        $_SESSION['otp_expires'],
+        $_SESSION['otp_attempts'],
+        $_SESSION['otp_user_id'],
+        $_SESSION['otp_username'],
+        $_SESSION['otp_remember']
+    );
+
+
     header(
         'Location: login.php?error=db'
     );
@@ -573,7 +623,7 @@ Philippine Air Force
 
     /*
     |--------------------------------------------------------------------------
-    | EMAIL ERROR
+    | PHPMailer / SMTP ERROR
     |--------------------------------------------------------------------------
     */
 
@@ -585,7 +635,7 @@ Philippine Air Force
 
     /*
     |--------------------------------------------------------------------------
-    | CLEAR OTP
+    | CLEAR PENDING OTP
     |--------------------------------------------------------------------------
     */
 
@@ -598,6 +648,12 @@ Philippine Air Force
         $_SESSION['otp_remember']
     );
 
+
+    /*
+    |--------------------------------------------------------------------------
+    | RETURN TO LOGIN
+    |--------------------------------------------------------------------------
+    */
 
     header(
         'Location: login.php?error=email'
