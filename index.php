@@ -1,18 +1,42 @@
 <?php
 
+declare(strict_types=1);
+
+/*
+|--------------------------------------------------------------------------
+| SESSION
+|--------------------------------------------------------------------------
+*/
+
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+
 /*
 |--------------------------------------------------------------------------
 | LOGIN SECURITY
 |--------------------------------------------------------------------------
+|
+| The user must have:
+|
+| 1. Successfully entered the correct username/password
+| 2. Successfully entered the OTP
+|
+| verify-otp.php sets logged_in = true only after
+| successful OTP verification.
+|
 */
 
-session_start();
+if (
+    !isset($_SESSION['logged_in']) ||
+    $_SESSION['logged_in'] !== true ||
+    !isset($_SESSION['user_id']) ||
+    !isset($_SESSION['username'])
+) {
 
-if (!isset($_SESSION['username'])) {
-
-    header("Location: login.php");
+    header('Location: login.php?error=login_required');
     exit;
-
 }
 
 
