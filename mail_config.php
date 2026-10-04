@@ -9,7 +9,7 @@ define(
 
 define(
     'SMTP_PASSWORD',
-    'rwrpwvswlqkydjgc'
+    'rxxv diof gvri plfp'
 );
 
 define(
