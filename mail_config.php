@@ -1,34 +1,33 @@
-<?php
+    <?php
+    /*
+    |--------------------------------------------------------------------------
+    | GMAIL SMTP CONFIGURATION
+    |--------------------------------------------------------------------------
+    */
 
-/*
-|--------------------------------------------------------------------------
-| GMAIL SMTP CONFIGURATION
-|--------------------------------------------------------------------------
-*/
+    define(
+        'SMTP_USERNAME',
+        'cmoinformationsystem@gmail.com'
+    );
 
-define(
-    'SMTP_USERNAME',
-    'cmoinformationsystem@gmail.com'
-);
-
-define(
-    'SMTP_PASSWORD',
-    'yzvv pmsv uvyg bldy'
-);
+    define(
+        'SMTP_PASSWORD',
+        'yzvv pmsv uvyg bldy'
+    );
 
 
-/*
-|--------------------------------------------------------------------------
-| EMAIL SENDER
-|--------------------------------------------------------------------------
-*/
+    /*
+    |--------------------------------------------------------------------------
+    | EMAIL SENDER
+    |--------------------------------------------------------------------------
+    */
 
-define(
-    'MAIL_FROM_EMAIL',
-    'cmoinformationsystem@gmail.com'
-);
+    define(
+        'MAIL_FROM_EMAIL',
+        'cmoinformationsystem@gmail.com'
+    );
 
-define(
-    'MAIL_FROM_NAME',
-    'CMO Information System'
-);
+    define(
+        'MAIL_FROM_NAME',
+        'CMO Information System'
+    );
