@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 /*
 |--------------------------------------------------------------------------
 | SESSION
@@ -16,17 +15,16 @@ if (session_status() === PHP_SESSION_NONE) {
 
 /*
 |--------------------------------------------------------------------------
-| ERROR HANDLING
+| PHP ERROR HANDLING
 |--------------------------------------------------------------------------
 |
-| Prevent PHP warnings/notices from being printed into the AJAX response.
-| They are logged instead.
+| Do not allow PHP warnings/notices to corrupt AJAX JSON responses.
 |
-|--------------------------------------------------------------------------
 */
 
 ini_set('display_errors', '0');
 ini_set('log_errors', '1');
+error_reporting(E_ALL);
 
 
 /*
@@ -46,15 +44,14 @@ use PHPMailer\PHPMailer\PHPMailer;
 
 /*
 |--------------------------------------------------------------------------
-| AJAX REQUEST
+| AJAX DETECTION
 |--------------------------------------------------------------------------
 */
 
 $isAjax =
     isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
-    strtolower(
-        (string)$_SERVER['HTTP_X_REQUESTED_WITH']
-    ) === 'xmlhttprequest';
+    strtolower((string) $_SERVER['HTTP_X_REQUESTED_WITH']) ===
+    'xmlhttprequest';
 
 
 /*
@@ -69,23 +66,6 @@ function jsonResponse(
     array $extra = []
 ): never {
 
-    /*
-    |--------------------------------------------------------------------------
-    | Remove any accidental output buffers
-    |--------------------------------------------------------------------------
-    */
-
-    while (ob_get_level() > 0) {
-        ob_end_clean();
-    }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | JSON HEADER
-    |--------------------------------------------------------------------------
-    */
-
     http_response_code(
         $success ? 200 : 400
     );
@@ -97,13 +77,6 @@ function jsonResponse(
     header(
         'Cache-Control: no-store, no-cache, must-revalidate'
     );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | RESPONSE
-    |--------------------------------------------------------------------------
-    */
 
     echo json_encode(
         array_merge(
@@ -123,15 +96,19 @@ function jsonResponse(
 
 /*
 |--------------------------------------------------------------------------
-| START OUTPUT BUFFER
-|--------------------------------------------------------------------------
-|
-| Prevent accidental whitespace/output from breaking JSON.
-|
+| NORMAL REDIRECT ERROR
 |--------------------------------------------------------------------------
 */
 
-ob_start();
+function redirectError(string $error): never
+{
+    header(
+        'Location: login.php?error=' .
+        urlencode($error)
+    );
+
+    exit;
+}
 
 
 /*
@@ -148,13 +125,9 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             false,
             'Invalid request method.'
         );
-
     }
 
-
-    header(
-        'Location: login.php'
-    );
+    header('Location: login.php');
 
     exit;
 }
@@ -162,26 +135,26 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 /*
 |--------------------------------------------------------------------------
-| GET LOGIN DATA
+| GET FORM DATA
 |--------------------------------------------------------------------------
 */
 
 $username = trim(
-    (string)($_POST['username'] ?? '')
+    (string) ($_POST['username'] ?? '')
 );
 
-$password = (string)(
+$password = (string) (
     $_POST['password'] ?? ''
 );
 
 $remember =
     isset($_POST['remember']) &&
-    $_POST['remember'] === '1';
+    (string) $_POST['remember'] === '1';
 
 
 /*
 |--------------------------------------------------------------------------
-| EMPTY INPUT
+| EMPTY DATA
 |--------------------------------------------------------------------------
 */
 
@@ -196,33 +169,15 @@ if (
             false,
             'Please enter your email address and password.'
         );
-
     }
 
-
-    header(
-        'Location: login.php?error=empty'
-    );
-
-    exit;
+    redirectError('empty');
 }
 
 
 /*
 |--------------------------------------------------------------------------
-| NORMALIZE EMAIL
-|--------------------------------------------------------------------------
-*/
-
-$username =
-    strtolower(
-        trim($username)
-    );
-
-
-/*
-|--------------------------------------------------------------------------
-| VALIDATE EMAIL
+| EMAIL VALIDATION
 |--------------------------------------------------------------------------
 */
 
@@ -239,15 +194,9 @@ if (
             false,
             'Please enter a valid email address.'
         );
-
     }
 
-
-    header(
-        'Location: login.php?error=invalid_email'
-    );
-
-    exit;
+    redirectError('invalid_email');
 }
 
 
@@ -259,32 +208,24 @@ if (
 
 try {
 
-    /*
-    |--------------------------------------------------------------------------
-    | FIND USER
-    |--------------------------------------------------------------------------
-    */
-
     $stmt = $connection->prepare(
-        "SELECT
+        "
+        SELECT
             id,
             username,
             password
-         FROM users
-         WHERE LOWER(username) = LOWER(:username)
-         LIMIT 1"
+        FROM users
+        WHERE username = :username
+        LIMIT 1
+        "
     );
-
 
     $stmt->execute([
         ':username' => $username
     ]);
 
-
     $user =
-        $stmt->fetch(
-            PDO::FETCH_ASSOC
-        );
+        $stmt->fetch(PDO::FETCH_ASSOC);
 
 
     /*
@@ -301,43 +242,29 @@ try {
                 false,
                 'Invalid email address or password.'
             );
-
         }
 
-
-        header(
-            'Location: login.php?error=invalid'
-        );
-
-        exit;
+        redirectError('invalid');
     }
 
 
     /*
     |--------------------------------------------------------------------------
-    | GET DATABASE PASSWORD
-    |--------------------------------------------------------------------------
-    */
-
-    $databasePassword =
-        (string)(
-            $user['password'] ?? ''
-        );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | PASSWORD VERIFY
+    | PASSWORD VERIFICATION
     |--------------------------------------------------------------------------
     |
     | IMPORTANT:
-    |
-    | This expects the database password to have been generated using:
+    | The database password must be created using:
     |
     | password_hash($password, PASSWORD_DEFAULT)
     |
-    |--------------------------------------------------------------------------
     */
+
+    $databasePassword =
+        (string) (
+            $user['password'] ?? ''
+        );
+
 
     if (
         $databasePassword === '' ||
@@ -353,15 +280,9 @@ try {
                 false,
                 'Invalid email address or password.'
             );
-
         }
 
-
-        header(
-            'Location: login.php?error=invalid'
-        );
-
-        exit;
+        redirectError('invalid');
     }
 
 
@@ -378,30 +299,43 @@ try {
         )
     ) {
 
-        $newPasswordHash =
+        $newHash =
             password_hash(
                 $password,
                 PASSWORD_DEFAULT
             );
 
-
-        $updatePassword =
+        $update =
             $connection->prepare(
-                "UPDATE users
-                 SET password = :password
-                 WHERE id = :id"
+                "
+                UPDATE users
+                SET password = :password
+                WHERE id = :id
+                "
             );
 
-
-        $updatePassword->execute([
-            ':password' =>
-                $newPasswordHash,
-
+        $update->execute([
+            ':password' => $newHash,
             ':id' =>
-                (int)$user['id']
+                (int) $user['id']
         ]);
-
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CLEAR OLD OTP
+    |--------------------------------------------------------------------------
+    */
+
+    unset(
+        $_SESSION['otp_hash'],
+        $_SESSION['otp_expires'],
+        $_SESSION['otp_attempts'],
+        $_SESSION['otp_user_id'],
+        $_SESSION['otp_username'],
+        $_SESSION['otp_remember']
+    );
 
 
     /*
@@ -411,7 +345,7 @@ try {
     */
 
     $otp =
-        (string)random_int(
+        (string) random_int(
             100000,
             999999
         );
@@ -424,12 +358,12 @@ try {
     */
 
     $otpExpires =
-        time() + (10 * 60);
+        time() + 600;
 
 
     /*
     |--------------------------------------------------------------------------
-    | STORE OTP SESSION
+    | STORE OTP
     |--------------------------------------------------------------------------
     */
 
@@ -439,22 +373,17 @@ try {
             PASSWORD_DEFAULT
         );
 
-
     $_SESSION['otp_expires'] =
         $otpExpires;
-
 
     $_SESSION['otp_attempts'] =
         0;
 
-
     $_SESSION['otp_user_id'] =
-        (int)$user['id'];
-
+        (int) $user['id'];
 
     $_SESSION['otp_username'] =
-        (string)$user['username'];
-
+        (string) $user['username'];
 
     $_SESSION['otp_remember'] =
         $remember;
@@ -472,55 +401,42 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | SMTP CONFIGURATION
+    | SMTP
     |--------------------------------------------------------------------------
     */
 
     $mail->isSMTP();
 
-
     $mail->Host =
         'smtp.gmail.com';
-
 
     $mail->SMTPAuth =
         true;
 
-
     $mail->Username =
         SMTP_USERNAME;
-
 
     $mail->Password =
         SMTP_PASSWORD;
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | TLS
-    |--------------------------------------------------------------------------
-    */
-
     $mail->SMTPSecure =
         PHPMailer::ENCRYPTION_STARTTLS;
-
 
     $mail->Port =
         587;
 
-
     $mail->CharSet =
         'UTF-8';
 
-
     /*
     |--------------------------------------------------------------------------
-    | SMTP TIMEOUT
+    | TIMEOUT
     |--------------------------------------------------------------------------
     */
 
-    $mail->Timeout =
-        15;
+    $mail->Timeout = 15;
+
+    $mail->SMTPKeepAlive = false;
 
 
     /*
@@ -542,7 +458,7 @@ try {
     */
 
     $mail->addAddress(
-        (string)$user['username']
+        (string) $user['username']
     );
 
 
@@ -573,37 +489,29 @@ try {
 
     $mail->isHTML(true);
 
-
     $mail->Body = '
-
 <!DOCTYPE html>
-
 <html>
-
 <head>
-
 <meta charset="UTF-8">
-
+<title>CMO Verification Code</title>
 </head>
-
 
 <body style="
 margin:0;
-padding:0;
+padding:30px;
 background:#f4f7fb;
 font-family:Arial,Helvetica,sans-serif;
 ">
 
-
 <div style="
 max-width:600px;
-margin:40px auto;
+margin:auto;
 background:#ffffff;
 border:1px solid #e2e8f0;
 border-radius:12px;
 overflow:hidden;
 ">
-
 
 <div style="
 background:#0b5796;
@@ -616,17 +524,11 @@ text-align:center;
 CMO Information System
 </h2>
 
-<p style="
-margin:8px 0 0;
-font-size:13px;
-">
-
+<p style="margin:8px 0 0;">
 Philippine Air Force
-
 </p>
 
 </div>
-
 
 <div style="
 padding:35px;
@@ -634,45 +536,25 @@ color:#24364c;
 ">
 
 <h3>
-Verification Code
+Login Verification
 </h3>
 
-
-<p style="
-font-size:14px;
-line-height:1.6;
-">
-
-A login attempt was made for your
-CMO Information System account.
-
+<p>
+Your CMO Information System verification code is:
 </p>
-
-
-<p style="
-font-size:14px;
-line-height:1.6;
-">
-
-Enter the following verification code
-to complete your login:
-
-</p>
-
 
 <div style="
 margin:30px 0;
-padding:20px;
+padding:22px;
 background:#eef7ff;
 border:1px solid #cfe8ff;
 border-radius:10px;
 text-align:center;
 ">
 
-
 <div style="
-color:#6b7c93;
 font-size:11px;
+color:#6b7c93;
 margin-bottom:8px;
 text-transform:uppercase;
 letter-spacing:1px;
@@ -682,21 +564,18 @@ Verification Code
 
 </div>
 
-
 <div style="
-color:#0b5796;
 font-size:36px;
 font-weight:bold;
 letter-spacing:8px;
+color:#0b5796;
 ">
 
 ' . $safeOtp . '
 
 </div>
 
-
 </div>
-
 
 <p style="
 font-size:13px;
@@ -708,51 +587,43 @@ This code expires in
 
 </p>
 
-
 <p style="
 font-size:13px;
 color:#6b7c93;
 ">
 
 If you did not attempt to sign in,
-you can safely ignore this email.
+please ignore this message.
 
 </p>
 
-
 </div>
-
 
 <div style="
 padding:18px;
 background:#f8fafc;
 border-top:1px solid #edf0f3;
 text-align:center;
-color:#8d99a6;
 font-size:11px;
+color:#8d99a6;
 ">
 
 CMO Information System
-
 <br>
-
 Philippine Air Force
 
 </div>
 
-
 </div>
 
 </body>
-
 </html>
-
 ';
 
 
     /*
     |--------------------------------------------------------------------------
-    | PLAIN TEXT EMAIL
+    | PLAIN TEXT VERSION
     |--------------------------------------------------------------------------
     */
 
@@ -761,9 +632,7 @@ Philippine Air Force
         "Your verification code is: " .
         $otp .
         "\n\n" .
-        "This code will expire in 10 minutes.\n\n" .
-        "If you did not attempt to sign in, " .
-        "you can safely ignore this email.";
+        "This code expires in 10 minutes.\n";
 
 
     /*
@@ -777,7 +646,7 @@ Philippine Air Force
 
     /*
     |--------------------------------------------------------------------------
-    | AJAX SUCCESS
+    | SUCCESS
     |--------------------------------------------------------------------------
     */
 
@@ -788,18 +657,16 @@ Philippine Air Force
             'Verification code sent successfully.',
             [
                 'otp_required' => true,
-
                 'email' =>
-                    (string)$user['username']
+                    (string) $user['username']
             ]
         );
-
     }
 
 
     /*
     |--------------------------------------------------------------------------
-    | NORMAL FORM FALLBACK
+    | NON-AJAX
     |--------------------------------------------------------------------------
     */
 
@@ -810,28 +677,13 @@ Philippine Air Force
     exit;
 
 
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| DATABASE ERROR
-|--------------------------------------------------------------------------
-*/
-
-catch (PDOException $e) {
+} catch (PDOException $e) {
 
     error_log(
-        'CMO database error: ' .
+        'CMO AUTH DATABASE ERROR: ' .
         $e->getMessage()
     );
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | CLEAR OTP DATA
-    |--------------------------------------------------------------------------
-    */
 
     unset(
         $_SESSION['otp_hash'],
@@ -849,37 +701,18 @@ catch (PDOException $e) {
             false,
             'A database error occurred. Please try again later.'
         );
-
     }
 
-
-    header(
-        'Location: login.php?error=db'
-    );
-
-    exit;
-}
+    redirectError('db');
 
 
-/*
-|--------------------------------------------------------------------------
-| MAIL / PHPMailer ERROR
-|--------------------------------------------------------------------------
-*/
-
-catch (Exception $e) {
+} catch (Exception $e) {
 
     error_log(
-        'CMO PHPMailer OTP error: ' .
+        'CMO AUTH EMAIL ERROR: ' .
         $e->getMessage()
     );
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | CLEAR OTP SESSION
-    |--------------------------------------------------------------------------
-    */
 
     unset(
         $_SESSION['otp_hash'],
@@ -895,47 +728,19 @@ catch (Exception $e) {
 
         jsonResponse(
             false,
-            'We could not send the verification code. Please check your SMTP configuration.'
+            'We could not send the verification code. Please check the SMTP configuration.'
         );
-
     }
 
 
-    header(
-        'Location: login.php?error=email'
-    );
-
-    exit;
-}
+    redirectError('email');
 
 
-/*
-|--------------------------------------------------------------------------
-| UNEXPECTED ERROR
-|--------------------------------------------------------------------------
-*/
-
-catch (Throwable $e) {
+} catch (Throwable $e) {
 
     error_log(
-        'CMO authentication error: ' .
+        'CMO AUTH GENERAL ERROR: ' .
         $e->getMessage()
-    );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | CLEAR OTP SESSION
-    |--------------------------------------------------------------------------
-    */
-
-    unset(
-        $_SESSION['otp_hash'],
-        $_SESSION['otp_expires'],
-        $_SESSION['otp_attempts'],
-        $_SESSION['otp_user_id'],
-        $_SESSION['otp_username'],
-        $_SESSION['otp_remember']
     );
 
 
@@ -943,15 +748,10 @@ catch (Throwable $e) {
 
         jsonResponse(
             false,
-            'Unable to process the login request. Please try again.'
+            'The authentication server encountered an error. Please try again.'
         );
-
     }
 
 
-    header(
-        'Location: login.php?error=system'
-    );
-
-    exit;
+    redirectError('server');
 }
