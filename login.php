@@ -1651,13 +1651,11 @@ function togglePassword() {
     const icon =
         document.getElementById("passwordIcon");
 
-
     if (password.type === "password") {
 
         password.type = "text";
 
         icon.classList.remove("bi-eye");
-
         icon.classList.add("bi-eye-slash");
 
     } else {
@@ -1665,11 +1663,9 @@ function togglePassword() {
         password.type = "password";
 
         icon.classList.remove("bi-eye-slash");
-
         icon.classList.add("bi-eye");
 
     }
-
 }
 
 
@@ -1703,194 +1699,368 @@ const otpForm =
 
 /*
 |--------------------------------------------------------------------------
-| LOGIN AJAX
-|--------------------------------------------------------------------------
-|
-| IMPORTANT:
-| The OTP popup opens BEFORE auth.php finishes.
-|
+| SHOW LOGIN BUTTON
 |--------------------------------------------------------------------------
 */
 
-loginForm.addEventListener("submit", async function (e) {
+function resetLoginButton() {
 
-    e.preventDefault();
+    loginButton.disabled = false;
+
+    loginButton.innerHTML =
+        'Continue securely ' +
+        '<i class="bi bi-arrow-right"></i>';
+
+}
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | SHOW OTP POPUP IMMEDIATELY
-    |--------------------------------------------------------------------------
-    */
+/*
+|--------------------------------------------------------------------------
+| SHOW OTP ERROR
+|--------------------------------------------------------------------------
+*/
 
-    otpModal.classList.add("show");
-
+function showOtpError(message) {
 
     otpStatus.className =
-        "otp-status";
-
+        "otp-status error";
 
     otpStatus.innerHTML =
-        '<span class="spinner-border spinner-border-sm me-2"></span>' +
-        'Sending verification code...';
+        '<i class="bi bi-exclamation-circle-fill"></i> ' +
+        escapeHtml(message);
+
+    resetLoginButton();
+
+}
 
 
-    otpInput.disabled = true;
+/*
+|--------------------------------------------------------------------------
+| SHOW OTP SUCCESS
+|--------------------------------------------------------------------------
+*/
 
-    otpInput.value = "";
+function showOtpSuccess(email) {
+
+    otpStatus.className =
+        "otp-status success";
+
+    otpStatus.innerHTML =
+        '<i class="bi bi-check-circle-fill"></i> ' +
+        'Verification code sent successfully.';
+
+
+    otpInput.disabled = false;
 
     otpSubmit.disabled = true;
 
 
-    loginButton.disabled = true;
+    /*
+    |--------------------------------------------------------------------------
+    | SHOW EMAIL
+    |--------------------------------------------------------------------------
+    */
 
-    loginButton.innerHTML =
-        '<span class="spinner-border spinner-border-sm me-2"></span>' +
-        'Sending verification code...';
+    const description =
+        document.querySelector(".otp-description");
+
+
+    if (description && email) {
+
+        description.innerHTML =
+            'A 6-digit verification code was sent to<br>' +
+            '<strong>' +
+            escapeHtml(email) +
+            '</strong>.' +
+            '<br>' +
+            'Please enter the code below.';
+
+    }
 
 
     /*
     |--------------------------------------------------------------------------
-    | SEND LOGIN DATA
+    | FOCUS OTP
     |--------------------------------------------------------------------------
     */
 
-    try {
+    setTimeout(function () {
+
+        otpInput.focus();
+
+    }, 100);
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| LOGIN AJAX
+|--------------------------------------------------------------------------
+|
+| The OTP popup appears immediately.
+|
+| auth.php runs in the background.
+|
+|--------------------------------------------------------------------------
+*/
+
+loginForm.addEventListener(
+    "submit",
+    async function (e) {
+
+        e.preventDefault();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | BASIC CLIENT VALIDATION
+        |--------------------------------------------------------------------------
+        */
+
+        const username =
+            document.getElementById("username").value.trim();
+
+        const password =
+            document.getElementById("password").value;
+
+
+        if (!username || !password) {
+
+            showOtpError(
+                "Please enter your email address and password."
+            );
+
+            return;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SHOW OTP POPUP IMMEDIATELY
+        |--------------------------------------------------------------------------
+        */
+
+        otpModal.classList.add("show");
+
+
+        otpStatus.className =
+            "otp-status";
+
+
+        otpStatus.innerHTML =
+            '<span class="spinner-border spinner-border-sm me-2"></span>' +
+            'Sending verification code...';
+
+
+        otpInput.disabled = true;
+
+        otpInput.value = "";
+
+        otpSubmit.disabled = true;
+
+
+        loginButton.disabled = true;
+
+        loginButton.innerHTML =
+            '<span class="spinner-border spinner-border-sm me-2"></span>' +
+            'Sending verification code...';
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | PREPARE FORM DATA
+        |--------------------------------------------------------------------------
+        */
 
         const formData =
             new FormData(loginForm);
 
 
-        const response =
-            await fetch(
-                "auth.php",
-                {
-                    method: "POST",
+        /*
+        |--------------------------------------------------------------------------
+        | SEND TO AUTH.PHP
+        |--------------------------------------------------------------------------
+        */
 
-                    body: formData,
+        try {
 
-                    headers: {
-                        "X-Requested-With": "XMLHttpRequest"
+            const response =
+                await fetch(
+                    "auth.php",
+                    {
+                        method: "POST",
+
+                        body: formData,
+
+                        credentials: "same-origin",
+
+                        headers: {
+                            "X-Requested-With": "XMLHttpRequest",
+                            "Accept": "application/json"
+                        }
                     }
-                }
-            );
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | CHECK HTTP STATUS
-        |--------------------------------------------------------------------------
-        */
-
-        if (!response.ok) {
-
-            throw new Error(
-                "Authentication server returned HTTP " +
-                response.status
-            );
-
-        }
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | READ JSON
-        |--------------------------------------------------------------------------
-        */
-
-        const result =
-            await response.json();
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | SUCCESS
-        |--------------------------------------------------------------------------
-        */
-
-        if (result.success) {
-
-            otpStatus.className =
-                "otp-status success";
-
-
-            otpStatus.innerHTML =
-                '<i class="bi bi-check-circle-fill"></i> ' +
-                'Verification code sent to your email.';
-
-
-            otpInput.disabled = false;
-
-            otpSubmit.disabled = false;
-
-
-            setTimeout(function () {
-
-                otpInput.focus();
-
-            }, 100);
+                );
 
 
             /*
             |--------------------------------------------------------------------------
-            | OPTIONAL EMAIL DISPLAY
+            | HTTP ERROR
             |--------------------------------------------------------------------------
             */
 
-            if (result.email) {
+            if (!response.ok) {
 
-                const description =
-                    document.querySelector(".otp-description");
+                let serverText = "";
 
+                try {
 
-                if (description) {
+                    serverText =
+                        await response.text();
 
-                    description.innerHTML =
-                        'A 6-digit verification code was sent to<br>' +
-                        '<strong>' +
-                        escapeHtml(result.email) +
-                        '</strong>.' +
-                        '<br>' +
-                        'Please enter the code below.';
+                } catch (e) {
+
+                    serverText = "";
 
                 }
+
+
+                console.error(
+                    "auth.php HTTP error:",
+                    response.status,
+                    serverText
+                );
+
+
+                throw new Error(
+                    "HTTP " + response.status
+                );
 
             }
 
 
-        }
+            /*
+            |--------------------------------------------------------------------------
+            | IMPORTANT:
+            |
+            | DO NOT USE response.json() DIRECTLY.
+            |
+            | Read text first.
+            |--------------------------------------------------------------------------
+            */
+
+            const responseText =
+                await response.text();
 
 
-        /*
-        |--------------------------------------------------------------------------
-        | FAILURE
-        |--------------------------------------------------------------------------
-        */
-
-        else {
-
-            otpStatus.className =
-                "otp-status error";
-
-
-            otpStatus.innerHTML =
-                '<i class="bi bi-exclamation-circle-fill"></i> ' +
-                escapeHtml(
-                    result.message ||
-                    "Unable to send verification code."
-                );
-
-
-            loginButton.disabled = false;
-
-            loginButton.innerHTML =
-                'Continue securely ' +
-                '<i class="bi bi-arrow-right"></i>';
+            console.log(
+                "auth.php response:",
+                responseText
+            );
 
 
             /*
             |--------------------------------------------------------------------------
-            | CLOSE AFTER A SHORT DELAY
+            | EMPTY RESPONSE
+            |--------------------------------------------------------------------------
+            */
+
+            if (!responseText.trim()) {
+
+                throw new Error(
+                    "auth.php returned an empty response."
+                );
+
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | PARSE JSON SAFELY
+            |--------------------------------------------------------------------------
+            */
+
+            let result;
+
+
+            try {
+
+                result =
+                    JSON.parse(responseText);
+
+            } catch (jsonError) {
+
+                console.error(
+                    "Invalid JSON returned by auth.php:",
+                    responseText
+                );
+
+
+                /*
+                |--------------------------------------------------------------------------
+                | DO NOT SAY "UNABLE TO CONNECT"
+                |
+                | The server actually responded.
+                |--------------------------------------------------------------------------
+                */
+
+                throw new Error(
+                    "The authentication server returned an invalid response."
+                );
+
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | AUTH SUCCESS
+            |--------------------------------------------------------------------------
+            */
+
+            if (
+                result &&
+                result.success === true
+            ) {
+
+                showOtpSuccess(
+                    result.email || username
+                );
+
+
+                return;
+
+            }
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | AUTH FAILURE
+            |--------------------------------------------------------------------------
+            */
+
+            let message =
+                "Unable to sign in. Please try again.";
+
+
+            if (
+                result &&
+                typeof result.message === "string" &&
+                result.message.trim() !== ""
+            ) {
+
+                message =
+                    result.message;
+
+            }
+
+
+            showOtpError(message);
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | CLOSE MODAL AFTER ERROR
             |--------------------------------------------------------------------------
             */
 
@@ -1898,59 +2068,53 @@ loginForm.addEventListener("submit", async function (e) {
 
                 otpModal.classList.remove("show");
 
-            }, 2500);
+            }, 3500);
 
         }
 
 
-    } catch (error) {
+        /*
+        |--------------------------------------------------------------------------
+        | CONNECTION / SERVER ERROR
+        |--------------------------------------------------------------------------
+        */
 
-        console.error(error);
+        catch (error) {
 
-
-        otpStatus.className =
-            "otp-status error";
-
-
-        otpStatus.innerHTML =
-            '<i class="bi bi-exclamation-circle-fill"></i> ' +
-            'Unable to connect to the authentication server.';
-
-
-        loginButton.disabled = false;
-
-        loginButton.innerHTML =
-            'Continue securely ' +
-            '<i class="bi bi-arrow-right"></i>';
+            console.error(
+                "Login request failed:",
+                error
+            );
 
 
-        setTimeout(function () {
+            otpStatus.className =
+                "otp-status error";
 
-            otpModal.classList.remove("show");
 
-        }, 3000);
+            otpStatus.innerHTML =
+                '<i class="bi bi-exclamation-circle-fill"></i> ' +
+                'The login server could not process the request.';
+
+
+            resetLoginButton();
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | CLOSE AFTER DELAY
+            |--------------------------------------------------------------------------
+            */
+
+            setTimeout(function () {
+
+                otpModal.classList.remove("show");
+
+            }, 4000);
+
+        }
 
     }
-
-});
-
-
-/*
-|--------------------------------------------------------------------------
-| ESCAPE HTML
-|--------------------------------------------------------------------------
-*/
-
-function escapeHtml(value) {
-
-    const div =
-        document.createElement("div");
-
-    div.textContent =
-        String(value);
-
-    return div.innerHTML;
-}
+);
 
 
 /*
@@ -1963,6 +2127,12 @@ otpInput.addEventListener(
     "input",
     function () {
 
+        /*
+        |--------------------------------------------------------------------------
+        | NUMBERS ONLY
+        |--------------------------------------------------------------------------
+        */
+
         this.value =
             this.value
                 .replace(/\D/g, "")
@@ -1971,7 +2141,7 @@ otpInput.addEventListener(
 
         /*
         |--------------------------------------------------------------------------
-        | ENABLE VERIFY ONLY AT 6 DIGITS
+        | ENABLE BUTTON ONLY WITH 6 DIGITS
         |--------------------------------------------------------------------------
         */
 
@@ -1990,7 +2160,35 @@ otpInput.addEventListener(
 
 otpForm.addEventListener(
     "submit",
-    function () {
+    function (e) {
+
+        /*
+        |--------------------------------------------------------------------------
+        | DO NOT SUBMIT INVALID OTP
+        |--------------------------------------------------------------------------
+        */
+
+        if (otpInput.value.length !== 6) {
+
+            e.preventDefault();
+
+            otpStatus.className =
+                "otp-status error";
+
+            otpStatus.innerHTML =
+                '<i class="bi bi-exclamation-circle-fill"></i> ' +
+                'Please enter the 6-digit verification code.';
+
+            return;
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | VERIFYING
+        |--------------------------------------------------------------------------
+        */
 
         otpSubmit.disabled = true;
 
@@ -2010,6 +2208,15 @@ otpForm.addEventListener(
 
 function cancelOtp() {
 
+    /*
+    |--------------------------------------------------------------------------
+    | Go back to login.
+    |
+    | auth.php session data will be cleared by the new request
+    | when necessary.
+    |--------------------------------------------------------------------------
+    */
+
     window.location.href =
         "login.php";
 
@@ -2018,11 +2225,38 @@ function cancelOtp() {
 
 /*
 |--------------------------------------------------------------------------
-| EXISTING OTP ERROR
+| ESCAPE HTML
 |--------------------------------------------------------------------------
 */
 
-<?php if ($showOtp && $otpError !== ''): ?>
+function escapeHtml(value) {
+
+    const div =
+        document.createElement("div");
+
+    div.textContent =
+        String(value);
+
+    return div.innerHTML;
+
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| EXISTING OTP SESSION
+|--------------------------------------------------------------------------
+|
+| This handles:
+|
+| login.php?otp=1
+|
+| when the user has already requested an OTP.
+|
+|--------------------------------------------------------------------------
+*/
+
+<?php if ($showOtp): ?>
 
 window.addEventListener(
     "load",
@@ -2032,7 +2266,8 @@ window.addEventListener(
 
         otpInput.disabled = false;
 
-        otpSubmit.disabled = false;
+        otpSubmit.disabled =
+            otpInput.value.length !== 6;
 
 
         <?php if ($otpError === 'invalid'): ?>
@@ -2065,10 +2300,23 @@ window.addEventListener(
             'Too many incorrect attempts. Please sign in again.';
 
 
+        <?php else: ?>
+
+        otpStatus.className =
+            "otp-status success";
+
+        otpStatus.innerHTML =
+            '<i class="bi bi-check-circle-fill"></i> ' +
+            'Enter the verification code sent to your email.';
+
         <?php endif; ?>
 
 
-        otpInput.focus();
+        setTimeout(function () {
+
+            otpInput.focus();
+
+        }, 150);
 
     }
 );
