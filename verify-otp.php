@@ -16,39 +16,11 @@ if (session_status() === PHP_SESSION_NONE) {
 
 /*
 |--------------------------------------------------------------------------
-| ERROR HANDLING
+| REQUIRED FILE
 |--------------------------------------------------------------------------
 */
 
-ini_set('display_errors', '0');
-ini_set('log_errors', '1');
-
-error_reporting(E_ALL);
-
-
-/*
-|--------------------------------------------------------------------------
-| DATABASE
-|--------------------------------------------------------------------------
-*/
-
-try {
-
-    require_once __DIR__ . '/db.php';
-
-} catch (Throwable $e) {
-
-    error_log(
-        'CMO OTP DATABASE ERROR: ' .
-        $e->getMessage()
-    );
-
-    header(
-        'Location: login.php?error=server'
-    );
-
-    exit;
-}
+require_once __DIR__ . '/db.php';
 
 
 /*
@@ -57,43 +29,31 @@ try {
 |--------------------------------------------------------------------------
 */
 
-if (
-    ($_SERVER['REQUEST_METHOD'] ?? '')
-    !== 'POST'
-) {
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
     header('Location: login.php');
-
     exit;
 }
 
 
 /*
 |--------------------------------------------------------------------------
-| GET OTP
+| OTP
 |--------------------------------------------------------------------------
 */
 
-$otp =
-    trim(
-        (string) (
-            $_POST['otp'] ?? ''
-        )
-    );
+$otp = trim(
+    (string)($_POST['otp'] ?? '')
+);
 
 
 /*
 |--------------------------------------------------------------------------
-| VALIDATE OTP
+| VALIDATE OTP FORMAT
 |--------------------------------------------------------------------------
 */
 
-if (
-    !preg_match(
-        '/^[0-9]{6}$/',
-        $otp
-    )
-) {
+if (!preg_match('/^\d{6}$/', $otp)) {
 
     header(
         'Location: login.php?otp=1&otp_error=invalid'
@@ -116,6 +76,10 @@ if (
     empty($_SESSION['otp_username'])
 ) {
 
+    /*
+     * There is no valid login waiting for OTP.
+     */
+
     header(
         'Location: login.php?error=otp_session'
     );
@@ -132,7 +96,7 @@ if (
 
 if (
     time() >
-    (int) $_SESSION['otp_expires']
+    (int)$_SESSION['otp_expires']
 ) {
 
     unset(
@@ -155,15 +119,19 @@ if (
 
 /*
 |--------------------------------------------------------------------------
-| ATTEMPT LIMIT
+| OTP ATTEMPTS
 |--------------------------------------------------------------------------
 */
 
 $attempts =
-    (int) (
-        $_SESSION['otp_attempts'] ?? 0
-    );
+    (int)($_SESSION['otp_attempts'] ?? 0);
 
+
+/*
+|--------------------------------------------------------------------------
+| MAXIMUM ATTEMPTS
+|--------------------------------------------------------------------------
+*/
 
 if ($attempts >= 5) {
 
@@ -191,22 +159,26 @@ if ($attempts >= 5) {
 |--------------------------------------------------------------------------
 */
 
-$otpValid =
-    password_verify(
+if (
+    !password_verify(
         $otp,
-        (string) $_SESSION['otp_hash']
-    );
-
-
-if (!$otpValid) {
-
-    $attempts++;
+        (string)$_SESSION['otp_hash']
+    )
+) {
 
     $_SESSION['otp_attempts'] =
-        $attempts;
+        $attempts + 1;
 
 
-    if ($attempts >= 5) {
+    /*
+    |--------------------------------------------------------------------------
+    | CHECK IF THIS WAS FINAL ATTEMPT
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $_SESSION['otp_attempts'] >= 5
+    ) {
 
         unset(
             $_SESSION['otp_hash'],
@@ -236,22 +208,18 @@ if (!$otpValid) {
 
 /*
 |--------------------------------------------------------------------------
-| OTP VERIFIED
+| OTP IS CORRECT
 |--------------------------------------------------------------------------
 */
 
 $userId =
-    (int) $_SESSION['otp_user_id'];
-
+    (int)$_SESSION['otp_user_id'];
 
 $username =
-    (string) $_SESSION['otp_username'];
-
+    (string)$_SESSION['otp_username'];
 
 $remember =
-    !empty(
-        $_SESSION['otp_remember']
-    );
+    !empty($_SESSION['otp_remember']);
 
 
 /*
@@ -272,26 +240,34 @@ session_regenerate_id(true);
 $_SESSION['logged_in'] =
     true;
 
-
 $_SESSION['user_id'] =
     $userId;
-
 
 $_SESSION['username'] =
     $username;
 
 
-$_SESSION['login_time'] =
-    time();
+/*
+|--------------------------------------------------------------------------
+| OPTIONAL REMEMBER FLAG
+|--------------------------------------------------------------------------
+|
+| IMPORTANT:
+| This does NOT automatically authenticate the user.
+|
+| It only remembers that the user selected
+| "Remember me" during this login.
+|
+|--------------------------------------------------------------------------
+*/
 
-
-$_SESSION['remember'] =
+$_SESSION['remember_me'] =
     $remember;
 
 
 /*
 |--------------------------------------------------------------------------
-| REMOVE OTP SESSION DATA
+| REMOVE OTP DATA
 |--------------------------------------------------------------------------
 */
 
@@ -303,6 +279,57 @@ unset(
     $_SESSION['otp_username'],
     $_SESSION['otp_remember']
 );
+
+
+/*
+|--------------------------------------------------------------------------
+| OPTIONAL REMEMBER COOKIE
+|--------------------------------------------------------------------------
+|
+| DO NOT use this cookie by itself to log somebody in.
+|
+| We only store the username for convenience.
+|
+|--------------------------------------------------------------------------
+*/
+
+if ($remember) {
+
+    setcookie(
+        'remember_user',
+        $username,
+        [
+            'expires' =>
+                time() + (30 * 24 * 60 * 60),
+
+            'path' => '/',
+
+            'secure' =>
+                isset($_SERVER['HTTPS']) &&
+                $_SERVER['HTTPS'] !== 'off',
+
+            'httponly' => true,
+
+            'samesite' => 'Lax'
+        ]
+    );
+
+} else {
+
+    setcookie(
+        'remember_user',
+        '',
+        [
+            'expires' => time() - 3600,
+            'path' => '/',
+            'secure' =>
+                isset($_SERVER['HTTPS']) &&
+                $_SERVER['HTTPS'] !== 'off',
+            'httponly' => true,
+            'samesite' => 'Lax'
+        ]
+    );
+}
 
 
 /*
