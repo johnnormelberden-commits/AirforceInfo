@@ -1,11 +1,13 @@
+
 <?php
 declare(strict_types=1);
+
+use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\PHPMailer;
 
 /*
 |--------------------------------------------------------------------------
 | SESSION
-|--------------------------------------------------------------------------
-| Must be started before ANY output.
 |--------------------------------------------------------------------------
 */
 
@@ -23,16 +25,6 @@ if (session_status() === PHP_SESSION_NONE) {
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/main_config.php';
 require_once __DIR__ . '/vendor/autoload.php';
-
-
-/*
-|--------------------------------------------------------------------------
-| PHPMailer
-|--------------------------------------------------------------------------
-*/
-
-use PHPMailer\PHPMailer\Exception;
-use PHPMailer\PHPMailer\PHPMailer;
 
 
 /*
@@ -102,10 +94,33 @@ try {
         !isset($user['password']) ||
         !password_verify($password, $user['password'])
     ) {
-
         header('Location: login.php?error=1');
         exit;
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | PASSWORD IS CORRECT
+    |--------------------------------------------------------------------------
+    |
+    | Do NOT authenticate the user yet.
+    |
+    | The user must pass OTP verification first.
+    |
+    */
+
+    /*
+    |--------------------------------------------------------------------------
+    | REGENERATE SESSION ID
+    |--------------------------------------------------------------------------
+    |
+    | Prevent session fixation after successful password
+    | authentication.
+    |
+    */
+
+    session_regenerate_id(true);
 
 
     /*
@@ -131,7 +146,7 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | STORE OTP DATA IN SESSION
+    | STORE OTP CHALLENGE IN SESSION
     |--------------------------------------------------------------------------
     */
 
@@ -144,9 +159,9 @@ try {
 
     $_SESSION['otp_attempts'] = 0;
 
-    $_SESSION['otp_user_id'] = (int)$user['id'];
+    $_SESSION['otp_user_id'] = (int) $user['id'];
 
-    $_SESSION['otp_username'] = $user['username'];
+    $_SESSION['otp_username'] = (string) $user['username'];
 
     $_SESSION['otp_remember'] = $remember;
 
@@ -199,7 +214,9 @@ try {
     |--------------------------------------------------------------------------
     */
 
-    $mail->addAddress($username);
+    $mail->addAddress(
+        (string) $user['username']
+    );
 
 
     /*
@@ -212,18 +229,19 @@ try {
 
     $mail->CharSet = 'UTF-8';
 
-    $mail->Subject = 'CMO Information System - Verification Code';
+    $mail->Subject =
+        'CMO Information System - Verification Code';
 
 
     /*
     |--------------------------------------------------------------------------
-    | ESCAPE OTP
+    | ESCAPE OTP FOR HTML
     |--------------------------------------------------------------------------
     */
 
     $safeOtp = htmlspecialchars(
         $otp,
-        ENT_QUOTES,
+        ENT_QUOTES | ENT_SUBSTITUTE,
         'UTF-8'
     );
 
@@ -267,8 +285,6 @@ try {
         overflow:hidden;
     ">
 
-        <!-- HEADER -->
-
         <div style="
             background:#0b5796;
             color:#ffffff;
@@ -293,8 +309,6 @@ try {
         </div>
 
 
-        <!-- CONTENT -->
-
         <div style="
             padding:35px;
             color:#24364c;
@@ -307,7 +321,6 @@ try {
                 Verification Code
             </h3>
 
-
             <p style="
                 font-size:14px;
                 line-height:1.6;
@@ -315,7 +328,6 @@ try {
                 Someone is attempting to sign in to your
                 CMO Information System account.
             </p>
-
 
             <p style="
                 font-size:14px;
@@ -325,8 +337,6 @@ try {
                 complete your login:
             </p>
 
-
-            <!-- OTP -->
 
             <div style="
                 margin:30px 0;
@@ -346,7 +356,6 @@ try {
                 ">
                     Your verification code
                 </div>
-
 
                 <div style="
                     color:#0b5796;
@@ -369,7 +378,6 @@ try {
                 <strong>10 minutes</strong>.
             </p>
 
-
             <p style="
                 font-size:13px;
                 color:#6b7c93;
@@ -381,8 +389,6 @@ try {
 
         </div>
 
-
-        <!-- FOOTER -->
 
         <div style="
             padding:18px;
@@ -425,7 +431,7 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | SEND EMAIL
+    | SEND OTP
     |--------------------------------------------------------------------------
     */
 
@@ -438,7 +444,7 @@ try {
     |--------------------------------------------------------------------------
     */
 
-    header('Location: verify_otp.php');
+    header('Location: verify-otp.php');
     exit;
 
 
@@ -472,12 +478,6 @@ try {
     );
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | RETURN TO LOGIN
-    |--------------------------------------------------------------------------
-    */
-
     header('Location: login.php?error=email');
     exit;
 
@@ -497,5 +497,33 @@ try {
 
 
     header('Location: login.php?error=db');
+    exit;
+
+
+} catch (Throwable $e) {
+
+    /*
+    |--------------------------------------------------------------------------
+    | UNEXPECTED ERROR
+    |--------------------------------------------------------------------------
+    */
+
+    error_log(
+        'Unexpected login error: ' .
+        $e->getMessage()
+    );
+
+
+    unset(
+        $_SESSION['otp_hash'],
+        $_SESSION['otp_expires'],
+        $_SESSION['otp_attempts'],
+        $_SESSION['otp_user_id'],
+        $_SESSION['otp_username'],
+        $_SESSION['otp_remember']
+    );
+
+
+    header('Location: login.php?error=server');
     exit;
 }

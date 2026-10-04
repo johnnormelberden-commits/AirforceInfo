@@ -1,17 +1,19 @@
+```php
 <?php
+declare(strict_types=1);
 
 /*
 |--------------------------------------------------------------------------
 | GMAIL SMTP CONFIGURATION
 |--------------------------------------------------------------------------
 |
-| This is the Gmail account used by the CMO Information System
-| to SEND OTP verification emails.
+| Use a Google App Password here.
 |
 | IMPORTANT:
-| SMTP_PASSWORD must be the Google App Password,
-| NOT your normal Gmail password.
+| Do NOT use your normal Gmail account password.
 |
+| Generate a NEW App Password because the previous one
+| was exposed.
 |--------------------------------------------------------------------------
 */
 
@@ -22,7 +24,7 @@ define(
 
 define(
     'SMTP_PASSWORD',
-    'wlan jksx woie wftc'
+    'wlan jksx woie wftc '
 );
 
 
@@ -41,3 +43,4 @@ define(
     'MAIL_FROM_NAME',
     'CMO Information System'
 );
+```
