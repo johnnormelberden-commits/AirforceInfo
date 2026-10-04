@@ -1,26 +1,11 @@
-
 <?php
-declare(strict_types=1);
 
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\PHPMailer;
 
-/*
-|--------------------------------------------------------------------------
-| SESSION
-|--------------------------------------------------------------------------
-*/
-
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
-
-
-/*
-|--------------------------------------------------------------------------
-| LOAD REQUIRED FILES
-|--------------------------------------------------------------------------
-*/
 
 require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/main_config.php';
