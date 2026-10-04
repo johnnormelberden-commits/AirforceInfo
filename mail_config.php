@@ -1,33 +1,59 @@
-    <?php
-    /*
-    |--------------------------------------------------------------------------
-    | GMAIL SMTP CONFIGURATION
-    |--------------------------------------------------------------------------
-    */
+<?php
 
-    define(
-        'SMTP_USERNAME',
-        'cmoinformationsystem@gmail.com'
-    );
+/*
+|--------------------------------------------------------------------------
+| MAIL CONFIGURATION
+|--------------------------------------------------------------------------
+|
+| IMPORTANT:
+| - Use a Google App Password.
+| - Do NOT use your normal Gmail password.
+| - Do NOT put spaces/blank lines before <?php.
+| - Do NOT add ?> at the end of this file.
+|
+|--------------------------------------------------------------------------
+*/
 
-    define(
-        'SMTP_PASSWORD',
-        'yzvv pmsv uvyg bldy'
-    );
+
+/*
+|--------------------------------------------------------------------------
+| SMTP ACCOUNT
+|--------------------------------------------------------------------------
+*/
+
+define(
+    'SMTP_USERNAME',
+    'cmoinformationsystem@gmail.com'
+);
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | EMAIL SENDER
-    |--------------------------------------------------------------------------
-    */
+/*
+|--------------------------------------------------------------------------
+| GOOGLE APP PASSWORD
+|--------------------------------------------------------------------------
+|
+| Replace this with your NEW Google App Password.
+|
+*/
 
-    define(
-        'MAIL_FROM_EMAIL',
-        'cmoinformationsystem@gmail.com'
-    );
+define(
+    'SMTP_PASSWORD',
+    'rwrp wvsw lqky djgc'
+);
 
-    define(
-        'MAIL_FROM_NAME',
-        'CMO Information System'
-    );
+
+/*
+|--------------------------------------------------------------------------
+| SENDER
+|--------------------------------------------------------------------------
+*/
+
+define(
+    'MAIL_FROM_EMAIL',
+    'cmoinformationsystem@gmail.com'
+);
+
+define(
+    'MAIL_FROM_NAME',
+    'CMO Information System'
+);

@@ -1,5 +1,6 @@
 # ============================================================
-# STAGE 1: Install PHP dependencies
+# STAGE 1
+# Install Composer dependencies
 # ============================================================
 
 FROM composer:2 AS dependencies
@@ -16,27 +17,28 @@ RUN composer install \
 
 
 # ============================================================
-# STAGE 2: PHP + Apache
+# STAGE 2
+# PHP + Apache
 # ============================================================
 
 FROM php:8.2-apache
 
-# Install PHP extensions required for TiDB
+# TiDB / MySQL PDO support
 RUN docker-php-ext-install pdo pdo_mysql
 
-# Enable Apache rewrite
+# Apache rewrite
 RUN a2enmod rewrite
 
 # Application directory
 WORKDIR /var/www/html
 
-# Copy application
+# Copy application files
 COPY . /var/www/html/
 
-# Copy Composer vendor directory
+# Copy Composer dependencies
 COPY --from=dependencies /app/vendor /var/www/html/vendor
 
-# Set permissions
+# Permissions
 RUN chown -R www-data:www-data /var/www/html
 
 EXPOSE 80

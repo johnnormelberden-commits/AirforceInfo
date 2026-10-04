@@ -1,5 +1,13 @@
-
 <?php
+
+declare(strict_types=1);
+
+
+/*
+|--------------------------------------------------------------------------
+| SESSION
+|--------------------------------------------------------------------------
+*/
 
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
@@ -8,7 +16,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 /*
 |--------------------------------------------------------------------------
-| OTP SESSION VALIDATION
+| OTP SESSION CHECK
 |--------------------------------------------------------------------------
 */
 
@@ -18,19 +26,26 @@ if (
     !isset($_SESSION['otp_user_id']) ||
     !isset($_SESSION['otp_username'])
 ) {
-    header('Location: login.php');
+
+    header(
+        'Location: login.php'
+    );
+
     exit;
 }
 
 
 /*
 |--------------------------------------------------------------------------
-| OTP CLEANUP FUNCTION
+| OTP EXPIRATION CHECK
 |--------------------------------------------------------------------------
 */
 
-function clearOtpSession(): void
-{
+if (
+    !is_numeric($_SESSION['otp_expires']) ||
+    time() >= (int) $_SESSION['otp_expires']
+) {
+
     unset(
         $_SESSION['otp_hash'],
         $_SESSION['otp_expires'],
@@ -39,22 +54,11 @@ function clearOtpSession(): void
         $_SESSION['otp_username'],
         $_SESSION['otp_remember']
     );
-}
 
+    header(
+        'Location: login.php?error=otp_expired'
+    );
 
-/*
-|--------------------------------------------------------------------------
-| CHECK OTP EXPIRATION
-|--------------------------------------------------------------------------
-*/
-
-if (
-    !is_numeric($_SESSION['otp_expires']) ||
-    time() >= (int) $_SESSION['otp_expires']
-) {
-    clearOtpSession();
-
-    header('Location: login.php?error=otp_expired');
     exit;
 }
 
@@ -89,23 +93,45 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         !is_numeric($_SESSION['otp_expires']) ||
         time() >= (int) $_SESSION['otp_expires']
     ) {
-        clearOtpSession();
 
-        header('Location: login.php?error=otp_expired');
+        unset(
+            $_SESSION['otp_hash'],
+            $_SESSION['otp_expires'],
+            $_SESSION['otp_attempts'],
+            $_SESSION['otp_user_id'],
+            $_SESSION['otp_username'],
+            $_SESSION['otp_remember']
+        );
+
+        header(
+            'Location: login.php?error=otp_expired'
+        );
+
         exit;
     }
 
 
     /*
     |--------------------------------------------------------------------------
-    | CHECK MAXIMUM ATTEMPTS
+    | MAXIMUM ATTEMPTS
     |--------------------------------------------------------------------------
     */
 
     if ((int) $_SESSION['otp_attempts'] >= 5) {
-        clearOtpSession();
 
-        header('Location: login.php?error=otp_attempts');
+        unset(
+            $_SESSION['otp_hash'],
+            $_SESSION['otp_expires'],
+            $_SESSION['otp_attempts'],
+            $_SESSION['otp_user_id'],
+            $_SESSION['otp_username'],
+            $_SESSION['otp_remember']
+        );
+
+        header(
+            'Location: login.php?error=otp_attempts'
+        );
+
         exit;
     }
 
@@ -128,7 +154,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     */
 
     if (!preg_match('/^\d{6}$/', $otp)) {
-        header('Location: verify-otp.php?error=invalid');
+
+        header(
+            'Location: verify-otp.php?error=invalid'
+        );
+
         exit;
     }
 
@@ -147,7 +177,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     /*
     |--------------------------------------------------------------------------
-    | CORRECT OTP
+    | OTP SUCCESS
     |--------------------------------------------------------------------------
     */
 
@@ -155,7 +185,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         /*
         |--------------------------------------------------------------------------
-        | SAVE DATA BEFORE CLEARING OTP SESSION
+        | SAVE AUTH DATA BEFORE CLEARING OTP
         |--------------------------------------------------------------------------
         */
 
@@ -179,7 +209,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         /*
         |--------------------------------------------------------------------------
-        | CREATE AUTHENTICATED SESSION
+        | AUTHENTICATED SESSION
         |--------------------------------------------------------------------------
         */
 
@@ -196,7 +226,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         |--------------------------------------------------------------------------
         */
 
-        clearOtpSession();
+        unset(
+            $_SESSION['otp_hash'],
+            $_SESSION['otp_expires'],
+            $_SESSION['otp_attempts'],
+            $_SESSION['otp_user_id'],
+            $_SESSION['otp_username'],
+            $_SESSION['otp_remember']
+        );
 
 
         /*
@@ -205,9 +242,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         |--------------------------------------------------------------------------
         */
 
-        $secureCookie =
-            !empty($_SERVER['HTTPS']) &&
-            $_SERVER['HTTPS'] !== 'off';
+        $cookieOptions = [
+            'expires' => time() + (86400 * 30),
+            'path' => '/',
+            'secure' => (
+                !empty($_SERVER['HTTPS']) &&
+                $_SERVER['HTTPS'] !== 'off'
+            ),
+            'httponly' => true,
+            'samesite' => 'Lax'
+        ];
 
 
         if ($remember) {
@@ -215,13 +259,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             setcookie(
                 'remember_user',
                 $username,
-                [
-                    'expires' => time() + (86400 * 30),
-                    'path' => '/',
-                    'secure' => $secureCookie,
-                    'httponly' => true,
-                    'samesite' => 'Lax'
-                ]
+                $cookieOptions
             );
 
         } else {
@@ -232,7 +270,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 [
                     'expires' => time() - 3600,
                     'path' => '/',
-                    'secure' => $secureCookie,
+                    'secure' => (
+                        !empty($_SERVER['HTTPS']) &&
+                        $_SERVER['HTTPS'] !== 'off'
+                    ),
                     'httponly' => true,
                     'samesite' => 'Lax'
                 ]
@@ -246,7 +287,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         |--------------------------------------------------------------------------
         */
 
-        header('Location: index.php');
+        header(
+            'Location: index.php'
+        );
+
         exit;
     }
 
@@ -258,20 +302,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     */
 
     $_SESSION['otp_attempts'] =
-        (int) ($_SESSION['otp_attempts'] ?? 0) + 1;
+        (int) $_SESSION['otp_attempts'] + 1;
 
 
     /*
     |--------------------------------------------------------------------------
-    | MAXIMUM ATTEMPTS REACHED
+    | MAX ATTEMPTS REACHED
     |--------------------------------------------------------------------------
     */
 
     if ((int) $_SESSION['otp_attempts'] >= 5) {
 
-        clearOtpSession();
+        unset(
+            $_SESSION['otp_hash'],
+            $_SESSION['otp_expires'],
+            $_SESSION['otp_attempts'],
+            $_SESSION['otp_user_id'],
+            $_SESSION['otp_username'],
+            $_SESSION['otp_remember']
+        );
 
-        header('Location: login.php?error=otp_attempts');
+        header(
+            'Location: login.php?error=otp_attempts'
+        );
+
         exit;
     }
 
@@ -282,14 +336,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     |--------------------------------------------------------------------------
     */
 
-    header('Location: verify-otp.php?error=invalid');
+    header(
+        'Location: verify-otp.php?error=invalid'
+    );
+
     exit;
 }
 
 
 /*
 |--------------------------------------------------------------------------
-| EMAIL
+| DISPLAY INFORMATION
 |--------------------------------------------------------------------------
 */
 
@@ -321,260 +378,332 @@ $remainingSecondsOnly =
 
 <head>
 
-    <meta charset="UTF-8">
+<meta charset="UTF-8">
 
-    <title>Verify OTP - CMO Information System</title>
+<title>
+Verify OTP - CMO Information System
+</title>
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
 
-    <link
-        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
-        rel="stylesheet"
-    >
+<link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+>
 
-    <link
-        rel="stylesheet"
-        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
-    >
+<link
+    rel="stylesheet"
+    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+>
 
-    <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-        rel="stylesheet"
-    >
+<link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+    rel="stylesheet"
+>
 
-    <style>
+<style>
 
-        * {
-            box-sizing: border-box;
-        }
+* {
+    box-sizing: border-box;
+}
 
-        body {
-            margin: 0;
-            min-height: 100vh;
-            font-family:
-                'Inter',
-                Arial,
-                sans-serif;
+body {
+    margin: 0;
+    min-height: 100vh;
 
-            background:
-                radial-gradient(
-                    circle at 20% 20%,
-                    rgba(0, 87, 183, 0.10),
-                    transparent 30%
-                ),
-                linear-gradient(
-                    135deg,
-                    #edf4fb,
-                    #f7faff
-                );
+    font-family:
+        'Inter',
+        Arial,
+        sans-serif;
 
-            color: #172b4d;
-        }
+    background:
+        radial-gradient(
+            circle at 20% 20%,
+            rgba(0, 87, 183, 0.10),
+            transparent 30%
+        ),
+        linear-gradient(
+            135deg,
+            #edf4fb,
+            #f7faff
+        );
 
-        .verify-container {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 25px;
-        }
+    color: #172b4d;
+}
 
-        .verify-card {
-            width: 100%;
-            max-width: 500px;
-            background: #ffffff;
-            border-radius: 20px;
-            padding: 45px;
-            box-shadow:
-                0 25px 70px rgba(19, 55, 91, 0.16),
-                0 5px 20px rgba(19, 55, 91, 0.07);
-            border:
-                1px solid rgba(15, 62, 105, 0.08);
-            text-align: center;
-        }
+.verify-container {
+    min-height: 100vh;
 
-        .verify-icon {
-            width: 65px;
-            height: 65px;
-            margin: 0 auto 20px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #eef7ff;
-            color: #176bb5;
-            font-size: 27px;
-        }
+    display: flex;
 
-        .authorized {
-            margin-bottom: 8px;
-            color: #1764ae;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 1.4px;
-            text-transform: uppercase;
-        }
+    align-items: center;
 
-        .verify-title {
-            margin: 0;
-            color: #10233d;
-            font-size: 29px;
-            font-weight: 800;
-            letter-spacing: -0.8px;
-        }
+    justify-content: center;
 
-        .verify-subtitle {
-            margin: 10px 0 25px;
-            color: #7d8b9b;
-            font-size: 12px;
-            line-height: 1.7;
-        }
+    padding: 25px;
+}
 
-        .email-display {
-            display: inline-block;
-            margin-bottom: 25px;
-            padding: 8px 13px;
-            border-radius: 8px;
-            background: #f3f7fb;
-            color: #1764ae;
-            font-size: 12px;
-            font-weight: 600;
-            word-break: break-word;
-        }
+.verify-card {
+    width: 100%;
 
-        .otp-input {
-            width: 100%;
-            height: 58px;
-            border: 1px solid #d6dee7;
-            border-radius: 10px;
-            outline: none;
-            text-align: center;
-            letter-spacing: 10px;
-            padding-left: 10px;
-            color: #172b4d;
-            font-size: 25px;
-            font-weight: 700;
-            background: #ffffff;
-            transition:
-                border-color 0.2s ease,
-                box-shadow 0.2s ease;
-        }
+    max-width: 500px;
 
-        .otp-input:focus {
-            border-color: #428dd1;
-            box-shadow:
-                0 0 0 3px
-                rgba(66,141,209,0.10);
-        }
+    background: #ffffff;
 
-        .otp-input::placeholder {
-            color: #b4bec9;
-            letter-spacing: 8px;
-        }
+    border-radius: 20px;
 
-        .btn-verify {
-            width: 100%;
-            height: 44px;
-            margin-top: 18px;
-            border: none;
-            border-radius: 9px;
-            background:
-                linear-gradient(
-                    90deg,
-                    #0c5595,
-                    #176bb5
-                );
-            color: white;
-            font-size: 12px;
-            font-weight: 600;
-            box-shadow:
-                0 7px 15px
-                rgba(15, 91, 157, 0.20);
-            transition: all 0.2s ease;
-        }
+    padding: 45px;
 
-        .btn-verify:hover {
-            background:
-                linear-gradient(
-                    90deg,
-                    #08487f,
-                    #0d5da0
-                );
-            transform: translateY(-1px);
-        }
+    box-shadow:
+        0 25px 70px rgba(19, 55, 91, 0.16),
+        0 5px 20px rgba(19, 55, 91, 0.07);
 
-        .error-message {
-            margin-top: 17px;
-            padding: 10px 12px;
-            border-radius: 8px;
-            background: #fff1f1;
-            border: 1px solid #ffd6d6;
-            color: #d63939;
-            font-size: 11px;
-            text-align: center;
-        }
+    border:
+        1px solid rgba(15, 62, 105, 0.08);
 
-        .otp-timer {
-            margin-top: 17px;
-            color: #929daa;
-            font-size: 10px;
-        }
+    text-align: center;
+}
 
-        .otp-timer strong {
-            color: #1764ae;
-            font-weight: 700;
-        }
+.verify-icon {
+    width: 65px;
+    height: 65px;
 
-        .security-message {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 6px;
-            margin-top: 25px;
-            color: #929daa;
-            font-size: 9px;
-            line-height: 1.5;
-        }
+    margin: 0 auto 20px;
 
-        .security-message i {
-            color: #8896a5;
-        }
+    border-radius: 50%;
 
-        .verify-footer {
-            margin-top: 25px;
-            padding-top: 18px;
-            border-top: 1px solid #edf0f3;
-            color: #8d99a6;
-            font-size: 8px;
-            line-height: 1.6;
-        }
+    display: flex;
 
-        @media (max-width: 500px) {
+    align-items: center;
 
-            .verify-container {
-                padding: 15px;
-            }
+    justify-content: center;
 
-            .verify-card {
-                padding: 35px 25px;
-                border-radius: 17px;
-            }
+    background: #eef7ff;
 
-            .verify-title {
-                font-size: 26px;
-            }
+    color: #176bb5;
 
-            .otp-input {
-                height: 55px;
-                font-size: 22px;
-                letter-spacing: 7px;
-            }
-        }
+    font-size: 27px;
+}
 
-    </style>
+.authorized {
+    margin-bottom: 8px;
+
+    color: #1764ae;
+
+    font-size: 10px;
+
+    font-weight: 700;
+
+    letter-spacing: 1.4px;
+
+    text-transform: uppercase;
+}
+
+.verify-title {
+    margin: 0;
+
+    color: #10233d;
+
+    font-size: 29px;
+
+    font-weight: 800;
+
+    letter-spacing: -0.8px;
+}
+
+.verify-subtitle {
+    margin: 10px 0 25px;
+
+    color: #7d8b9b;
+
+    font-size: 12px;
+
+    line-height: 1.7;
+}
+
+.email-display {
+    display: inline-block;
+
+    margin-bottom: 25px;
+
+    padding: 8px 13px;
+
+    border-radius: 8px;
+
+    background: #f3f7fb;
+
+    color: #1764ae;
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    word-break: break-word;
+}
+
+.otp-input {
+    width: 100%;
+
+    height: 58px;
+
+    border:
+        1px solid #d6dee7;
+
+    border-radius: 10px;
+
+    outline: none;
+
+    text-align: center;
+
+    letter-spacing: 10px;
+
+    padding-left: 10px;
+
+    color: #172b4d;
+
+    font-size: 25px;
+
+    font-weight: 700;
+
+    background: #ffffff;
+
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease;
+}
+
+.otp-input:focus {
+    border-color: #428dd1;
+
+    box-shadow:
+        0 0 0 3px
+        rgba(66,141,209,0.10);
+}
+
+.otp-input::placeholder {
+    color: #b4bec9;
+
+    letter-spacing: 8px;
+}
+
+.btn-verify {
+    width: 100%;
+
+    height: 44px;
+
+    margin-top: 18px;
+
+    border: none;
+
+    border-radius: 9px;
+
+    background:
+        linear-gradient(
+            90deg,
+            #0c5595,
+            #176bb5
+        );
+
+    color: white;
+
+    font-size: 12px;
+
+    font-weight: 600;
+
+    box-shadow:
+        0 7px 15px
+        rgba(15, 91, 157, 0.20);
+}
+
+.error-message {
+    margin-top: 17px;
+
+    padding: 10px 12px;
+
+    border-radius: 8px;
+
+    background: #fff1f1;
+
+    border:
+        1px solid #ffd6d6;
+
+    color: #d63939;
+
+    font-size: 11px;
+}
+
+.otp-timer {
+    margin-top: 17px;
+
+    color: #929daa;
+
+    font-size: 10px;
+}
+
+.otp-timer strong {
+    color: #1764ae;
+}
+
+.security-message {
+    display: flex;
+
+    justify-content: center;
+
+    align-items: center;
+
+    gap: 6px;
+
+    margin-top: 25px;
+
+    color: #929daa;
+
+    font-size: 9px;
+
+    line-height: 1.5;
+}
+
+.verify-footer {
+    margin-top: 25px;
+
+    padding-top: 18px;
+
+    border-top:
+        1px solid #edf0f3;
+
+    color: #8d99a6;
+
+    font-size: 8px;
+
+    line-height: 1.6;
+}
+
+@media (max-width: 500px) {
+
+    .verify-container {
+        padding: 15px;
+    }
+
+    .verify-card {
+        padding: 35px 25px;
+    }
+
+    .verify-title {
+        font-size: 26px;
+    }
+
+    .otp-input {
+        height: 55px;
+
+        font-size: 22px;
+
+        letter-spacing: 7px;
+    }
+}
+
+</style>
 
 </head>
 
@@ -582,160 +711,173 @@ $remainingSecondsOnly =
 
 <div class="verify-container">
 
-    <div class="verify-card">
+<div class="verify-card">
 
-        <div class="verify-icon">
-            <i class="bi bi-envelope-check-fill"></i>
-        </div>
+<div class="verify-icon">
 
-        <div class="authorized">
-            Two-Step Verification
-        </div>
+<i class="bi bi-envelope-check-fill"></i>
 
-        <h1 class="verify-title">
-            Check your email
-        </h1>
-
-        <p class="verify-subtitle">
-            We sent a 6-digit verification code
-            to the email address associated with
-            your account.
-        </p>
-
-        <div class="email-display">
-
-            <i class="bi bi-envelope"></i>
-
-            <?php
-            echo htmlspecialchars(
-                $email,
-                ENT_QUOTES | ENT_SUBSTITUTE,
-                'UTF-8'
-            );
-            ?>
-
-        </div>
+</div>
 
 
-        <!-- IMPORTANT: hyphen, not underscore -->
+<div class="authorized">
 
-        <<form
+Two-Step Verification
+
+</div>
+
+
+<h1 class="verify-title">
+
+Check your email
+
+</h1>
+
+
+<p class="verify-subtitle">
+
+We sent a 6-digit verification code
+to the email address associated with
+your account.
+
+</p>
+
+
+<div class="email-display">
+
+<i class="bi bi-envelope"></i>
+
+<?php
+
+echo htmlspecialchars(
+    $email,
+    ENT_QUOTES | ENT_SUBSTITUTE,
+    'UTF-8'
+);
+
+?>
+
+</div>
+
+
+<form
     action="verify-otp.php"
     method="POST"
     autocomplete="off"
 >
 
-            <label
-                for="otp"
-                class="visually-hidden"
-            >
-                Verification Code
-            </label>
-
-            <input
-                type="text"
-                id="otp"
-                name="otp"
-                class="otp-input"
-                placeholder="••••••"
-                maxlength="6"
-                pattern="[0-9]{6}"
-                inputmode="numeric"
-                autocomplete="one-time-code"
-                required
-                autofocus
-            >
-
-            <button
-                type="submit"
-                class="btn-verify"
-            >
-                Verify and Sign In
-                <i class="bi bi-arrow-right ms-1"></i>
-            </button>
-
-        </form>
+<label
+    for="otp"
+    class="visually-hidden"
+>
+Verification Code
+</label>
 
 
-        <?php if (isset($_GET['error'])): ?>
-
-            <div class="error-message">
-
-                <?php
-
-                switch ($_GET['error']) {
-
-                    case 'invalid':
-
-                        echo '
-                            <i class="bi bi-exclamation-circle"></i>
-                            Incorrect verification code.
-                            Please try again.
-                        ';
-
-                        break;
-
-                    default:
-
-                        echo '
-                            <i class="bi bi-exclamation-circle"></i>
-                            Unable to verify the code.
-                            Please try again.
-                        ';
-
-                        break;
-                }
-
-                ?>
-
-            </div>
-
-        <?php endif; ?>
+<input
+    type="text"
+    id="otp"
+    name="otp"
+    class="otp-input"
+    placeholder="••••••"
+    maxlength="6"
+    pattern="[0-9]{6}"
+    inputmode="numeric"
+    autocomplete="one-time-code"
+    required
+    autofocus
+>
 
 
-        <div class="otp-timer">
+<button
+    type="submit"
+    class="btn-verify"
+>
 
-            Code expires in
+Verify and Sign In
 
-            <strong id="timer">
+<i class="bi bi-arrow-right ms-1"></i>
 
-                <?php
+</button>
 
-                printf(
-                    '%02d:%02d',
-                    $remainingMinutes,
-                    $remainingSecondsOnly
-                );
-
-                ?>
-
-            </strong>
-
-        </div>
+</form>
 
 
-        <div class="security-message">
+<?php if (isset($_GET['error'])): ?>
 
-            <i class="bi bi-shield-lock-fill"></i>
+<div class="error-message">
 
-            Never share your verification code with anyone.
+<?php
 
-        </div>
+$error = (string) $_GET['error'];
+
+if ($error === 'invalid') {
+
+    echo '
+        <i class="bi bi-exclamation-circle"></i>
+        Incorrect verification code.
+        Please try again.
+    ';
+
+} else {
+
+    echo '
+        <i class="bi bi-exclamation-circle"></i>
+        Unable to verify the code.
+        Please try again.
+    ';
+}
+
+?>
+
+</div>
+
+<?php endif; ?>
 
 
-        <div class="verify-footer">
+<div class="otp-timer">
 
-            <div>
-                Philippine Air Force
-            </div>
+Code expires in
 
-            <div>
-                CMO Information System
-            </div>
+<strong id="timer">
 
-        </div>
+<?php
 
-    </div>
+printf(
+    '%02d:%02d',
+    $remainingMinutes,
+    $remainingSecondsOnly
+);
+
+?>
+
+</strong>
+
+</div>
+
+
+<div class="security-message">
+
+<i class="bi bi-shield-lock-fill"></i>
+
+Never share your verification code with anyone.
+
+</div>
+
+
+<div class="verify-footer">
+
+<div>
+Philippine Air Force
+</div>
+
+<div>
+CMO Information System
+</div>
+
+</div>
+
+</div>
 
 </div>
 
@@ -746,29 +888,33 @@ let remainingSeconds =
     <?php echo (int) $remainingSeconds; ?>;
 
 const timer =
-    document.getElementById("timer");
+    document.getElementById('timer');
+
+const otpInput =
+    document.getElementById('otp');
+
+const verifyButton =
+    document.querySelector('.btn-verify');
 
 
 function updateTimer() {
 
     if (remainingSeconds <= 0) {
 
-        timer.textContent = "00:00";
-
-        const otpInput =
-            document.getElementById("otp");
-
-        const verifyButton =
-            document.querySelector(".btn-verify");
+        timer.textContent = '00:00';
 
         if (otpInput) {
             otpInput.disabled = true;
         }
 
         if (verifyButton) {
+
             verifyButton.disabled = true;
-            verifyButton.style.opacity = "0.6";
-            verifyButton.style.cursor = "not-allowed";
+
+            verifyButton.style.opacity = '0.6';
+
+            verifyButton.style.cursor =
+                'not-allowed';
         }
 
         return;
@@ -776,27 +922,31 @@ function updateTimer() {
 
 
     const minutes =
-        Math.floor(remainingSeconds / 60);
+        Math.floor(
+            remainingSeconds / 60
+        );
 
     const seconds =
         remainingSeconds % 60;
 
 
     timer.textContent =
-        String(minutes).padStart(2, "0")
-        + ":"
-        + String(seconds).padStart(2, "0");
+        String(minutes).padStart(2, '0')
+        + ':'
+        +
+        String(seconds).padStart(2, '0');
 
 
     remainingSeconds--;
+
 }
 
 
 updateTimer();
 
 
-const timerInterval = setInterval(
-    function () {
+const timerInterval =
+    setInterval(function () {
 
         updateTimer();
 
@@ -804,25 +954,13 @@ const timerInterval = setInterval(
             clearInterval(timerInterval);
         }
 
-    },
-    1000
-);
-
-
-/*
-|--------------------------------------------------------------------------
-| ALLOW ONLY NUMBERS
-|--------------------------------------------------------------------------
-*/
-
-const otpInput =
-    document.getElementById("otp");
+    }, 1000);
 
 
 if (otpInput) {
 
     otpInput.addEventListener(
-        "input",
+        'input',
         function () {
 
             this.value =
@@ -832,7 +970,6 @@ if (otpInput) {
 
         }
     );
-
 }
 
 </script>
