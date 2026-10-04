@@ -1,5 +1,4 @@
 <?php
-
 declare(strict_types=1);
 
 
@@ -16,7 +15,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 /*
 |--------------------------------------------------------------------------
-| OTP SESSION CHECK
+| CHECK OTP SESSION
 |--------------------------------------------------------------------------
 */
 
@@ -27,23 +26,20 @@ if (
     !isset($_SESSION['otp_username'])
 ) {
 
-    header(
-        'Location: login.php'
-    );
-
+    header('Location: login.php');
     exit;
 }
 
 
 /*
 |--------------------------------------------------------------------------
-| OTP EXPIRATION CHECK
+| CHECK EXPIRATION
 |--------------------------------------------------------------------------
 */
 
 if (
     !is_numeric($_SESSION['otp_expires']) ||
-    time() >= (int) $_SESSION['otp_expires']
+    time() >= (int)$_SESSION['otp_expires']
 ) {
 
     unset(
@@ -55,10 +51,7 @@ if (
         $_SESSION['otp_remember']
     );
 
-    header(
-        'Location: login.php?error=otp_expired'
-    );
-
+    header('Location: login.php?error=otp_expired');
     exit;
 }
 
@@ -76,7 +69,7 @@ if (!isset($_SESSION['otp_attempts'])) {
 
 /*
 |--------------------------------------------------------------------------
-| HANDLE OTP SUBMISSION
+| PROCESS OTP
 |--------------------------------------------------------------------------
 */
 
@@ -91,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (
         !isset($_SESSION['otp_expires']) ||
         !is_numeric($_SESSION['otp_expires']) ||
-        time() >= (int) $_SESSION['otp_expires']
+        time() >= (int)$_SESSION['otp_expires']
     ) {
 
         unset(
@@ -103,21 +96,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['otp_remember']
         );
 
-        header(
-            'Location: login.php?error=otp_expired'
-        );
-
+        header('Location: login.php?error=otp_expired');
         exit;
     }
 
 
     /*
     |--------------------------------------------------------------------------
-    | MAXIMUM ATTEMPTS
+    | CHECK MAXIMUM ATTEMPTS
     |--------------------------------------------------------------------------
     */
 
-    if ((int) $_SESSION['otp_attempts'] >= 5) {
+    if ((int)$_SESSION['otp_attempts'] >= 5) {
 
         unset(
             $_SESSION['otp_hash'],
@@ -128,10 +118,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['otp_remember']
         );
 
-        header(
-            'Location: login.php?error=otp_attempts'
-        );
-
+        header('Location: login.php?error=otp_attempts');
         exit;
     }
 
@@ -143,22 +130,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     */
 
     $otp = trim(
-        (string) ($_POST['otp'] ?? '')
+        (string)($_POST['otp'] ?? '')
     );
 
 
     /*
     |--------------------------------------------------------------------------
-    | VALIDATE OTP FORMAT
+    | VALIDATE OTP
     |--------------------------------------------------------------------------
     */
 
     if (!preg_match('/^\d{6}$/', $otp)) {
 
-        header(
-            'Location: verify-otp.php?error=invalid'
-        );
-
+        header('Location: verify-otp.php?error=invalid');
         exit;
     }
 
@@ -171,13 +155,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $otpValid = password_verify(
         $otp,
-        (string) $_SESSION['otp_hash']
+        (string)$_SESSION['otp_hash']
     );
 
 
     /*
     |--------------------------------------------------------------------------
-    | OTP SUCCESS
+    | OTP CORRECT
     |--------------------------------------------------------------------------
     */
 
@@ -185,13 +169,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         /*
         |--------------------------------------------------------------------------
-        | SAVE AUTH DATA BEFORE CLEARING OTP
+        | SAVE DATA BEFORE SESSION REGENERATION
         |--------------------------------------------------------------------------
         */
 
-        $userId = (int) $_SESSION['otp_user_id'];
+        $userId = (int)$_SESSION['otp_user_id'];
 
-        $username = (string) $_SESSION['otp_username'];
+        $username = (string)$_SESSION['otp_username'];
 
         $remember = !empty(
             $_SESSION['otp_remember']
@@ -209,7 +193,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         /*
         |--------------------------------------------------------------------------
-        | AUTHENTICATED SESSION
+        | CREATE AUTHENTICATED SESSION
         |--------------------------------------------------------------------------
         */
 
@@ -242,16 +226,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         |--------------------------------------------------------------------------
         */
 
-        $cookieOptions = [
-            'expires' => time() + (86400 * 30),
-            'path' => '/',
-            'secure' => (
-                !empty($_SERVER['HTTPS']) &&
-                $_SERVER['HTTPS'] !== 'off'
-            ),
-            'httponly' => true,
-            'samesite' => 'Lax'
-        ];
+        $secureCookie =
+            !empty($_SERVER['HTTPS']) &&
+            $_SERVER['HTTPS'] !== 'off';
 
 
         if ($remember) {
@@ -259,7 +236,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             setcookie(
                 'remember_user',
                 $username,
-                $cookieOptions
+                [
+                    'expires' => time() + (86400 * 30),
+                    'path' => '/',
+                    'secure' => $secureCookie,
+                    'httponly' => true,
+                    'samesite' => 'Lax'
+                ]
             );
 
         } else {
@@ -270,10 +253,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 [
                     'expires' => time() - 3600,
                     'path' => '/',
-                    'secure' => (
-                        !empty($_SERVER['HTTPS']) &&
-                        $_SERVER['HTTPS'] !== 'off'
-                    ),
+                    'secure' => $secureCookie,
                     'httponly' => true,
                     'samesite' => 'Lax'
                 ]
@@ -287,10 +267,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         |--------------------------------------------------------------------------
         */
 
-        header(
-            'Location: index.php'
-        );
-
+        header('Location: index.php');
         exit;
     }
 
@@ -302,16 +279,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     */
 
     $_SESSION['otp_attempts'] =
-        (int) $_SESSION['otp_attempts'] + 1;
+        (int)$_SESSION['otp_attempts'] + 1;
 
 
     /*
     |--------------------------------------------------------------------------
-    | MAX ATTEMPTS REACHED
+    | MAXIMUM ATTEMPTS
     |--------------------------------------------------------------------------
     */
 
-    if ((int) $_SESSION['otp_attempts'] >= 5) {
+    if ((int)$_SESSION['otp_attempts'] >= 5) {
 
         unset(
             $_SESSION['otp_hash'],
@@ -322,10 +299,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['otp_remember']
         );
 
-        header(
-            'Location: login.php?error=otp_attempts'
-        );
-
+        header('Location: login.php?error=otp_attempts');
         exit;
     }
 
@@ -336,21 +310,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     |--------------------------------------------------------------------------
     */
 
-    header(
-        'Location: verify-otp.php?error=invalid'
-    );
-
+    header('Location: verify-otp.php?error=invalid');
     exit;
 }
 
 
 /*
 |--------------------------------------------------------------------------
-| DISPLAY INFORMATION
+| DISPLAY USER EMAIL
 |--------------------------------------------------------------------------
 */
 
-$email = (string) $_SESSION['otp_username'];
+$email = (string)$_SESSION['otp_username'];
 
 
 /*
@@ -361,7 +332,7 @@ $email = (string) $_SESSION['otp_username'];
 
 $remainingSeconds = max(
     0,
-    (int) $_SESSION['otp_expires'] - time()
+    (int)$_SESSION['otp_expires'] - time()
 );
 
 $remainingMinutes = intdiv(
@@ -380,9 +351,7 @@ $remainingSecondsOnly =
 
 <meta charset="UTF-8">
 
-<title>
-Verify OTP - CMO Information System
-</title>
+<title>Verify OTP - CMO Information System</title>
 
 <meta
     name="viewport"
@@ -448,7 +417,6 @@ body {
 
 .verify-card {
     width: 100%;
-
     max-width: 500px;
 
     background: #ffffff;
@@ -478,7 +446,6 @@ body {
     display: flex;
 
     align-items: center;
-
     justify-content: center;
 
     background: #eef7ff;
@@ -549,8 +516,7 @@ body {
 
     height: 58px;
 
-    border:
-        1px solid #d6dee7;
+    border: 1px solid #d6dee7;
 
     border-radius: 10px;
 
@@ -569,10 +535,6 @@ body {
     font-weight: 700;
 
     background: #ffffff;
-
-    transition:
-        border-color 0.2s ease,
-        box-shadow 0.2s ease;
 }
 
 .otp-input:focus {
@@ -581,12 +543,6 @@ body {
     box-shadow:
         0 0 0 3px
         rgba(66,141,209,0.10);
-}
-
-.otp-input::placeholder {
-    color: #b4bec9;
-
-    letter-spacing: 8px;
 }
 
 .btn-verify {
@@ -612,10 +568,6 @@ body {
     font-size: 12px;
 
     font-weight: 600;
-
-    box-shadow:
-        0 7px 15px
-        rgba(15, 91, 157, 0.20);
 }
 
 .error-message {
@@ -627,8 +579,7 @@ body {
 
     background: #fff1f1;
 
-    border:
-        1px solid #ffd6d6;
+    border: 1px solid #ffd6d6;
 
     color: #d63939;
 
@@ -651,7 +602,6 @@ body {
     display: flex;
 
     justify-content: center;
-
     align-items: center;
 
     gap: 6px;
@@ -661,8 +611,6 @@ body {
     color: #929daa;
 
     font-size: 9px;
-
-    line-height: 1.5;
 }
 
 .verify-footer {
@@ -670,8 +618,7 @@ body {
 
     padding-top: 18px;
 
-    border-top:
-        1px solid #edf0f3;
+    border-top: 1px solid #edf0f3;
 
     color: #8d99a6;
 
@@ -714,51 +661,36 @@ body {
 <div class="verify-card">
 
 <div class="verify-icon">
-
 <i class="bi bi-envelope-check-fill"></i>
-
 </div>
-
 
 <div class="authorized">
-
 Two-Step Verification
-
 </div>
 
-
 <h1 class="verify-title">
-
 Check your email
-
 </h1>
 
-
 <p class="verify-subtitle">
-
 We sent a 6-digit verification code
 to the email address associated with
 your account.
-
 </p>
-
 
 <div class="email-display">
 
 <i class="bi bi-envelope"></i>
 
 <?php
-
 echo htmlspecialchars(
     $email,
     ENT_QUOTES | ENT_SUBSTITUTE,
     'UTF-8'
 );
-
 ?>
 
 </div>
-
 
 <form
     action="verify-otp.php"
@@ -772,7 +704,6 @@ echo htmlspecialchars(
 >
 Verification Code
 </label>
-
 
 <input
     type="text"
@@ -788,20 +719,15 @@ Verification Code
     autofocus
 >
 
-
 <button
     type="submit"
     class="btn-verify"
 >
-
 Verify and Sign In
-
 <i class="bi bi-arrow-right ms-1"></i>
-
 </button>
 
 </form>
-
 
 <?php if (isset($_GET['error'])): ?>
 
@@ -809,7 +735,7 @@ Verify and Sign In
 
 <?php
 
-$error = (string) $_GET['error'];
+$error = (string)$_GET['error'];
 
 if ($error === 'invalid') {
 
@@ -834,7 +760,6 @@ if ($error === 'invalid') {
 
 <?php endif; ?>
 
-
 <div class="otp-timer">
 
 Code expires in
@@ -855,7 +780,6 @@ printf(
 
 </div>
 
-
 <div class="security-message">
 
 <i class="bi bi-shield-lock-fill"></i>
@@ -864,16 +788,10 @@ Never share your verification code with anyone.
 
 </div>
 
-
 <div class="verify-footer">
 
-<div>
-Philippine Air Force
-</div>
-
-<div>
-CMO Information System
-</div>
+<div>Philippine Air Force</div>
+<div>CMO Information System</div>
 
 </div>
 
@@ -885,7 +803,7 @@ CMO Information System
 <script>
 
 let remainingSeconds =
-    <?php echo (int) $remainingSeconds; ?>;
+    <?php echo (int)$remainingSeconds; ?>;
 
 const timer =
     document.getElementById('timer');
@@ -938,7 +856,6 @@ function updateTimer() {
 
 
     remainingSeconds--;
-
 }
 
 
@@ -975,5 +892,4 @@ if (otpInput) {
 </script>
 
 </body>
-
 </html>
