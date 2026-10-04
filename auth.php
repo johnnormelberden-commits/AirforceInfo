@@ -15,7 +15,7 @@ if (session_status() === PHP_SESSION_NONE) {
 
 /*
 |--------------------------------------------------------------------------
-| LOAD DATABASE
+| DATABASE
 |--------------------------------------------------------------------------
 */
 
@@ -24,7 +24,7 @@ require_once __DIR__ . '/db.php';
 
 /*
 |--------------------------------------------------------------------------
-| LOAD MAIL CONFIGURATION
+| MAIL CONFIG
 |--------------------------------------------------------------------------
 */
 
@@ -33,18 +33,11 @@ require_once __DIR__ . '/mail_config.php';
 
 /*
 |--------------------------------------------------------------------------
-| LOAD PHPMailer
+| PHPMailer
 |--------------------------------------------------------------------------
 */
 
 require_once __DIR__ . '/vendor/autoload.php';
-
-
-/*
-|--------------------------------------------------------------------------
-| PHPMailer
-|--------------------------------------------------------------------------
-*/
 
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\PHPMailer;
@@ -52,12 +45,11 @@ use PHPMailer\PHPMailer\PHPMailer;
 
 /*
 |--------------------------------------------------------------------------
-| ONLY POST REQUEST
+| ONLY ALLOW POST
 |--------------------------------------------------------------------------
 */
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-
     header('Location: login.php');
     exit;
 }
@@ -82,13 +74,35 @@ $remember = isset($_POST['remember']);
 
 /*
 |--------------------------------------------------------------------------
-| VALIDATE INPUT
+| CLEAR OLD OTP STATE
+|--------------------------------------------------------------------------
+|
+| This prevents an old OTP session from being reused.
+|
+*/
+
+unset(
+    $_SESSION['otp_hash'],
+    $_SESSION['otp_expires'],
+    $_SESSION['otp_attempts'],
+    $_SESSION['otp_user_id'],
+    $_SESSION['otp_username'],
+    $_SESSION['otp_remember']
+);
+
+
+/*
+|--------------------------------------------------------------------------
+| VALIDATE EMPTY INPUT
 |--------------------------------------------------------------------------
 */
 
 if ($username === '' || $password === '') {
 
-    header('Location: login.php?error=empty');
+    header(
+        'Location: login.php?error=empty'
+    );
+
     exit;
 }
 
@@ -104,7 +118,10 @@ if (!filter_var(
     FILTER_VALIDATE_EMAIL
 )) {
 
-    header('Location: login.php?error=invalid_email');
+    header(
+        'Location: login.php?error=invalid_email'
+    );
+
     exit;
 }
 
@@ -117,12 +134,6 @@ if (!filter_var(
 
 try {
 
-    /*
-    |--------------------------------------------------------------------------
-    | FIND USER
-    |--------------------------------------------------------------------------
-    */
-
     $stmt = $connection->prepare(
         "SELECT
             id,
@@ -133,11 +144,15 @@ try {
          LIMIT 1"
     );
 
+
     $stmt->execute([
         ':username' => $username
     ]);
 
-    $user = $stmt->fetch(PDO::FETCH_ASSOC);
+
+    $user = $stmt->fetch(
+        PDO::FETCH_ASSOC
+    );
 
 
     /*
@@ -149,7 +164,7 @@ try {
     if (!$user) {
 
         header(
-            'Location: login.php?error=invalid'
+            'Location: login.php?error=credentials'
         );
 
         exit;
@@ -158,14 +173,14 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | PLAIN TEXT PASSWORD
+    | PASSWORD
     |--------------------------------------------------------------------------
     |
-    | TESTING ONLY
+    | CURRENT TEST SYSTEM:
+    | Database password is compared as plain text.
     |
-    | Database:
-    |
-    | password = potenciana24
+    | If your database contains password_hash() values,
+    | replace this section with password_verify().
     |
     */
 
@@ -179,27 +194,11 @@ try {
     )) {
 
         header(
-            'Location: login.php?error=invalid'
+            'Location: login.php?error=credentials'
         );
 
         exit;
     }
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | REMOVE OLD OTP SESSION
-    |--------------------------------------------------------------------------
-    */
-
-    unset(
-        $_SESSION['otp_hash'],
-        $_SESSION['otp_expires'],
-        $_SESSION['otp_attempts'],
-        $_SESSION['otp_user_id'],
-        $_SESSION['otp_username'],
-        $_SESSION['otp_remember']
-    );
 
 
     /*
@@ -229,13 +228,8 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | STORE OTP SESSION
+    | STORE OTP IN SESSION
     |--------------------------------------------------------------------------
-    |
-    | IMPORTANT:
-    |
-    | We store the HASH, not the actual OTP.
-    |
     */
 
     $_SESSION['otp_hash'] =
@@ -244,17 +238,22 @@ try {
             PASSWORD_DEFAULT
         );
 
+
     $_SESSION['otp_expires'] =
         $otpExpires;
+
 
     $_SESSION['otp_attempts'] =
         0;
 
+
     $_SESSION['otp_user_id'] =
         (int)$user['id'];
 
+
     $_SESSION['otp_username'] =
         (string)$user['username'];
+
 
     $_SESSION['otp_remember'] =
         $remember;
@@ -262,7 +261,7 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | CREATE PHPMailer
+    | CREATE MAILER
     |--------------------------------------------------------------------------
     */
 
@@ -271,18 +270,11 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | ENABLE SMTP
+    | SMTP
     |--------------------------------------------------------------------------
     */
 
     $mail->isSMTP();
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | GMAIL SMTP
-    |--------------------------------------------------------------------------
-    */
 
     $mail->Host =
         'smtp.gmail.com';
@@ -308,7 +300,19 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | FROM ADDRESS
+    | OPTIONAL SMTP DEBUG
+    |--------------------------------------------------------------------------
+    |
+    | Keep disabled for normal operation.
+    |
+    */
+
+    $mail->SMTPDebug = 0;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | FROM
     |--------------------------------------------------------------------------
     */
 
@@ -320,7 +324,7 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | RECIPIENT
+    | TO
     |--------------------------------------------------------------------------
     */
 
@@ -331,7 +335,7 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | EMAIL SUBJECT
+    | SUBJECT
     |--------------------------------------------------------------------------
     */
 
@@ -341,16 +345,7 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | HTML EMAIL
-    |--------------------------------------------------------------------------
-    */
-
-    $mail->isHTML(true);
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | ESCAPE OTP
+    | SAFE OTP FOR HTML
     |--------------------------------------------------------------------------
     */
 
@@ -363,14 +358,16 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | EMAIL BODY
+    | HTML EMAIL
     |--------------------------------------------------------------------------
     */
+
+    $mail->isHTML(true);
 
     $mail->Body = '
 <!DOCTYPE html>
 
-<html lang="en">
+<html>
 
 <head>
 
@@ -381,7 +378,7 @@ try {
     content="width=device-width, initial-scale=1.0"
 >
 
-<title>CMO Verification Code</title>
+<title>Verification Code</title>
 
 </head>
 
@@ -412,14 +409,18 @@ overflow:hidden;
         margin:0;
         font-size:22px;
         ">
+
             CMO Information System
+
         </h2>
 
         <p style="
         margin:8px 0 0;
         font-size:13px;
         ">
+
             Philippine Air Force
+
         </p>
 
     </div>
@@ -430,9 +431,7 @@ overflow:hidden;
     color:#24364c;
     ">
 
-        <h3 style="
-        margin-top:0;
-        ">
+        <h3>
             Verification Code
         </h3>
 
@@ -453,8 +452,8 @@ overflow:hidden;
         line-height:1.6;
         ">
 
-            Enter the verification code below
-            to complete your login.
+            Enter the following verification code
+            to complete your login:
 
         </p>
 
@@ -498,10 +497,9 @@ overflow:hidden;
         <p style="
         font-size:13px;
         color:#6b7c93;
-        line-height:1.6;
         ">
 
-            This verification code will expire in
+            This code expires in
             <strong>10 minutes</strong>.
 
         </p>
@@ -510,7 +508,6 @@ overflow:hidden;
         <p style="
         font-size:13px;
         color:#6b7c93;
-        line-height:1.6;
         ">
 
             If you did not attempt to sign in,
@@ -562,7 +559,7 @@ overflow:hidden;
 
     /*
     |--------------------------------------------------------------------------
-    | SEND EMAIL
+    | SEND
     |--------------------------------------------------------------------------
     */
 
@@ -571,14 +568,8 @@ overflow:hidden;
 
     /*
     |--------------------------------------------------------------------------
-    | EMAIL SENT SUCCESSFULLY
+    | OTP EMAIL SENT
     |--------------------------------------------------------------------------
-    |
-    | Return to login page.
-    |
-    | login.php must detect ?otp=1 and display
-    | the OTP modal.
-    |
     */
 
     header(
@@ -597,7 +588,7 @@ overflow:hidden;
     */
 
     error_log(
-        'TiDB login error: ' .
+        'CMO AUTH DATABASE ERROR: ' .
         $e->getMessage()
     );
 
@@ -623,21 +614,15 @@ overflow:hidden;
 
     /*
     |--------------------------------------------------------------------------
-    | PHPMailer / SMTP ERROR
+    | EMAIL ERROR
     |--------------------------------------------------------------------------
     */
 
     error_log(
-        'PHPMailer OTP error: ' .
+        'CMO AUTH PHPMailer ERROR: ' .
         $e->getMessage()
     );
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | CLEAR PENDING OTP
-    |--------------------------------------------------------------------------
-    */
 
     unset(
         $_SESSION['otp_hash'],
@@ -649,14 +634,39 @@ overflow:hidden;
     );
 
 
+    header(
+        'Location: login.php?error=email'
+    );
+
+    exit;
+
+
+} catch (Throwable $e) {
+
     /*
     |--------------------------------------------------------------------------
-    | RETURN TO LOGIN
+    | UNEXPECTED ERROR
     |--------------------------------------------------------------------------
     */
 
+    error_log(
+        'CMO AUTH UNEXPECTED ERROR: ' .
+        $e->getMessage()
+    );
+
+
+    unset(
+        $_SESSION['otp_hash'],
+        $_SESSION['otp_expires'],
+        $_SESSION['otp_attempts'],
+        $_SESSION['otp_user_id'],
+        $_SESSION['otp_username'],
+        $_SESSION['otp_remember']
+    );
+
+
     header(
-        'Location: login.php?error=email'
+        'Location: login.php?error=system'
     );
 
     exit;
