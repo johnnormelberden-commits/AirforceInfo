@@ -1,6 +1,6 @@
 FROM php:8.2-apache
 
-# Install MySQL PDO driver for TiDB
+# Install PHP extensions required for TiDB
 RUN docker-php-ext-install pdo pdo_mysql
 
 # Enable Apache rewrite
@@ -12,11 +12,18 @@ COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 # Application directory
 WORKDIR /var/www/html
 
+# Copy Composer configuration
+COPY composer.json /var/www/html/
+
+# Install PHP dependencies
+RUN composer install \
+    --no-dev \
+    --no-interaction \
+    --prefer-dist \
+    --optimize-autoloader
+
 # Copy application files
 COPY . /var/www/html/
-
-# Install PHPMailer
-RUN composer require phpmailer/phpmailer --no-interaction --no-dev
 
 # Set permissions
 RUN chown -R www-data:www-data /var/www/html
