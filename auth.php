@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+
 /*
 |--------------------------------------------------------------------------
 | SESSION
@@ -15,30 +16,23 @@ if (session_status() === PHP_SESSION_NONE) {
 
 /*
 |--------------------------------------------------------------------------
-| PHP ERROR HANDLING
+| ERROR HANDLING
 |--------------------------------------------------------------------------
-|
-| Do not allow PHP warnings/notices to corrupt AJAX JSON responses.
-|
 */
 
 ini_set('display_errors', '0');
 ini_set('log_errors', '1');
+
 error_reporting(E_ALL);
 
 
 /*
 |--------------------------------------------------------------------------
-| REQUIRED FILES
+| PHPMailer
 |--------------------------------------------------------------------------
 */
 
-require_once __DIR__ . '/db.php';
-require_once __DIR__ . '/mail_config.php';
-require_once __DIR__ . '/vendor/autoload.php';
-
-
-use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\Exception as PHPMailerException;
 use PHPMailer\PHPMailer\PHPMailer;
 
 
@@ -50,8 +44,9 @@ use PHPMailer\PHPMailer\PHPMailer;
 
 $isAjax =
     isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
-    strtolower((string) $_SERVER['HTTP_X_REQUESTED_WITH']) ===
-    'xmlhttprequest';
+    strtolower(
+        (string) $_SERVER['HTTP_X_REQUESTED_WITH']
+    ) === 'xmlhttprequest';
 
 
 /*
@@ -63,29 +58,36 @@ $isAjax =
 function jsonResponse(
     bool $success,
     string $message,
-    array $extra = []
+    array $extra = [],
+    int $statusCode = 200
 ): never {
 
-    http_response_code(
-        $success ? 200 : 400
-    );
+    http_response_code($statusCode);
 
     header(
         'Content-Type: application/json; charset=UTF-8'
     );
 
     header(
-        'Cache-Control: no-store, no-cache, must-revalidate'
+        'Cache-Control: no-store, no-cache, must-revalidate, max-age=0'
     );
 
+    header(
+        'Pragma: no-cache'
+    );
+
+
+    $response = array_merge(
+        [
+            'success' => $success,
+            'message' => $message
+        ],
+        $extra
+    );
+
+
     echo json_encode(
-        array_merge(
-            [
-                'success' => $success,
-                'message' => $message
-            ],
-            $extra
-        ),
+        $response,
         JSON_UNESCAPED_UNICODE |
         JSON_UNESCAPED_SLASHES
     );
@@ -96,7 +98,7 @@ function jsonResponse(
 
 /*
 |--------------------------------------------------------------------------
-| NORMAL REDIRECT ERROR
+| NORMAL REDIRECT
 |--------------------------------------------------------------------------
 */
 
@@ -113,19 +115,25 @@ function redirectError(string $error): never
 
 /*
 |--------------------------------------------------------------------------
-| ONLY POST
+| REQUEST METHOD
 |--------------------------------------------------------------------------
 */
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+if (
+    ($_SERVER['REQUEST_METHOD'] ?? '')
+    !== 'POST'
+) {
 
     if ($isAjax) {
 
         jsonResponse(
             false,
-            'Invalid request method.'
+            'Invalid request method.',
+            [],
+            405
         );
     }
+
 
     header('Location: login.php');
 
@@ -135,94 +143,139 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
 /*
 |--------------------------------------------------------------------------
-| GET FORM DATA
+| LOAD CONFIGURATION
 |--------------------------------------------------------------------------
-*/
-
-$username = trim(
-    (string) ($_POST['username'] ?? '')
-);
-
-$password = (string) (
-    $_POST['password'] ?? ''
-);
-
-$remember =
-    isset($_POST['remember']) &&
-    (string) $_POST['remember'] === '1';
-
-
-/*
-|--------------------------------------------------------------------------
-| EMPTY DATA
-|--------------------------------------------------------------------------
-*/
-
-if (
-    $username === '' ||
-    $password === ''
-) {
-
-    if ($isAjax) {
-
-        jsonResponse(
-            false,
-            'Please enter your email address and password.'
-        );
-    }
-
-    redirectError('empty');
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| EMAIL VALIDATION
-|--------------------------------------------------------------------------
-*/
-
-if (
-    !filter_var(
-        $username,
-        FILTER_VALIDATE_EMAIL
-    )
-) {
-
-    if ($isAjax) {
-
-        jsonResponse(
-            false,
-            'Please enter a valid email address.'
-        );
-    }
-
-    redirectError('invalid_email');
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| DATABASE AUTHENTICATION
+|
+| IMPORTANT:
+| These are loaded INSIDE the try block so errors
+| can be handled correctly.
+|
 |--------------------------------------------------------------------------
 */
 
 try {
 
-    $stmt = $connection->prepare(
-        "
-        SELECT
-            id,
-            username,
-            password
-        FROM users
-        WHERE username = :username
-        LIMIT 1
-        "
-    );
+    require_once __DIR__ . '/db.php';
+
+    require_once __DIR__ . '/mail_config.php';
+
+    require_once __DIR__ . '/vendor/autoload.php';
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | VERIFY DATABASE CONNECTION
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        !isset($connection) ||
+        !($connection instanceof PDO)
+    ) {
+
+        throw new RuntimeException(
+            'Database connection was not initialized.'
+        );
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | GET FORM DATA
+    |--------------------------------------------------------------------------
+    */
+
+    $username =
+        trim(
+            (string) (
+                $_POST['username'] ?? ''
+            )
+        );
+
+
+    $password =
+        (string) (
+            $_POST['password'] ?? ''
+        );
+
+
+    $remember =
+        isset($_POST['remember']) &&
+        (string) $_POST['remember'] === '1';
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | EMPTY DATA
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        $username === '' ||
+        $password === ''
+    ) {
+
+        if ($isAjax) {
+
+            jsonResponse(
+                false,
+                'Please enter your email address and password.'
+            );
+        }
+
+        redirectError('empty');
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | EMAIL VALIDATION
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        !filter_var(
+            $username,
+            FILTER_VALIDATE_EMAIL
+        )
+    ) {
+
+        if ($isAjax) {
+
+            jsonResponse(
+                false,
+                'Please enter a valid email address.'
+            );
+        }
+
+        redirectError('invalid_email');
+    }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | FIND USER
+    |--------------------------------------------------------------------------
+    */
+
+    $stmt =
+        $connection->prepare(
+            "
+            SELECT
+                id,
+                username,
+                password
+            FROM users
+            WHERE username = :username
+            LIMIT 1
+            "
+        );
+
 
     $stmt->execute([
         ':username' => $username
     ]);
+
 
     $user =
         $stmt->fetch(PDO::FETCH_ASSOC);
@@ -252,12 +305,6 @@ try {
     |--------------------------------------------------------------------------
     | PASSWORD VERIFICATION
     |--------------------------------------------------------------------------
-    |
-    | IMPORTANT:
-    | The database password must be created using:
-    |
-    | password_hash($password, PASSWORD_DEFAULT)
-    |
     */
 
     $databasePassword =
@@ -288,7 +335,7 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | OPTIONAL PASSWORD REHASH
+    | PASSWORD REHASH
     |--------------------------------------------------------------------------
     */
 
@@ -305,6 +352,7 @@ try {
                 PASSWORD_DEFAULT
             );
 
+
         $update =
             $connection->prepare(
                 "
@@ -313,6 +361,7 @@ try {
                 WHERE id = :id
                 "
             );
+
 
         $update->execute([
             ':password' => $newHash,
@@ -324,7 +373,7 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | CLEAR OLD OTP
+    | CLEAR PREVIOUS OTP
     |--------------------------------------------------------------------------
     */
 
@@ -363,7 +412,7 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | STORE OTP
+    | STORE OTP SESSION
     |--------------------------------------------------------------------------
     */
 
@@ -373,20 +422,44 @@ try {
             PASSWORD_DEFAULT
         );
 
+
     $_SESSION['otp_expires'] =
         $otpExpires;
+
 
     $_SESSION['otp_attempts'] =
         0;
 
+
     $_SESSION['otp_user_id'] =
         (int) $user['id'];
+
 
     $_SESSION['otp_username'] =
         (string) $user['username'];
 
+
     $_SESSION['otp_remember'] =
         $remember;
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | CHECK SMTP CONFIGURATION
+    |--------------------------------------------------------------------------
+    */
+
+    if (
+        !defined('SMTP_USERNAME') ||
+        !defined('SMTP_PASSWORD') ||
+        !defined('MAIL_FROM_EMAIL') ||
+        !defined('MAIL_FROM_NAME')
+    ) {
+
+        throw new RuntimeException(
+            'SMTP configuration is incomplete.'
+        );
+    }
 
 
     /*
@@ -428,15 +501,11 @@ try {
     $mail->CharSet =
         'UTF-8';
 
-    /*
-    |--------------------------------------------------------------------------
-    | TIMEOUT
-    |--------------------------------------------------------------------------
-    */
+    $mail->Timeout =
+        15;
 
-    $mail->Timeout = 15;
-
-    $mail->SMTPKeepAlive = false;
+    $mail->SMTPKeepAlive =
+        false;
 
 
     /*
@@ -453,7 +522,7 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | TO
+    | RECIPIENT
     |--------------------------------------------------------------------------
     */
 
@@ -474,7 +543,7 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | OTP HTML
+    | SAFE OTP
     |--------------------------------------------------------------------------
     */
 
@@ -487,14 +556,24 @@ try {
         );
 
 
+    /*
+    |--------------------------------------------------------------------------
+    | HTML EMAIL
+    |--------------------------------------------------------------------------
+    */
+
     $mail->isHTML(true);
 
     $mail->Body = '
 <!DOCTYPE html>
-<html>
+<html lang="en">
+
 <head>
+
 <meta charset="UTF-8">
+
 <title>CMO Verification Code</title>
+
 </head>
 
 <body style="
@@ -617,13 +696,14 @@ Philippine Air Force
 </div>
 
 </body>
+
 </html>
 ';
 
 
     /*
     |--------------------------------------------------------------------------
-    | PLAIN TEXT VERSION
+    | PLAIN TEXT
     |--------------------------------------------------------------------------
     */
 
@@ -637,7 +717,7 @@ Philippine Air Force
 
     /*
     |--------------------------------------------------------------------------
-    | SEND EMAIL
+    | SEND
     |--------------------------------------------------------------------------
     */
 
@@ -659,14 +739,15 @@ Philippine Air Force
                 'otp_required' => true,
                 'email' =>
                     (string) $user['username']
-            ]
+            ],
+            200
         );
     }
 
 
     /*
     |--------------------------------------------------------------------------
-    | NON-AJAX
+    | NON-AJAX SUCCESS
     |--------------------------------------------------------------------------
     */
 
@@ -680,7 +761,7 @@ Philippine Air Force
 } catch (PDOException $e) {
 
     error_log(
-        'CMO AUTH DATABASE ERROR: ' .
+        'CMO AUTH PDO ERROR: ' .
         $e->getMessage()
     );
 
@@ -699,17 +780,20 @@ Philippine Air Force
 
         jsonResponse(
             false,
-            'A database error occurred. Please try again later.'
+            'A database error occurred. Please try again later.',
+            [],
+            500
         );
     }
+
 
     redirectError('db');
 
 
-} catch (Exception $e) {
+} catch (PHPMailerException $e) {
 
     error_log(
-        'CMO AUTH EMAIL ERROR: ' .
+        'CMO AUTH PHPMailer ERROR: ' .
         $e->getMessage()
     );
 
@@ -728,7 +812,9 @@ Philippine Air Force
 
         jsonResponse(
             false,
-            'We could not send the verification code. Please check the SMTP configuration.'
+            'We could not send the verification code. Please check the email configuration.',
+            [],
+            500
         );
     }
 
@@ -744,11 +830,23 @@ Philippine Air Force
     );
 
 
+    unset(
+        $_SESSION['otp_hash'],
+        $_SESSION['otp_expires'],
+        $_SESSION['otp_attempts'],
+        $_SESSION['otp_user_id'],
+        $_SESSION['otp_username'],
+        $_SESSION['otp_remember']
+    );
+
+
     if ($isAjax) {
 
         jsonResponse(
             false,
-            'The authentication server encountered an error. Please try again.'
+            'The authentication server encountered an error. Please try again.',
+            [],
+            500
         );
     }
 

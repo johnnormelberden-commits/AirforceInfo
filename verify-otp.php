@@ -2,15 +2,53 @@
 
 declare(strict_types=1);
 
+
+/*
+|--------------------------------------------------------------------------
+| SESSION
+|--------------------------------------------------------------------------
+*/
+
 if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
+
+/*
+|--------------------------------------------------------------------------
+| ERROR HANDLING
+|--------------------------------------------------------------------------
+*/
+
 ini_set('display_errors', '0');
 ini_set('log_errors', '1');
+
 error_reporting(E_ALL);
 
-require_once __DIR__ . '/db.php';
+
+/*
+|--------------------------------------------------------------------------
+| DATABASE
+|--------------------------------------------------------------------------
+*/
+
+try {
+
+    require_once __DIR__ . '/db.php';
+
+} catch (Throwable $e) {
+
+    error_log(
+        'CMO OTP DATABASE ERROR: ' .
+        $e->getMessage()
+    );
+
+    header(
+        'Location: login.php?error=server'
+    );
+
+    exit;
+}
 
 
 /*
@@ -19,8 +57,13 @@ require_once __DIR__ . '/db.php';
 |--------------------------------------------------------------------------
 */
 
-if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+if (
+    ($_SERVER['REQUEST_METHOD'] ?? '')
+    !== 'POST'
+) {
+
     header('Location: login.php');
+
     exit;
 }
 
@@ -31,18 +74,26 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 |--------------------------------------------------------------------------
 */
 
-$otp = trim(
-    (string)($_POST['otp'] ?? '')
-);
+$otp =
+    trim(
+        (string) (
+            $_POST['otp'] ?? ''
+        )
+    );
 
 
 /*
 |--------------------------------------------------------------------------
-| VALIDATE OTP FORMAT
+| VALIDATE OTP
 |--------------------------------------------------------------------------
 */
 
-if (!preg_match('/^[0-9]{6}$/', $otp)) {
+if (
+    !preg_match(
+        '/^[0-9]{6}$/',
+        $otp
+    )
+) {
 
     header(
         'Location: login.php?otp=1&otp_error=invalid'
@@ -81,7 +132,7 @@ if (
 
 if (
     time() >
-    (int)$_SESSION['otp_expires']
+    (int) $_SESSION['otp_expires']
 ) {
 
     unset(
@@ -92,6 +143,7 @@ if (
         $_SESSION['otp_username'],
         $_SESSION['otp_remember']
     );
+
 
     header(
         'Location: login.php?otp_error=expired'
@@ -108,7 +160,7 @@ if (
 */
 
 $attempts =
-    (int)(
+    (int) (
         $_SESSION['otp_attempts'] ?? 0
     );
 
@@ -124,6 +176,7 @@ if ($attempts >= 5) {
         $_SESSION['otp_remember']
     );
 
+
     header(
         'Location: login.php?otp_error=attempts'
     );
@@ -138,20 +191,22 @@ if ($attempts >= 5) {
 |--------------------------------------------------------------------------
 */
 
-if (
-    !password_verify(
+$otpValid =
+    password_verify(
         $otp,
-        (string)$_SESSION['otp_hash']
-    )
-) {
+        (string) $_SESSION['otp_hash']
+    );
+
+
+if (!$otpValid) {
+
+    $attempts++;
 
     $_SESSION['otp_attempts'] =
-        $attempts + 1;
+        $attempts;
 
 
-    if (
-        $_SESSION['otp_attempts'] >= 5
-    ) {
+    if ($attempts >= 5) {
 
         unset(
             $_SESSION['otp_hash'],
@@ -161,6 +216,7 @@ if (
             $_SESSION['otp_username'],
             $_SESSION['otp_remember']
         );
+
 
         header(
             'Location: login.php?otp_error=attempts'
@@ -180,23 +236,27 @@ if (
 
 /*
 |--------------------------------------------------------------------------
-| OTP SUCCESS
+| OTP VERIFIED
 |--------------------------------------------------------------------------
 */
 
 $userId =
-    (int)$_SESSION['otp_user_id'];
+    (int) $_SESSION['otp_user_id'];
+
 
 $username =
-    (string)$_SESSION['otp_username'];
+    (string) $_SESSION['otp_username'];
+
 
 $remember =
-    !empty($_SESSION['otp_remember']);
+    !empty(
+        $_SESSION['otp_remember']
+    );
 
 
 /*
 |--------------------------------------------------------------------------
-| SESSION REGENERATION
+| REGENERATE SESSION ID
 |--------------------------------------------------------------------------
 */
 
@@ -209,27 +269,21 @@ session_regenerate_id(true);
 |--------------------------------------------------------------------------
 */
 
-$_SESSION['logged_in'] = true;
+$_SESSION['logged_in'] =
+    true;
+
 
 $_SESSION['user_id'] =
     $userId;
 
+
 $_SESSION['username'] =
     $username;
+
 
 $_SESSION['login_time'] =
     time();
 
-
-/*
-|--------------------------------------------------------------------------
-| REMEMBER ME
-|--------------------------------------------------------------------------
-|
-| This does NOT automatically authenticate the user.
-| It is only stored as a preference for your application.
-|
-*/
 
 $_SESSION['remember'] =
     $remember;
@@ -237,7 +291,7 @@ $_SESSION['remember'] =
 
 /*
 |--------------------------------------------------------------------------
-| REMOVE OTP DATA
+| REMOVE OTP SESSION DATA
 |--------------------------------------------------------------------------
 */
 
@@ -253,7 +307,7 @@ unset(
 
 /*
 |--------------------------------------------------------------------------
-| SUCCESS
+| LOGIN COMPLETE
 |--------------------------------------------------------------------------
 */
 
