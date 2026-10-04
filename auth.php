@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+
 /*
 |--------------------------------------------------------------------------
 | SESSION
@@ -39,18 +40,83 @@ require_once __DIR__ . '/mail_config.php';
 
 require_once __DIR__ . '/vendor/autoload.php';
 
+
+/*
+|--------------------------------------------------------------------------
+| PHPMailer USE
+|--------------------------------------------------------------------------
+*/
+
 use PHPMailer\PHPMailer\Exception;
 use PHPMailer\PHPMailer\PHPMailer;
 
 
 /*
 |--------------------------------------------------------------------------
-| ONLY ALLOW POST
+| JSON RESPONSE HELPER
+|--------------------------------------------------------------------------
+*/
+
+function jsonResponse(
+    bool $success,
+    string $message,
+    array $extra = [],
+    int $status = 200
+): never {
+
+    http_response_code($status);
+
+    header('Content-Type: application/json; charset=UTF-8');
+
+    echo json_encode(
+        array_merge(
+            [
+                'success' => $success,
+                'message' => $message
+            ],
+            $extra
+        ),
+        JSON_UNESCAPED_UNICODE
+    );
+
+    exit;
+}
+
+
+/*
+|--------------------------------------------------------------------------
+| AJAX REQUEST
+|--------------------------------------------------------------------------
+*/
+
+$isAjax =
+    isset($_SERVER['HTTP_X_REQUESTED_WITH']) &&
+    strtolower(
+        (string)$_SERVER['HTTP_X_REQUESTED_WITH']
+    ) === 'xmlhttprequest';
+
+
+/*
+|--------------------------------------------------------------------------
+| ONLY POST
 |--------------------------------------------------------------------------
 */
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+
+    if ($isAjax) {
+
+        jsonResponse(
+            false,
+            'Invalid request method.',
+            [],
+            405
+        );
+
+    }
+
     header('Location: login.php');
+
     exit;
 }
 
@@ -65,43 +131,37 @@ $username = trim(
     (string)($_POST['username'] ?? '')
 );
 
+
 $password = (string)(
     $_POST['password'] ?? ''
 );
 
-$remember = isset($_POST['remember']);
+
+$remember =
+    isset($_POST['remember']) &&
+    $_POST['remember'] === '1';
 
 
 /*
 |--------------------------------------------------------------------------
-| CLEAR OLD OTP STATE
-|--------------------------------------------------------------------------
-|
-| This prevents an old OTP session from being reused.
-|
-*/
-
-unset(
-    $_SESSION['otp_hash'],
-    $_SESSION['otp_expires'],
-    $_SESSION['otp_attempts'],
-    $_SESSION['otp_user_id'],
-    $_SESSION['otp_username'],
-    $_SESSION['otp_remember']
-);
-
-
-/*
-|--------------------------------------------------------------------------
-| VALIDATE EMPTY INPUT
+| EMPTY INPUT
 |--------------------------------------------------------------------------
 */
 
 if ($username === '' || $password === '') {
 
-    header(
-        'Location: login.php?error=empty'
-    );
+    if ($isAjax) {
+
+        jsonResponse(
+            false,
+            'Please enter your email address and password.',
+            [],
+            400
+        );
+
+    }
+
+    header('Location: login.php?error=empty');
 
     exit;
 }
@@ -109,7 +169,7 @@ if ($username === '' || $password === '') {
 
 /*
 |--------------------------------------------------------------------------
-| VALIDATE EMAIL
+| EMAIL VALIDATION
 |--------------------------------------------------------------------------
 */
 
@@ -118,9 +178,18 @@ if (!filter_var(
     FILTER_VALIDATE_EMAIL
 )) {
 
-    header(
-        'Location: login.php?error=invalid_email'
-    );
+    if ($isAjax) {
+
+        jsonResponse(
+            false,
+            'Please enter a valid email address.',
+            [],
+            400
+        );
+
+    }
+
+    header('Location: login.php?error=invalid_email');
 
     exit;
 }
@@ -145,27 +214,37 @@ try {
     );
 
 
-    $stmt->execute([
-        ':username' => $username
-    ]);
-
-
-    $user = $stmt->fetch(
-        PDO::FETCH_ASSOC
+    $stmt->execute(
+        [
+            ':username' => $username
+        ]
     );
+
+
+    $user =
+        $stmt->fetch(PDO::FETCH_ASSOC);
 
 
     /*
     |--------------------------------------------------------------------------
-    | USER NOT FOUND
+    | INVALID LOGIN
     |--------------------------------------------------------------------------
     */
 
     if (!$user) {
 
-        header(
-            'Location: login.php?error=credentials'
-        );
+        if ($isAjax) {
+
+            jsonResponse(
+                false,
+                'Invalid email address or password.',
+                [],
+                401
+            );
+
+        }
+
+        header('Location: login.php?error=invalid_login');
 
         exit;
     }
@@ -177,11 +256,13 @@ try {
     |--------------------------------------------------------------------------
     |
     | CURRENT TEST SYSTEM:
-    | Database password is compared as plain text.
     |
-    | If your database contains password_hash() values,
+    | Your database currently contains the password directly.
+    |
+    | If your database has a password_hash() value instead,
     | replace this section with password_verify().
     |
+    |--------------------------------------------------------------------------
     */
 
     $databasePassword =
@@ -193,12 +274,37 @@ try {
         $password
     )) {
 
-        header(
-            'Location: login.php?error=credentials'
-        );
+        if ($isAjax) {
+
+            jsonResponse(
+                false,
+                'Invalid email address or password.',
+                [],
+                401
+            );
+
+        }
+
+        header('Location: login.php?error=invalid_login');
 
         exit;
     }
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | REMOVE OLD OTP DATA
+    |--------------------------------------------------------------------------
+    */
+
+    unset(
+        $_SESSION['otp_hash'],
+        $_SESSION['otp_expires'],
+        $_SESSION['otp_attempts'],
+        $_SESSION['otp_user_id'],
+        $_SESSION['otp_username'],
+        $_SESSION['otp_remember']
+    );
 
 
     /*
@@ -207,19 +313,17 @@ try {
     |--------------------------------------------------------------------------
     */
 
-    $otp = (string)random_int(
-        100000,
-        999999
-    );
+    $otp =
+        (string)random_int(
+            100000,
+            999999
+        );
 
 
     /*
     |--------------------------------------------------------------------------
     | OTP EXPIRATION
     |--------------------------------------------------------------------------
-    |
-    | 10 minutes
-    |
     */
 
     $otpExpires =
@@ -228,7 +332,7 @@ try {
 
     /*
     |--------------------------------------------------------------------------
-    | STORE OTP IN SESSION
+    | STORE OTP SESSION
     |--------------------------------------------------------------------------
     */
 
@@ -265,106 +369,114 @@ try {
     |--------------------------------------------------------------------------
     */
 
-    $mail = new PHPMailer(true);
+    try {
+
+        $mail =
+            new PHPMailer(true);
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | SMTP
-    |--------------------------------------------------------------------------
-    */
+        /*
+        |--------------------------------------------------------------------------
+        | SMTP
+        |--------------------------------------------------------------------------
+        */
 
-    $mail->isSMTP();
+        $mail->isSMTP();
 
-    $mail->Host =
-        'smtp.gmail.com';
+        $mail->Host =
+            'smtp.gmail.com';
 
-    $mail->SMTPAuth =
-        true;
+        $mail->SMTPAuth =
+            true;
 
-    $mail->Username =
-        SMTP_USERNAME;
+        $mail->Username =
+            SMTP_USERNAME;
 
-    $mail->Password =
-        SMTP_PASSWORD;
+        $mail->Password =
+            SMTP_PASSWORD;
 
-    $mail->SMTPSecure =
-        PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->SMTPSecure =
+            PHPMailer::ENCRYPTION_STARTTLS;
 
-    $mail->Port =
-        587;
+        $mail->Port =
+            587;
 
-    $mail->CharSet =
-        'UTF-8';
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | OPTIONAL SMTP DEBUG
-    |--------------------------------------------------------------------------
-    |
-    | Keep disabled for normal operation.
-    |
-    */
-
-    $mail->SMTPDebug = 0;
+        $mail->CharSet =
+            'UTF-8';
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | FROM
-    |--------------------------------------------------------------------------
-    */
+        /*
+        |--------------------------------------------------------------------------
+        | CONNECTION TIMEOUT
+        |--------------------------------------------------------------------------
+        |
+        | Prevent the browser from waiting forever.
+        |
+        |--------------------------------------------------------------------------
+        */
 
-    $mail->setFrom(
-        MAIL_FROM_EMAIL,
-        MAIL_FROM_NAME
-    );
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | TO
-    |--------------------------------------------------------------------------
-    */
-
-    $mail->addAddress(
-        (string)$user['username']
-    );
+        $mail->Timeout =
+            15;
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | SUBJECT
-    |--------------------------------------------------------------------------
-    */
+        /*
+        |--------------------------------------------------------------------------
+        | FROM
+        |--------------------------------------------------------------------------
+        */
 
-    $mail->Subject =
-        'CMO Information System - Verification Code';
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | SAFE OTP FOR HTML
-    |--------------------------------------------------------------------------
-    */
-
-    $safeOtp = htmlspecialchars(
-        $otp,
-        ENT_QUOTES | ENT_SUBSTITUTE,
-        'UTF-8'
-    );
+        $mail->setFrom(
+            MAIL_FROM_EMAIL,
+            MAIL_FROM_NAME
+        );
 
 
-    /*
-    |--------------------------------------------------------------------------
-    | HTML EMAIL
-    |--------------------------------------------------------------------------
-    */
+        /*
+        |--------------------------------------------------------------------------
+        | RECIPIENT
+        |--------------------------------------------------------------------------
+        */
 
-    $mail->isHTML(true);
+        $mail->addAddress(
+            (string)$user['username']
+        );
 
-    $mail->Body = '
+
+        /*
+        |--------------------------------------------------------------------------
+        | SUBJECT
+        |--------------------------------------------------------------------------
+        */
+
+        $mail->Subject =
+            'CMO Information System - Verification Code';
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SAFE OTP
+        |--------------------------------------------------------------------------
+        */
+
+        $safeOtp =
+            htmlspecialchars(
+                $otp,
+                ENT_QUOTES | ENT_SUBSTITUTE,
+                'UTF-8'
+            );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | HTML
+        |--------------------------------------------------------------------------
+        */
+
+        $mail->isHTML(true);
+
+
+        $mail->Body = '
+
 <!DOCTYPE html>
 
 <html>
@@ -373,14 +485,8 @@ try {
 
 <meta charset="UTF-8">
 
-<meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
->
-
-<title>Verification Code</title>
-
 </head>
+
 
 <body style="
 margin:0;
@@ -398,275 +504,303 @@ border-radius:12px;
 overflow:hidden;
 ">
 
-    <div style="
-    background:#0b5796;
-    color:#ffffff;
-    padding:25px;
-    text-align:center;
-    ">
 
-        <h2 style="
-        margin:0;
-        font-size:22px;
-        ">
+<div style="
+background:#0b5796;
+color:#ffffff;
+padding:25px;
+text-align:center;
+">
 
-            CMO Information System
+<h2 style="
+margin:0;
+font-size:22px;
+">
 
-        </h2>
+CMO Information System
 
-        <p style="
-        margin:8px 0 0;
-        font-size:13px;
-        ">
-
-            Philippine Air Force
-
-        </p>
-
-    </div>
+</h2>
 
 
-    <div style="
-    padding:35px;
-    color:#24364c;
-    ">
+<p style="
+margin:8px 0 0;
+font-size:13px;
+">
 
-        <h3>
-            Verification Code
-        </h3>
+Philippine Air Force
 
+</p>
 
-        <p style="
-        font-size:14px;
-        line-height:1.6;
-        ">
-
-            A login attempt was made for your
-            CMO Information System account.
-
-        </p>
+</div>
 
 
-        <p style="
-        font-size:14px;
-        line-height:1.6;
-        ">
+<div style="
+padding:35px;
+color:#24364c;
+">
 
-            Enter the following verification code
-            to complete your login:
-
-        </p>
-
-
-        <div style="
-        margin:30px 0;
-        padding:20px;
-        background:#eef7ff;
-        border:1px solid #cfe8ff;
-        border-radius:10px;
-        text-align:center;
-        ">
-
-            <div style="
-            color:#6b7c93;
-            font-size:11px;
-            margin-bottom:8px;
-            text-transform:uppercase;
-            letter-spacing:1px;
-            ">
-
-                Verification Code
-
-            </div>
+<h3>
+Verification Code
+</h3>
 
 
-            <div style="
-            color:#0b5796;
-            font-size:36px;
-            font-weight:bold;
-            letter-spacing:8px;
-            ">
+<p style="
+font-size:14px;
+line-height:1.6;
+">
 
-                ' . $safeOtp . '
+A login attempt was made for your
+CMO Information System account.
 
-            </div>
-
-        </div>
+</p>
 
 
-        <p style="
-        font-size:13px;
-        color:#6b7c93;
-        ">
+<p style="
+font-size:14px;
+line-height:1.6;
+">
 
-            This code expires in
-            <strong>10 minutes</strong>.
+Enter the following verification code
+to complete your login:
 
-        </p>
-
-
-        <p style="
-        font-size:13px;
-        color:#6b7c93;
-        ">
-
-            If you did not attempt to sign in,
-            you can safely ignore this email.
-
-        </p>
-
-    </div>
+</p>
 
 
-    <div style="
-    padding:18px;
-    background:#f8fafc;
-    border-top:1px solid #edf0f3;
-    text-align:center;
-    color:#8d99a6;
-    font-size:11px;
-    ">
+<div style="
+margin:30px 0;
+padding:20px;
+background:#eef7ff;
+border:1px solid #cfe8ff;
+border-radius:10px;
+text-align:center;
+">
 
-        CMO Information System
-        <br>
-        Philippine Air Force
 
-    </div>
+<div style="
+color:#6b7c93;
+font-size:11px;
+margin-bottom:8px;
+text-transform:uppercase;
+letter-spacing:1px;
+">
+
+Verification Code
+
+</div>
+
+
+<div style="
+color:#0b5796;
+font-size:36px;
+font-weight:bold;
+letter-spacing:8px;
+">
+
+' . $safeOtp . '
+
+</div>
+
+</div>
+
+
+<p style="
+font-size:13px;
+color:#6b7c93;
+">
+
+This code expires in
+<strong>10 minutes</strong>.
+
+</p>
+
+
+<p style="
+font-size:13px;
+color:#6b7c93;
+">
+
+If you did not attempt to sign in,
+you can safely ignore this email.
+
+</p>
+
+</div>
+
+
+<div style="
+padding:18px;
+background:#f8fafc;
+border-top:1px solid #edf0f3;
+text-align:center;
+color:#8d99a6;
+font-size:11px;
+">
+
+CMO Information System
+<br>
+Philippine Air Force
+
+</div>
+
 
 </div>
 
 </body>
 
 </html>
+
 ';
 
 
+        /*
+        |--------------------------------------------------------------------------
+        | PLAIN TEXT
+        |--------------------------------------------------------------------------
+        */
+
+        $mail->AltBody =
+            "CMO Information System\n\n" .
+            "Your verification code is: " .
+            $otp .
+            "\n\n" .
+            "This code will expire in 10 minutes.\n\n" .
+            "If you did not attempt to sign in, " .
+            "you can safely ignore this email.";
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | SEND
+        |--------------------------------------------------------------------------
+        */
+
+        $mail->send();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | AJAX SUCCESS
+        |--------------------------------------------------------------------------
+        */
+
+        if ($isAjax) {
+
+            jsonResponse(
+                true,
+                'Verification code sent to your email.',
+                [
+                    'email' =>
+                        (string)$user['username']
+                ]
+            );
+
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | NON AJAX FALLBACK
+        |--------------------------------------------------------------------------
+        */
+
+        header(
+            'Location: login.php?otp=1'
+        );
+
+        exit;
+
+
+    } catch (Exception $mailException) {
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | LOG REAL ERROR
+        |--------------------------------------------------------------------------
+        */
+
+        error_log(
+            'PHPMailer OTP error: ' .
+            $mailException->getMessage()
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | CLEAR OTP
+        |--------------------------------------------------------------------------
+        */
+
+        unset(
+            $_SESSION['otp_hash'],
+            $_SESSION['otp_expires'],
+            $_SESSION['otp_attempts'],
+            $_SESSION['otp_user_id'],
+            $_SESSION['otp_username'],
+            $_SESSION['otp_remember']
+        );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | AJAX ERROR
+        |--------------------------------------------------------------------------
+        */
+
+        if ($isAjax) {
+
+            /*
+            | Do NOT expose SMTP password or
+            | sensitive server information.
+            */
+
+            jsonResponse(
+                false,
+                'We could not send the verification code. Please check your mail configuration and try again.',
+                [],
+                500
+            );
+
+        }
+
+
+        header(
+            'Location: login.php?error=email'
+        );
+
+        exit;
+    }
+
+
+} catch (PDOException $databaseException) {
+
+
     /*
     |--------------------------------------------------------------------------
-    | PLAIN TEXT EMAIL
-    |--------------------------------------------------------------------------
-    */
-
-    $mail->AltBody =
-        "CMO Information System\n\n" .
-        "Your verification code is: " .
-        $otp .
-        "\n\n" .
-        "This code will expire in 10 minutes.\n\n" .
-        "If you did not attempt to sign in, " .
-        "you can safely ignore this email.";
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | SEND
-    |--------------------------------------------------------------------------
-    */
-
-    $mail->send();
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | OTP EMAIL SENT
-    |--------------------------------------------------------------------------
-    */
-
-    header(
-        'Location: login.php?otp=1'
-    );
-
-    exit;
-
-
-} catch (PDOException $e) {
-
-    /*
-    |--------------------------------------------------------------------------
-    | DATABASE ERROR
+    | LOG DATABASE ERROR
     |--------------------------------------------------------------------------
     */
 
     error_log(
-        'CMO AUTH DATABASE ERROR: ' .
-        $e->getMessage()
+        'Database authentication error: ' .
+        $databaseException->getMessage()
     );
 
 
-    unset(
-        $_SESSION['otp_hash'],
-        $_SESSION['otp_expires'],
-        $_SESSION['otp_attempts'],
-        $_SESSION['otp_user_id'],
-        $_SESSION['otp_username'],
-        $_SESSION['otp_remember']
-    );
+    if ($isAjax) {
+
+        jsonResponse(
+            false,
+            'A database error occurred. Please try again later.',
+            [],
+            500
+        );
+
+    }
 
 
     header(
         'Location: login.php?error=db'
-    );
-
-    exit;
-
-
-} catch (Exception $e) {
-
-    /*
-    |--------------------------------------------------------------------------
-    | EMAIL ERROR
-    |--------------------------------------------------------------------------
-    */
-
-    error_log(
-        'CMO AUTH PHPMailer ERROR: ' .
-        $e->getMessage()
-    );
-
-
-    unset(
-        $_SESSION['otp_hash'],
-        $_SESSION['otp_expires'],
-        $_SESSION['otp_attempts'],
-        $_SESSION['otp_user_id'],
-        $_SESSION['otp_username'],
-        $_SESSION['otp_remember']
-    );
-
-
-    header(
-        'Location: login.php?error=email'
-    );
-
-    exit;
-
-
-} catch (Throwable $e) {
-
-    /*
-    |--------------------------------------------------------------------------
-    | UNEXPECTED ERROR
-    |--------------------------------------------------------------------------
-    */
-
-    error_log(
-        'CMO AUTH UNEXPECTED ERROR: ' .
-        $e->getMessage()
-    );
-
-
-    unset(
-        $_SESSION['otp_hash'],
-        $_SESSION['otp_expires'],
-        $_SESSION['otp_attempts'],
-        $_SESSION['otp_user_id'],
-        $_SESSION['otp_username'],
-        $_SESSION['otp_remember']
-    );
-
-
-    header(
-        'Location: login.php?error=system'
     );
 
     exit;

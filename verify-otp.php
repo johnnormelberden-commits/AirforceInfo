@@ -16,15 +16,13 @@ if (session_status() === PHP_SESSION_NONE) {
 
 /*
 |--------------------------------------------------------------------------
-| ONLY ALLOW POST
+| ONLY POST
 |--------------------------------------------------------------------------
 */
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 
-    header(
-        'Location: login.php'
-    );
+    header('Location: login.php');
 
     exit;
 }
@@ -44,7 +42,7 @@ if (
 ) {
 
     header(
-        'Location: login.php?otp_error=session'
+        'Location: login.php?error=otp_session'
     );
 
     exit;
@@ -53,7 +51,7 @@ if (
 
 /*
 |--------------------------------------------------------------------------
-| CHECK OTP EXPIRATION
+| CHECK EXPIRATION
 |--------------------------------------------------------------------------
 */
 
@@ -61,6 +59,7 @@ if (
     !is_numeric($_SESSION['otp_expires']) ||
     time() >= (int)$_SESSION['otp_expires']
 ) {
+
 
     unset(
         $_SESSION['otp_hash'],
@@ -101,6 +100,7 @@ if (!isset($_SESSION['otp_attempts'])) {
 if (
     (int)$_SESSION['otp_attempts'] >= 5
 ) {
+
 
     unset(
         $_SESSION['otp_hash'],
@@ -164,7 +164,7 @@ $valid = password_verify(
 
 /*
 |--------------------------------------------------------------------------
-| OTP SUCCESS
+| SUCCESS
 |--------------------------------------------------------------------------
 */
 
@@ -173,7 +173,7 @@ if ($valid) {
 
     /*
     |--------------------------------------------------------------------------
-    | GET USER DATA BEFORE SESSION REGENERATION
+    | GET PENDING USER
     |--------------------------------------------------------------------------
     */
 
@@ -191,11 +191,8 @@ if ($valid) {
 
     /*
     |--------------------------------------------------------------------------
-    | REGENERATE SESSION ID
+    | REGENERATE SESSION
     |--------------------------------------------------------------------------
-    |
-    | Prevents session fixation.
-    |
     */
 
     session_regenerate_id(true);
@@ -203,7 +200,7 @@ if ($valid) {
 
     /*
     |--------------------------------------------------------------------------
-    | CREATE AUTHENTICATED SESSION
+    | AUTHENTICATED SESSION
     |--------------------------------------------------------------------------
     */
 
@@ -217,16 +214,6 @@ if ($valid) {
 
     $_SESSION['username'] =
         $username;
-
-
-    /*
-    |--------------------------------------------------------------------------
-    | AUTHENTICATION TIME
-    |--------------------------------------------------------------------------
-    */
-
-    $_SESSION['login_time'] =
-        time();
 
 
     /*
@@ -250,11 +237,12 @@ if ($valid) {
     | REMEMBER ME
     |--------------------------------------------------------------------------
     |
-    | IMPORTANT:
-    | This cookie is created ONLY after successful OTP verification.
+    | For your current test system this preserves your
+    | existing remember_user behavior.
     |
-    | This keeps it from bypassing the OTP step.
+    | For production, use a random server-side token.
     |
+    |--------------------------------------------------------------------------
     */
 
     if ($remember) {
@@ -266,7 +254,8 @@ if ($valid) {
                 'expires' =>
                     time() + (86400 * 30),
 
-                'path' => '/',
+                'path' =>
+                    '/',
 
                 'secure' =>
                     (
@@ -274,19 +263,15 @@ if ($valid) {
                         $_SERVER['HTTPS'] !== 'off'
                     ),
 
-                'httponly' => true,
+                'httponly' =>
+                    true,
 
-                'samesite' => 'Lax'
+                'samesite' =>
+                    'Lax'
             ]
         );
 
     } else {
-
-        /*
-        |--------------------------------------------------------------------------
-        | DELETE OLD REMEMBER COOKIE
-        |--------------------------------------------------------------------------
-        */
 
         setcookie(
             'remember_user',
@@ -295,7 +280,8 @@ if ($valid) {
                 'expires' =>
                     time() - 3600,
 
-                'path' => '/',
+                'path' =>
+                    '/',
 
                 'secure' =>
                     (
@@ -303,9 +289,11 @@ if ($valid) {
                         $_SERVER['HTTPS'] !== 'off'
                     ),
 
-                'httponly' => true,
+                'httponly' =>
+                    true,
 
-                'samesite' => 'Lax'
+                'samesite' =>
+                    'Lax'
             ]
         );
     }
@@ -327,7 +315,7 @@ if ($valid) {
 
 /*
 |--------------------------------------------------------------------------
-| INVALID OTP
+| INCORRECT OTP
 |--------------------------------------------------------------------------
 */
 
@@ -337,13 +325,14 @@ $_SESSION['otp_attempts'] =
 
 /*
 |--------------------------------------------------------------------------
-| MAXIMUM ATTEMPTS REACHED
+| MAXIMUM ATTEMPTS
 |--------------------------------------------------------------------------
 */
 
 if (
     (int)$_SESSION['otp_attempts'] >= 5
 ) {
+
 
     unset(
         $_SESSION['otp_hash'],
