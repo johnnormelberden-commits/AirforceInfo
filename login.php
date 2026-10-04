@@ -9,34 +9,39 @@ if (session_status() === PHP_SESSION_NONE) {
 
 /*
 |--------------------------------------------------------------------------
-| ALREADY AUTHENTICATED
+| IMPORTANT
+|--------------------------------------------------------------------------
+|
+| DO NOT automatically log in using remember_user.
+|
+| The previous code did this:
+|
+| if (isset($_COOKIE['remember_user'])) {
+|     $_SESSION['logged_in'] = true;
+|     ...
+| }
+|
+| That means an old cookie could bypass the normal login/OTP process.
+|
+| For now, we intentionally require a fresh authenticated session.
+|
 |--------------------------------------------------------------------------
 */
-
-if (!empty($_SESSION['logged_in']) && !empty($_SESSION['username'])) {
-    header('Location: index.php');
-    exit;
-}
 
 
 /*
 |--------------------------------------------------------------------------
-| REMEMBERED USER
+| IF ALREADY LOGGED IN
 |--------------------------------------------------------------------------
-|
-| IMPORTANT:
-| The remember_user cookie is only used to pre-fill the email.
-| It is NOT treated as proof of authentication.
-|
 */
 
-$rememberedUser = '';
-
 if (
-    isset($_COOKIE['remember_user']) &&
-    $_COOKIE['remember_user'] !== ''
+    isset($_SESSION['logged_in']) &&
+    $_SESSION['logged_in'] === true &&
+    !empty($_SESSION['username'])
 ) {
-    $rememberedUser = (string)$_COOKIE['remember_user'];
+    header('Location: index.php');
+    exit;
 }
 
 
@@ -46,145 +51,11 @@ if (
 |--------------------------------------------------------------------------
 */
 
-$otpPending =
-    isset($_SESSION['otp_hash']) &&
-    isset($_SESSION['otp_expires']) &&
-    isset($_SESSION['otp_user_id']) &&
-    isset($_SESSION['otp_username']);
+$showOtp = isset($_GET['otp']) && $_GET['otp'] === '1';
 
+$otpError = $_GET['otp_error'] ?? '';
 
-/*
-|--------------------------------------------------------------------------
-| OTP EMAIL
-|--------------------------------------------------------------------------
-*/
-
-$otpEmail = '';
-
-if ($otpPending) {
-    $otpEmail = (string)$_SESSION['otp_username'];
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| ERROR MESSAGE
-|--------------------------------------------------------------------------
-*/
-
-$errorMessage = '';
-
-if (isset($_GET['error'])) {
-
-    $error = (string)$_GET['error'];
-
-    switch ($error) {
-
-        case 'empty':
-
-            $errorMessage =
-                'Please enter your email address and password.';
-
-            break;
-
-
-        case 'invalid_email':
-
-            $errorMessage =
-                'Please enter a valid email address.';
-
-            break;
-
-
-        case 'email':
-
-            $errorMessage =
-                'We could not send the verification code. Please check the Gmail SMTP configuration and try again.';
-
-            break;
-
-
-        case 'db':
-
-            $errorMessage =
-                'A database error occurred. Please try again later.';
-
-            break;
-
-
-        case 'otp_expired':
-
-            $errorMessage =
-                'Your verification code has expired. Please sign in again.';
-
-            break;
-
-
-        case 'otp_attempts':
-
-            $errorMessage =
-                'Too many incorrect verification attempts. Please sign in again.';
-
-            break;
-
-
-        case 'invalid':
-
-            $errorMessage =
-                'Invalid verification code.';
-
-            break;
-
-
-        case '1':
-
-            $errorMessage =
-                'Invalid email address or password.';
-
-            break;
-
-
-        default:
-
-            $errorMessage =
-                'Unable to sign in. Please try again.';
-
-            break;
-    }
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| OTP ERROR
-|--------------------------------------------------------------------------
-*/
-
-$otpError = '';
-
-if (isset($_GET['otp_error'])) {
-
-    $otpError = (string)$_GET['otp_error'];
-
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| OTP REMAINING TIME
-|--------------------------------------------------------------------------
-*/
-
-$otpRemainingSeconds = 0;
-
-if ($otpPending) {
-
-    $otpRemainingSeconds = max(
-        0,
-        (int)$_SESSION['otp_expires'] - time()
-    );
-
-}
+$error = $_GET['error'] ?? '';
 
 ?>
 <!DOCTYPE html>
@@ -194,66 +65,43 @@ if ($otpPending) {
 
 <meta charset="UTF-8">
 
-<title>
-CMO Information System - Login
-</title>
+<title>CMO Information System - Login</title>
 
 <meta
     name="viewport"
     content="width=device-width, initial-scale=1.0"
 >
 
-
-<!-- =====================================================
-     BOOTSTRAP
-====================================================== -->
-
 <link
     href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
     rel="stylesheet"
 >
-
-
-<!-- =====================================================
-     BOOTSTRAP ICONS
-====================================================== -->
 
 <link
     rel="stylesheet"
     href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
 >
 
-
-<!-- =====================================================
-     GOOGLE FONT
-====================================================== -->
-
 <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
     rel="stylesheet"
 >
 
-
 <style>
 
-/* =========================================
+/* =========================================================
    GLOBAL
-========================================= */
+========================================================= */
 
 * {
     box-sizing: border-box;
 }
 
 body {
-
     margin: 0;
-
     min-height: 100vh;
 
-    font-family:
-        'Inter',
-        Arial,
-        sans-serif;
+    font-family: 'Inter', Arial, sans-serif;
 
     background:
         radial-gradient(
@@ -271,9 +119,9 @@ body {
 }
 
 
-/* =========================================
+/* =========================================================
    LOGIN CONTAINER
-========================================= */
+========================================================= */
 
 .login-container {
 
@@ -289,9 +137,9 @@ body {
 }
 
 
-/* =========================================
+/* =========================================================
    LOGIN CARD
-========================================= */
+========================================================= */
 
 .login-card {
 
@@ -313,14 +161,13 @@ body {
         0 25px 70px rgba(19, 55, 91, 0.18),
         0 5px 20px rgba(19, 55, 91, 0.08);
 
-    border:
-        1px solid rgba(15, 62, 105, 0.08);
+    border: 1px solid rgba(15, 62, 105, 0.08);
 }
 
 
-/* =========================================
-   LEFT BRANDING
-========================================= */
+/* =========================================================
+   LEFT PANEL
+========================================================= */
 
 .brand-panel {
 
@@ -401,8 +248,7 @@ body {
 
     color: rgba(255,255,255,0.055);
 
-    border:
-        35px solid rgba(255,255,255,0.035);
+    border: 35px solid rgba(255,255,255,0.035);
 
     pointer-events: none;
 }
@@ -415,6 +261,10 @@ body {
     z-index: 2;
 }
 
+
+/* =========================================================
+   BRAND HEADER
+========================================================= */
 
 .brand-header {
 
@@ -491,6 +341,10 @@ body {
 }
 
 
+/* =========================================================
+   PORTAL LABEL
+========================================================= */
+
 .portal-label {
 
     display: flex;
@@ -527,6 +381,10 @@ body {
 }
 
 
+/* =========================================================
+   BRAND TITLE
+========================================================= */
+
 .brand-title {
 
     max-width: 350px;
@@ -556,6 +414,10 @@ body {
     line-height: 1.7;
 }
 
+
+/* =========================================================
+   SECURITY BADGE
+========================================================= */
 
 .security-badge {
 
@@ -600,9 +462,9 @@ body {
 }
 
 
-/* =========================================
-   RIGHT LOGIN
-========================================= */
+/* =========================================================
+   RIGHT PANEL
+========================================================= */
 
 .login-panel {
 
@@ -627,6 +489,10 @@ body {
     margin: 0 auto;
 }
 
+
+/* =========================================================
+   LABEL
+========================================================= */
 
 .authorized {
 
@@ -670,9 +536,9 @@ body {
 }
 
 
-/* =========================================
-   LABEL
-========================================= */
+/* =========================================================
+   LABELS
+========================================================= */
 
 .form-label {
 
@@ -692,9 +558,9 @@ body {
 }
 
 
-/* =========================================
+/* =========================================================
    INPUT
-========================================= */
+========================================================= */
 
 .input-wrapper {
 
@@ -742,6 +608,8 @@ body {
     font-size: 12px;
 
     box-shadow: none;
+
+    transition: all 0.2s ease;
 }
 
 
@@ -750,8 +618,9 @@ body {
     border-color: #428dd1;
 
     box-shadow:
-        0 0 0 3px
-        rgba(66,141,209,0.10);
+        0 0 0 3px rgba(66,141,209,0.10);
+
+    background: #ffffff !important;
 }
 
 
@@ -761,9 +630,9 @@ body {
 }
 
 
-/* =========================================
-   PASSWORD TOGGLE
-========================================= */
+/* =========================================================
+   PASSWORD
+========================================================= */
 
 .password-toggle {
 
@@ -787,17 +656,21 @@ body {
 }
 
 
-/* =========================================
+.password-toggle:hover {
+
+    color: #1764ae;
+}
+
+
+/* =========================================================
    REMEMBER
-========================================= */
+========================================================= */
 
 .remember-row {
 
     display: flex;
 
     align-items: center;
-
-    justify-content: space-between;
 
     margin-top: -5px;
 
@@ -833,15 +706,17 @@ body {
 }
 
 
-/* =========================================
+/* =========================================================
    LOGIN BUTTON
-========================================= */
+========================================================= */
 
 .btn-login {
 
     width: 100%;
 
     height: 42px;
+
+    margin-top: 2px;
 
     border: none;
 
@@ -861,22 +736,38 @@ body {
     font-weight: 600;
 
     box-shadow:
-        0 7px 15px
-        rgba(15, 91, 157, 0.20);
+        0 7px 15px rgba(15, 91, 157, 0.20);
+
+    transition: all 0.2s ease;
+}
+
+
+.btn-login:hover {
+
+    background:
+        linear-gradient(
+            90deg,
+            #08487f,
+            #0d5da0
+        );
+
+    transform: translateY(-1px);
 }
 
 
 .btn-login:disabled {
 
-    opacity: 0.65;
+    opacity: 0.7;
 
     cursor: not-allowed;
+
+    transform: none;
 }
 
 
-/* =========================================
+/* =========================================================
    SECURITY
-========================================= */
+========================================================= */
 
 .security-message {
 
@@ -898,9 +789,9 @@ body {
 }
 
 
-/* =========================================
+/* =========================================================
    FOOTER
-========================================= */
+========================================================= */
 
 .login-footer {
 
@@ -921,9 +812,9 @@ body {
 }
 
 
-/* =========================================
+/* =========================================================
    ERROR
-========================================= */
+========================================================= */
 
 .error-message {
 
@@ -946,11 +837,32 @@ body {
 }
 
 
-/* =========================================
-   OTP OVERLAY
-========================================= */
+.info-message {
 
-.otp-overlay {
+    margin-top: 15px;
+
+    padding: 10px 12px;
+
+    border-radius: 8px;
+
+    background: #eef7ff;
+
+    border:
+        1px solid #cfe8ff;
+
+    color: #1764ae;
+
+    font-size: 11px;
+
+    text-align: center;
+}
+
+
+/* =========================================================
+   OTP MODAL
+========================================================= */
+
+.otp-modal {
 
     position: fixed;
 
@@ -958,7 +870,7 @@ body {
 
     z-index: 9999;
 
-    display: flex;
+    display: none;
 
     align-items: center;
 
@@ -967,74 +879,67 @@ body {
     padding: 20px;
 
     background:
-        rgba(5, 25, 45, 0.72);
+        rgba(8, 35, 63, 0.65);
 
-    backdrop-filter: blur(7px);
-
-    -webkit-backdrop-filter: blur(7px);
+    backdrop-filter: blur(5px);
 }
 
 
-/* =========================================
-   OTP MODAL
-========================================= */
+.otp-modal.show {
 
-.otp-modal {
+    display: flex;
+}
+
+
+.otp-box {
 
     width: 100%;
 
-    max-width: 460px;
-
-    padding: 38px;
+    max-width: 430px;
 
     background: #ffffff;
 
-    border-radius: 20px;
+    border-radius: 18px;
+
+    padding: 32px;
 
     box-shadow:
-        0 30px 90px
-        rgba(0,0,0,0.28);
+        0 25px 70px rgba(0,0,0,0.25);
 
-    text-align: center;
-
-    animation:
-        otpPopup 0.22s ease-out;
+    animation: otpAppear 0.25s ease;
 }
 
 
-@keyframes otpPopup {
+@keyframes otpAppear {
 
     from {
 
         opacity: 0;
 
-        transform:
-            translateY(15px)
-            scale(0.97);
+        transform: translateY(15px) scale(0.97);
+
     }
 
     to {
 
         opacity: 1;
 
-        transform:
-            translateY(0)
-            scale(1);
+        transform: translateY(0) scale(1);
+
     }
+
 }
 
 
-/* =========================================
-   OTP ICON
-========================================= */
-
 .otp-icon {
 
-    width: 64px;
+    width: 60px;
 
-    height: 64px;
+    height: 60px;
 
     margin: 0 auto 18px;
+
+    border-radius: 50%;
 
     display: flex;
 
@@ -1042,38 +947,33 @@ body {
 
     justify-content: center;
 
-    border-radius: 50%;
-
     background: #eef7ff;
 
-    color: #176bb5;
+    color: #1764ae;
 
-    font-size: 28px;
+    font-size: 25px;
 }
 
 
-/* =========================================
-   OTP TITLE
-========================================= */
-
-.otp-modal h2 {
+.otp-title {
 
     margin: 0;
 
+    text-align: center;
+
     color: #10233d;
 
-    font-size: 25px;
+    font-size: 23px;
 
     font-weight: 800;
 }
 
 
-.otp-modal p {
+.otp-description {
 
-    margin:
-        10px auto 18px;
+    margin: 10px 0 22px;
 
-    max-width: 360px;
+    text-align: center;
 
     color: #7d8b9b;
 
@@ -1083,62 +983,27 @@ body {
 }
 
 
-/* =========================================
-   OTP EMAIL
-========================================= */
-
-.otp-email {
-
-    display: inline-block;
-
-    margin-bottom: 20px;
-
-    padding: 7px 11px;
-
-    border-radius: 8px;
-
-    background: #f3f7fb;
-
-    color: #1764ae;
-
-    font-size: 11px;
-
-    font-weight: 600;
-
-    word-break: break-word;
-}
-
-
-/* =========================================
-   OTP INPUT
-========================================= */
-
 .otp-input {
 
     width: 100%;
 
-    height: 60px;
+    height: 58px;
 
-    border:
-        1px solid #d6dee7;
+    border: 1px solid #d6dee7;
 
-    border-radius: 11px;
-
-    outline: none;
+    border-radius: 10px;
 
     text-align: center;
 
-    letter-spacing: 11px;
+    letter-spacing: 10px;
 
-    padding-left: 11px;
+    font-size: 25px;
 
-    color: #172b4d;
+    font-weight: 700;
 
-    font-size: 26px;
+    color: #10233d;
 
-    font-weight: 800;
-
-    background: #ffffff;
+    outline: none;
 }
 
 
@@ -1147,22 +1012,17 @@ body {
     border-color: #428dd1;
 
     box-shadow:
-        0 0 0 3px
-        rgba(66,141,209,0.10);
+        0 0 0 3px rgba(66,141,209,0.10);
 }
 
 
-/* =========================================
-   OTP BUTTON
-========================================= */
-
-.btn-otp {
+.otp-submit {
 
     width: 100%;
 
     height: 45px;
 
-    margin-top: 17px;
+    margin-top: 18px;
 
     border: none;
 
@@ -1175,7 +1035,7 @@ body {
             #176bb5
         );
 
-    color: #ffffff;
+    color: white;
 
     font-size: 12px;
 
@@ -1183,41 +1043,29 @@ body {
 }
 
 
-.btn-otp:disabled {
+.otp-cancel {
 
-    opacity: 0.6;
+    width: 100%;
 
-    cursor: not-allowed;
+    height: 40px;
+
+    margin-top: 10px;
+
+    border: 1px solid #d6dee7;
+
+    border-radius: 9px;
+
+    background: #ffffff;
+
+    color: #667789;
+
+    font-size: 11px;
 }
 
-
-/* =========================================
-   OTP TIMER
-========================================= */
-
-.otp-timer {
-
-    margin-top: 15px;
-
-    color: #929daa;
-
-    font-size: 10px;
-}
-
-
-.otp-timer strong {
-
-    color: #1764ae;
-}
-
-
-/* =========================================
-   OTP ERROR
-========================================= */
 
 .otp-error {
 
-    margin-top: 14px;
+    margin-top: 15px;
 
     padding: 10px;
 
@@ -1225,32 +1073,39 @@ body {
 
     background: #fff1f1;
 
-    border:
-        1px solid #ffd6d6;
+    border: 1px solid #ffd6d6;
 
     color: #d63939;
+
+    text-align: center;
 
     font-size: 11px;
 }
 
 
-/* =========================================
-   OTP SECURITY
-========================================= */
+.otp-success {
 
-.otp-security {
+    margin-top: 15px;
 
-    margin-top: 18px;
+    padding: 10px;
 
-    color: #929daa;
+    border-radius: 8px;
 
-    font-size: 9px;
+    background: #effbf4;
+
+    border: 1px solid #c8efd6;
+
+    color: #21874b;
+
+    text-align: center;
+
+    font-size: 11px;
 }
 
 
-/* =========================================
+/* =========================================================
    MOBILE
-========================================= */
+========================================================= */
 
 @media (max-width: 800px) {
 
@@ -1258,7 +1113,6 @@ body {
 
         padding: 20px;
     }
-
 
     .login-card {
 
@@ -1271,7 +1125,6 @@ body {
         border-radius: 18px;
     }
 
-
     .brand-panel {
 
         width: 100%;
@@ -1281,18 +1134,15 @@ body {
         padding: 30px;
     }
 
-
     .brand-header {
 
         margin-bottom: 40px;
     }
 
-
     .brand-title {
 
         font-size: 28px;
     }
-
 
     .login-panel {
 
@@ -1300,7 +1150,6 @@ body {
 
         padding: 40px 30px;
     }
-
 }
 
 
@@ -1311,42 +1160,29 @@ body {
         padding: 10px;
     }
 
-
     .brand-panel {
 
         padding: 25px;
     }
-
 
     .login-panel {
 
         padding: 35px 22px;
     }
 
-
     .login-title {
 
         font-size: 27px;
     }
-
 
     .brand-title {
 
         font-size: 26px;
     }
 
+    .otp-box {
 
-    .otp-modal {
-
-        padding: 30px 22px;
-    }
-
-
-    .otp-input {
-
-        letter-spacing: 7px;
-
-        font-size: 23px;
+        padding: 25px 20px;
     }
 
 }
@@ -1361,452 +1197,471 @@ body {
 
 <div class="login-container">
 
-<div class="login-card">
+    <div class="login-card">
 
 
-<!-- =====================================================
-     BRAND PANEL
-====================================================== -->
+        <!-- =================================================
+             BRAND PANEL
+        ================================================== -->
 
-<div class="brand-panel">
+        <div class="brand-panel">
 
-<div class="brand-content">
+            <div class="brand-content">
 
+                <div class="brand-header">
 
-<div class="brand-header">
+                    <div class="logo-wrapper">
 
-<div class="logo-wrapper">
+                        <img
+                            src="cmo1.png"
+                            alt="Philippine Air Force CMO Logo"
+                        >
 
-<img
-    src="cmo1.png"
-    alt="Philippine Air Force CMO Logo"
->
+                    </div>
 
-</div>
+                    <div class="brand-name">
 
+                        <strong>
+                            CMO Information System
+                        </strong>
 
-<div class="brand-name">
+                        <small>
+                            Philippine Air Force
+                        </small>
 
-<strong>
-CMO Information System
-</strong>
+                    </div>
 
-<small>
-Philippine Air Force
-</small>
+                </div>
 
-</div>
 
-</div>
+                <div class="portal-label">
 
+                    CMO Information Portal
 
-<div class="portal-label">
-CMO Information Portal
-</div>
+                </div>
 
 
-<h1 class="brand-title">
+                <h1 class="brand-title">
 
-One secure<br>
-system for<br>
-CMO information.
+                    One secure<br>
+                    system for<br>
+                    CMO information.
 
-</h1>
+                </h1>
 
 
-<p class="brand-description">
+                <p class="brand-description">
 
-Access authorized CMO information,
-personnel records, activities,
-assignments, and official resources
-from one secure workspace.
+                    Access authorized CMO information,
+                    personnel records, activities,
+                    assignments, and official resources
+                    from one secure workspace.
 
-</p>
+                </p>
 
 
-<div class="security-badge">
+                <div class="security-badge">
 
-<span class="security-dot"></span>
+                    <span class="security-dot"></span>
 
-Authorized personnel access
+                    Authorized personnel access
 
-</div>
+                </div>
 
+            </div>
 
-</div>
+        </div>
 
-</div>
 
+        <!-- =================================================
+             LOGIN PANEL
+        ================================================== -->
 
-<!-- =====================================================
-     LOGIN PANEL
-====================================================== -->
+        <div class="login-panel">
 
-<div class="login-panel">
+            <div class="login-content">
 
-<div class="login-content">
+                <div class="authorized">
 
+                    Authorized Personnel
 
-<div class="authorized">
+                </div>
 
-Authorized Personnel
 
-</div>
+                <h2 class="login-title">
 
+                    Welcome back
 
-<h2 class="login-title">
+                </h2>
 
-Welcome back
 
-</h2>
+                <p class="login-subtitle">
 
+                    Sign in with your authorized email
+                    and password. A verification code
+                    will be sent to your email.
 
-<p class="login-subtitle">
+                </p>
 
-Sign in with your authorized email
-and password. A verification code
-will be sent to your email.
 
-</p>
+                <form
+                    action="auth.php"
+                    method="POST"
+                    autocomplete="on"
+                    id="loginForm"
+                >
 
 
-<!-- =================================================
-     LOGIN FORM
-================================================== -->
+                    <!-- EMAIL -->
 
-<form
-    action="auth.php"
-    method="POST"
-    autocomplete="on"
-    id="loginForm"
->
+                    <div>
 
+                        <label
+                            for="username"
+                            class="form-label"
+                        >
+                            Email Address
+                        </label>
 
-<label
-    for="username"
-    class="form-label"
->
 
-Email Address
+                        <div class="input-wrapper">
 
-</label>
+                            <i class="bi bi-envelope input-icon"></i>
 
+                            <input
+                                type="email"
+                                id="username"
+                                name="username"
+                                class="form-control email-input"
+                                placeholder="Enter your email address"
+                                required
+                                autocomplete="username"
+                                inputmode="email"
+                                maxlength="254"
+                            >
 
-<div class="input-wrapper">
+                        </div>
 
-<i
-    class="bi bi-envelope input-icon"
-></i>
+                    </div>
 
 
-<input
-    type="email"
-    id="username"
-    name="username"
-    class="form-control email-input"
-    placeholder="Enter your email address"
-    value="<?= htmlspecialchars(
-        $rememberedUser,
-        ENT_QUOTES | ENT_SUBSTITUTE,
-        'UTF-8'
-    ); ?>"
-    required
-    autocomplete="username"
-    inputmode="email"
-    maxlength="254"
->
+                    <!-- PASSWORD -->
 
-</div>
+                    <div>
 
+                        <label
+                            for="password"
+                            class="form-label"
+                        >
+                            Password
+                        </label>
 
-<label
-    for="password"
-    class="form-label"
->
 
-Password
+                        <div class="input-wrapper">
 
-</label>
+                            <i class="bi bi-lock input-icon"></i>
 
 
-<div class="input-wrapper">
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                class="form-control"
+                                placeholder="Enter your password"
+                                required
+                                autocomplete="current-password"
+                            >
 
-<i
-    class="bi bi-lock input-icon"
-></i>
 
+                            <button
+                                type="button"
+                                class="password-toggle"
+                                onclick="togglePassword()"
+                                aria-label="Show password"
+                            >
 
-<input
-    type="password"
-    id="password"
-    name="password"
-    class="form-control"
-    placeholder="Enter your password"
-    required
-    autocomplete="current-password"
->
+                                <i
+                                    class="bi bi-eye"
+                                    id="passwordIcon"
+                                ></i>
 
+                            </button>
 
-<button
-    type="button"
-    class="password-toggle"
-    onclick="togglePassword()"
-    aria-label="Show password"
->
+                        </div>
 
-<i
-    class="bi bi-eye"
-    id="passwordIcon"
-></i>
+                    </div>
 
-</button>
 
-</div>
+                    <!-- REMEMBER -->
 
+                    <div class="remember-row">
 
-<div class="remember-row">
+                        <label
+                            class="remember-label"
+                            for="remember"
+                        >
 
-<label
-    class="remember-label"
-    for="remember"
->
+                            <input
+                                type="checkbox"
+                                id="remember"
+                                name="remember"
+                                value="1"
+                            >
 
-<input
-    type="checkbox"
-    id="remember"
-    name="remember"
-    value="1"
->
+                            Remember me
 
-Remember me
+                        </label>
 
-</label>
+                    </div>
 
-</div>
 
+                    <!-- LOGIN -->
 
-<button
-    type="submit"
-    class="btn-login"
-    id="loginButton"
->
+                    <button
+                        type="submit"
+                        class="btn-login"
+                        id="loginButton"
+                    >
 
-Continue securely
+                        Continue securely
 
-<i class="bi bi-arrow-right"></i>
+                        <i class="bi bi-arrow-right"></i>
 
-</button>
+                    </button>
 
-</form>
+                </form>
 
 
-<?php if ($errorMessage !== ''): ?>
+                <!-- =================================================
+                     NORMAL ERRORS
+                ================================================== -->
 
-<div class="error-message">
+                <?php if ($error !== ''): ?>
 
-<i class="bi bi-exclamation-circle"></i>
+                    <div class="error-message">
 
-<?= htmlspecialchars(
-    $errorMessage,
-    ENT_QUOTES | ENT_SUBSTITUTE,
-    'UTF-8'
-); ?>
+                        <i class="bi bi-exclamation-circle"></i>
 
-</div>
+                        <?php
 
-<?php endif; ?>
+                        switch ($error) {
 
+                            case 'empty':
 
-<div class="security-message">
+                                echo 'Please enter your email address and password.';
 
-<i class="bi bi-shield-lock-fill"></i>
+                                break;
 
-Your session is protected with
-two-step verification.
 
-</div>
+                            case 'invalid_email':
 
+                                echo 'Please enter a valid email address.';
 
-<div class="login-footer">
+                                break;
 
-<div>
-Philippine Air Force
-</div>
 
-<div>
-CMO Information System
-</div>
+                            case 'email':
 
-</div>
+                                echo 'We could not send the verification code. Please check the mail configuration and try again.';
 
+                                break;
 
-</div>
 
-</div>
+                            case 'db':
 
-</div>
+                                echo 'A database error occurred. Please try again later.';
+
+                                break;
+
+
+                            default:
+
+                                echo 'Invalid email address or password.';
+
+                                break;
+                        }
+
+                        ?>
+
+                    </div>
+
+                <?php endif; ?>
+
+
+                <div class="security-message">
+
+                    <i class="bi bi-shield-lock-fill"></i>
+
+                    Your session is protected with
+                    two-step verification.
+
+                </div>
+
+
+                <div class="login-footer">
+
+                    <div>
+                        Philippine Air Force
+                    </div>
+
+                    <div>
+                        CMO Information System
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
 
 </div>
 
 
 <!-- =========================================================
-     OTP POPUP
+     OTP MODAL
 ========================================================= -->
 
-<?php if ($otpPending): ?>
-
 <div
-    class="otp-overlay"
-    id="otpOverlay"
+    class="otp-modal <?= $showOtp ? 'show' : ''; ?>"
+    id="otpModal"
 >
 
-<div
-    class="otp-modal"
-    role="dialog"
-    aria-modal="true"
-    aria-labelledby="otpTitle"
->
+    <div class="otp-box">
 
 
-<div class="otp-icon">
+        <div class="otp-icon">
 
-<i class="bi bi-envelope-check-fill"></i>
+            <i class="bi bi-shield-lock-fill"></i>
 
-</div>
-
-
-<div class="authorized">
-
-Two-Step Verification
-
-</div>
+        </div>
 
 
-<h2 id="otpTitle">
+        <h3 class="otp-title">
 
-Check your email
+            Verify Your Login
 
-</h2>
-
-
-<p>
-
-We sent a 6-digit verification code
-to the email address associated with
-your account.
-
-</p>
+        </h3>
 
 
-<div class="otp-email">
+        <p class="otp-description">
 
-<i class="bi bi-envelope"></i>
+            A 6-digit verification code has been
+            sent to your registered email address.
 
-<?= htmlspecialchars(
-    $otpEmail,
-    ENT_QUOTES | ENT_SUBSTITUTE,
-    'UTF-8'
-); ?>
+            <br>
 
-</div>
+            Please enter the code below to continue.
 
-
-<form
-    action="verify-otp.php"
-    method="POST"
-    autocomplete="off"
-    id="otpForm"
->
+        </p>
 
 
-<label
-    for="otp"
-    class="visually-hidden"
->
-Verification Code
-</label>
+        <form
+            action="verify-otp.php"
+            method="POST"
+            id="otpForm"
+        >
 
 
-<input
-    type="text"
-    id="otp"
-    name="otp"
-    class="otp-input"
-    placeholder="••••••"
-    maxlength="6"
-    pattern="[0-9]{6}"
-    inputmode="numeric"
-    autocomplete="one-time-code"
-    required
-    autofocus
->
+            <input
+                type="text"
+                name="otp"
+                id="otp"
+                class="otp-input"
+                inputmode="numeric"
+                autocomplete="one-time-code"
+                maxlength="6"
+                pattern="[0-9]{6}"
+                placeholder="••••••"
+                required
+                autofocus
+            >
 
 
-<button
-    type="submit"
-    class="btn-otp"
-    id="otpButton"
->
+            <?php if ($otpError !== ''): ?>
 
-Verify and Sign In
+                <div class="otp-error">
 
-<i class="bi bi-arrow-right ms-1"></i>
+                    <i class="bi bi-exclamation-circle"></i>
 
-</button>
+                    <?php
 
-</form>
+                    switch ($otpError) {
 
+                        case 'invalid':
 
-<?php if ($otpError !== ''): ?>
+                            echo 'The verification code is incorrect. Please try again.';
 
-<div class="otp-error">
-
-<i class="bi bi-exclamation-circle"></i>
-
-<?php
-
-if ($otpError === 'invalid') {
-
-    echo 'Incorrect verification code. Please try again.';
-
-} else {
-
-    echo 'Unable to verify the code. Please try again.';
-
-}
-
-?>
-
-</div>
-
-<?php endif; ?>
+                            break;
 
 
-<div class="otp-timer">
+                        case 'expired':
 
-Code expires in
+                            echo 'Your verification code has expired. Please sign in again.';
 
-<strong id="otpTimer">
-00:00
-</strong>
-
-</div>
+                            break;
 
 
-<div class="otp-security">
+                        case 'attempts':
 
-<i class="bi bi-shield-lock-fill"></i>
+                            echo 'Too many incorrect attempts. Please sign in again.';
 
-Never share your verification code with anyone.
+                            break;
+
+
+                        default:
+
+                            echo 'Unable to verify the code. Please try again.';
+
+                            break;
+                    }
+
+                    ?>
+
+                </div>
+
+            <?php endif; ?>
+
+
+            <button
+                type="submit"
+                class="otp-submit"
+                id="otpSubmit"
+            >
+
+                Verify & Continue
+
+                <i class="bi bi-arrow-right"></i>
+
+            </button>
+
+        </form>
+
+
+        <button
+            type="button"
+            class="otp-cancel"
+            onclick="cancelOtp()"
+        >
+
+            Cancel and return to login
+
+        </button>
+
+
+        <div class="otp-success">
+
+            <i class="bi bi-clock"></i>
+
+            The verification code is valid for
+            <strong>10 minutes</strong>.
+
+        </div>
+
+    </div>
 
 </div>
-
-
-</div>
-
-</div>
-
-<?php endif; ?>
 
 
 <script>
@@ -1820,35 +1675,29 @@ Never share your verification code with anyone.
 function togglePassword() {
 
     const password =
-        document.getElementById('password');
+        document.getElementById("password");
 
     const icon =
-        document.getElementById('passwordIcon');
+        document.getElementById("passwordIcon");
 
 
-    if (!password || !icon) {
-        return;
-    }
+    if (password.type === "password") {
 
+        password.type = "text";
 
-    if (password.type === 'password') {
+        icon.classList.remove("bi-eye");
 
-        password.type = 'text';
-
-        icon.classList.remove('bi-eye');
-
-        icon.classList.add('bi-eye-slash');
+        icon.classList.add("bi-eye-slash");
 
     } else {
 
-        password.type = 'password';
+        password.type = "password";
 
-        icon.classList.remove('bi-eye-slash');
+        icon.classList.remove("bi-eye-slash");
 
-        icon.classList.add('bi-eye');
+        icon.classList.add("bi-eye");
 
     }
-
 }
 
 
@@ -1859,129 +1708,21 @@ function togglePassword() {
 */
 
 const loginForm =
-    document.getElementById('loginForm');
+    document.getElementById("loginForm");
 
 const loginButton =
-    document.getElementById('loginButton');
+    document.getElementById("loginButton");
 
 
-if (loginForm && loginButton) {
+loginForm.addEventListener("submit", function () {
 
-    loginForm.addEventListener(
-        'submit',
-        function () {
+    loginButton.disabled = true;
 
-            loginButton.disabled = true;
+    loginButton.innerHTML =
+        '<span class="spinner-border spinner-border-sm me-2"></span>' +
+        'Sending verification code...';
 
-            loginButton.innerHTML =
-                '<span class="spinner-border spinner-border-sm me-2"></span>' +
-                'Sending verification code...';
-
-        }
-    );
-
-}
-
-
-/*
-|--------------------------------------------------------------------------
-| OTP TIMER
-|--------------------------------------------------------------------------
-*/
-
-<?php if ($otpPending): ?>
-
-let otpRemainingSeconds =
-    <?= (int)$otpRemainingSeconds ?>;
-
-
-const otpTimer =
-    document.getElementById('otpTimer');
-
-
-const otpInput =
-    document.getElementById('otp');
-
-
-const otpButton =
-    document.getElementById('otpButton');
-
-
-function updateOtpTimer() {
-
-    if (!otpTimer) {
-        return;
-    }
-
-
-    if (otpRemainingSeconds <= 0) {
-
-        otpTimer.textContent =
-            '00:00';
-
-
-        if (otpInput) {
-            otpInput.disabled = true;
-        }
-
-
-        if (otpButton) {
-
-            otpButton.disabled = true;
-
-            otpButton.innerHTML =
-                'Code expired';
-
-        }
-
-
-        return;
-    }
-
-
-    const minutes =
-        Math.floor(
-            otpRemainingSeconds / 60
-        );
-
-
-    const seconds =
-        otpRemainingSeconds % 60;
-
-
-    otpTimer.textContent =
-        String(minutes).padStart(2, '0')
-        +
-        ':'
-        +
-        String(seconds).padStart(2, '0');
-
-
-    otpRemainingSeconds--;
-
-}
-
-
-updateOtpTimer();
-
-
-const otpInterval =
-    setInterval(
-        function () {
-
-            updateOtpTimer();
-
-            if (otpRemainingSeconds <= 0) {
-
-                clearInterval(
-                    otpInterval
-                );
-
-            }
-
-        },
-        1000
-    );
+});
 
 
 /*
@@ -1990,111 +1731,106 @@ const otpInterval =
 |--------------------------------------------------------------------------
 */
 
+const otpInput =
+    document.getElementById("otp");
+
+
 if (otpInput) {
 
-    otpInput.addEventListener(
-        'input',
-        function () {
+    otpInput.addEventListener("input", function () {
 
-            this.value =
-                this.value
-                    .replace(/\D/g, '')
-                    .slice(0, 6);
+        this.value =
+            this.value
+                .replace(/\D/g, '')
+                .slice(0, 6);
 
-        }
-    );
+    });
 
 }
 
 
 /*
 |--------------------------------------------------------------------------
-| OTP SUBMIT LOADING
+| OTP FORM LOADING
 |--------------------------------------------------------------------------
 */
 
 const otpForm =
-    document.getElementById('otpForm');
+    document.getElementById("otpForm");
+
+const otpSubmit =
+    document.getElementById("otpSubmit");
 
 
-if (otpForm && otpButton) {
+if (otpForm) {
 
-    otpForm.addEventListener(
-        'submit',
-        function () {
+    otpForm.addEventListener("submit", function () {
 
-            if (
-                !otpInput ||
-                otpInput.value.length !== 6
-            ) {
+        otpSubmit.disabled = true;
 
-                return;
+        otpSubmit.innerHTML =
+            '<span class="spinner-border spinner-border-sm me-2"></span>' +
+            'Verifying...';
 
-            }
-
-
-            otpButton.disabled = true;
-
-            otpButton.innerHTML =
-                '<span class="spinner-border spinner-border-sm me-2"></span>' +
-                'Verifying...';
-
-        }
-    );
+    });
 
 }
 
 
 /*
 |--------------------------------------------------------------------------
-| FOCUS OTP
+| CANCEL OTP
 |--------------------------------------------------------------------------
 */
 
-if (otpInput) {
+function cancelOtp() {
 
-    setTimeout(
-        function () {
-
-            otpInput.focus();
-
-        },
-        150
-    );
+    window.location.href =
+        "login.php";
 
 }
+
+
+/*
+|--------------------------------------------------------------------------
+| AUTOMATICALLY FOCUS OTP
+|--------------------------------------------------------------------------
+*/
+
+<?php if ($showOtp): ?>
+
+window.addEventListener("load", function () {
+
+    const modal =
+        document.getElementById("otpModal");
+
+    const input =
+        document.getElementById("otp");
+
+
+    if (modal) {
+
+        modal.classList.add("show");
+
+    }
+
+
+    if (input) {
+
+        setTimeout(function () {
+
+            input.focus();
+
+        }, 150);
+
+    }
+
+});
 
 <?php endif; ?>
 
-
-/*
-|--------------------------------------------------------------------------
-| ESCAPE KEY
-|--------------------------------------------------------------------------
-|
-| Do NOT close the OTP popup with ESC.
-| The user must either complete verification
-| or start the login process again.
-|
-*/
-
-document.addEventListener(
-    'keydown',
-    function (event) {
-
-        if (
-            event.key === 'Escape' &&
-            document.getElementById('otpOverlay')
-        ) {
-
-            event.preventDefault();
-
-        }
-
-    }
-);
-
 </script>
+
 
 </body>
 
