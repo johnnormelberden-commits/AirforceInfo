@@ -1,4 +1,8 @@
+```php
 <?php
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
 
 session_start();
 
@@ -11,7 +15,8 @@ session_start();
 |
 */
 
-require_once 'db.php';
+require_once __DIR__ . '/db.php';
+require_once __DIR__ . '/vendor/autoload.php';
 
 
 /*
@@ -113,8 +118,6 @@ try {
      * PASSWORD IS CORRECT
      * ======================================================
      *
-     * IMPORTANT:
-     *
      * We DO NOT log the user in yet.
      *
      * The user must successfully enter the OTP first.
@@ -167,30 +170,6 @@ try {
 
     /*
      * ======================================================
-     * SEND OTP EMAIL
-     * ======================================================
-     *
-     * This uses PHPMailer with your Gmail account.
-     *
-     * IMPORTANT:
-     *
-     * Before using this code, PHPMailer must be installed
-     * in your project.
-     *
-     * If your project uses Composer:
-     *
-     * composer require phpmailer/phpmailer
-     *
-     */
-
-    require_once __DIR__ . '/vendor/autoload.php';
-
-    use PHPMailer\PHPMailer\PHPMailer;
-    use PHPMailer\PHPMailer\Exception;
-
-
-    /*
-     * ======================================================
      * CREATE MAILER
      * ======================================================
      */
@@ -210,17 +189,13 @@ try {
 
     $mail->SMTPAuth = true;
 
+
     /*
      * ======================================================
      * YOUR GMAIL ACCOUNT
      * ======================================================
      *
-     * CHANGE THIS.
-     *
-     * Example:
-     *
-     * $mail->Username = 'yourcmoaccount@gmail.com';
-     *
+     * CHANGE THIS TO YOUR GMAIL ADDRESS.
      */
 
     $mail->Username = 'YOUR_GMAIL@gmail.com';
@@ -231,14 +206,9 @@ try {
      * GMAIL APP PASSWORD
      * ======================================================
      *
-     * Put the 16-character Google App Password here.
+     * Use a Google App Password.
      *
      * DO NOT use your normal Gmail password.
-     *
-     * Example:
-     *
-     * $mail->Password = 'abcdefghijklmnop';
-     *
      */
 
     $mail->Password = 'YOUR_16_CHARACTER_APP_PASSWORD';
@@ -259,9 +229,6 @@ try {
      * ======================================================
      * EMAIL SENDER
      * ======================================================
-     *
-     * This should normally be the same Gmail account
-     * configured above.
      */
 
     $mail->setFrom(
@@ -275,27 +242,10 @@ try {
      * EMAIL RECIPIENT
      * ======================================================
      *
-     * VERY IMPORTANT:
-     *
-     * $username is the email entered by the user.
-     *
-     * Example:
-     *
-     * User enters:
-     * lemron@gmail.com
-     *
-     * Then:
-     *
-     * $mail->addAddress($username);
-     *
-     * sends the OTP to:
-     *
-     * lemron@gmail.com
+     * Send the OTP to the email address used for login.
      */
 
-    $mail->addAddress(
-        $username
-    );
+    $mail->addAddress($username);
 
 
     /*
@@ -308,171 +258,175 @@ try {
 
     $mail->Subject = 'CMO Information System - Verification Code';
 
-
     $mail->Body = '
 
-    <!DOCTYPE html>
+<!DOCTYPE html>
 
-    <html>
+<html>
 
-    <head>
+<head>
 
-        <meta charset="UTF-8">
+    <meta charset="UTF-8">
 
-    </head>
+</head>
 
-    <body style="
-        margin:0;
-        padding:0;
-        background:#f4f7fb;
-        font-family:Arial,Helvetica,sans-serif;
+<body style="
+    margin:0;
+    padding:0;
+    background:#f4f7fb;
+    font-family:Arial,Helvetica,sans-serif;
+">
+
+    <div style="
+        max-width:600px;
+        margin:40px auto;
+        background:#ffffff;
+        border-radius:12px;
+        overflow:hidden;
+        border:1px solid #e2e8f0;
     ">
 
         <div style="
-            max-width:600px;
-            margin:40px auto;
-            background:#ffffff;
-            border-radius:12px;
-            overflow:hidden;
-            border:1px solid #e2e8f0;
+            background:#0b5796;
+            padding:25px;
+            text-align:center;
+            color:#ffffff;
         ">
 
-            <div style="
-                background:#0b5796;
-                padding:25px;
-                text-align:center;
-                color:#ffffff;
+            <h2 style="
+                margin:0;
+                font-size:22px;
             ">
+                CMO Information System
+            </h2>
 
-                <h2 style="
-                    margin:0;
-                    font-size:22px;
-                ">
-                    CMO Information System
-                </h2>
-
-                <p style="
-                    margin:8px 0 0;
-                    color:#dceeff;
-                    font-size:13px;
-                ">
-                    Philippine Air Force
-                </p>
-
-            </div>
-
-
-            <div style="
-                padding:35px;
-                color:#24364c;
+            <p style="
+                margin:8px 0 0;
+                color:#dceeff;
+                font-size:13px;
             ">
-
-                <h3 style="
-                    margin-top:0;
-                    font-size:20px;
-                ">
-                    Verification Code
-                </h3>
-
-                <p style="
-                    font-size:14px;
-                    line-height:1.6;
-                ">
-                    Someone is attempting to sign in to your
-                    CMO Information System account.
-                </p>
-
-                <p style="
-                    font-size:14px;
-                    line-height:1.6;
-                ">
-                    Use the verification code below to
-                    complete your login:
-                </p>
-
-
-                <div style="
-                    margin:30px 0;
-                    padding:20px;
-                    background:#eef7ff;
-                    border:1px solid #cfe8ff;
-                    border-radius:10px;
-                    text-align:center;
-                ">
-
-                    <div style="
-                        color:#6b7c93;
-                        font-size:11px;
-                        margin-bottom:8px;
-                        text-transform:uppercase;
-                        letter-spacing:1px;
-                    ">
-                        Your verification code
-                    </div>
-
-                    <div style="
-                        color:#0b5796;
-                        font-size:36px;
-                        font-weight:bold;
-                        letter-spacing:8px;
-                    ">
-                        ' . htmlspecialchars($otp) . '
-                    </div>
-
-                </div>
-
-
-                <p style="
-                    font-size:13px;
-                    color:#6b7c93;
-                    line-height:1.6;
-                ">
-                    This code will expire in
-                    <strong>10 minutes</strong>.
-                </p>
-
-
-                <p style="
-                    font-size:13px;
-                    color:#6b7c93;
-                    line-height:1.6;
-                ">
-                    If you did not attempt to sign in,
-                    you can safely ignore this email.
-                </p>
-
-            </div>
-
-
-            <div style="
-                padding:18px 35px;
-                background:#f8fafc;
-                border-top:1px solid #edf0f3;
-                text-align:center;
-                color:#8d99a6;
-                font-size:11px;
-            ">
-
-                CMO Information System<br>
                 Philippine Air Force
-
-            </div>
+            </p>
 
         </div>
 
-    </body>
 
-    </html>
-    ';
+        <div style="
+            padding:35px;
+            color:#24364c;
+        ">
+
+            <h3 style="
+                margin-top:0;
+                font-size:20px;
+            ">
+                Verification Code
+            </h3>
+
+
+            <p style="
+                font-size:14px;
+                line-height:1.6;
+            ">
+                Someone is attempting to sign in to your
+                CMO Information System account.
+            </p>
+
+
+            <p style="
+                font-size:14px;
+                line-height:1.6;
+            ">
+                Use the verification code below to
+                complete your login:
+            </p>
+
+
+            <div style="
+                margin:30px 0;
+                padding:20px;
+                background:#eef7ff;
+                border:1px solid #cfe8ff;
+                border-radius:10px;
+                text-align:center;
+            ">
+
+                <div style="
+                    color:#6b7c93;
+                    font-size:11px;
+                    margin-bottom:8px;
+                    text-transform:uppercase;
+                    letter-spacing:1px;
+                ">
+                    Your verification code
+                </div>
+
+
+                <div style="
+                    color:#0b5796;
+                    font-size:36px;
+                    font-weight:bold;
+                    letter-spacing:8px;
+                ">
+                    ' . htmlspecialchars(
+                        $otp,
+                        ENT_QUOTES,
+                        'UTF-8'
+                    ) . '
+                </div>
+
+            </div>
+
+
+            <p style="
+                font-size:13px;
+                color:#6b7c93;
+                line-height:1.6;
+            ">
+                This code will expire in
+                <strong>10 minutes</strong>.
+            </p>
+
+
+            <p style="
+                font-size:13px;
+                color:#6b7c93;
+                line-height:1.6;
+            ">
+                If you did not attempt to sign in,
+                you can safely ignore this email.
+            </p>
+
+        </div>
+
+
+        <div style="
+            padding:18px 35px;
+            background:#f8fafc;
+            border-top:1px solid #edf0f3;
+            text-align:center;
+            color:#8d99a6;
+            font-size:11px;
+        ">
+
+            CMO Information System<br>
+            Philippine Air Force
+
+        </div>
+
+    </div>
+
+</body>
+
+</html>
+
+';
 
 
     /*
      * ======================================================
      * PLAIN TEXT EMAIL
      * ======================================================
-     *
-     * Useful when the recipient's mail client does not
-     * display HTML emails.
      */
 
     $mail->AltBody =
@@ -523,8 +477,9 @@ try {
 
 
     /*
-     * Clear OTP session information because
-     * the email was not successfully sent.
+     * ======================================================
+     * CLEAR OTP SESSION INFORMATION
+     * ======================================================
      */
 
     unset($_SESSION['otp_hash']);
@@ -551,8 +506,8 @@ try {
         "Login database error: " . $e->getMessage()
     );
 
-
     header("Location: login.php?error=db");
     exit;
 
 }
+```

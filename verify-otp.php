@@ -1,3 +1,4 @@
+```php
 <?php
 
 session_start();
@@ -22,10 +23,8 @@ if (
     !isset($_SESSION['otp_user_id']) ||
     !isset($_SESSION['otp_username'])
 ) {
-
     header("Location: login.php");
     exit;
-
 }
 
 
@@ -35,7 +34,10 @@ if (
 |--------------------------------------------------------------------------
 */
 
-if (time() > $_SESSION['otp_expires']) {
+if (
+    !is_numeric($_SESSION['otp_expires']) ||
+    time() >= (int) $_SESSION['otp_expires']
+) {
 
     /*
      * Remove OTP information.
@@ -55,11 +57,44 @@ if (time() > $_SESSION['otp_expires']) {
 
 /*
 |--------------------------------------------------------------------------
+| INITIALIZE OTP ATTEMPTS
+|--------------------------------------------------------------------------
+*/
+
+if (!isset($_SESSION['otp_attempts'])) {
+    $_SESSION['otp_attempts'] = 0;
+}
+
+
+/*
+|--------------------------------------------------------------------------
 | HANDLE OTP SUBMISSION
 |--------------------------------------------------------------------------
 */
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    /*
+     * Check expiration again when the form is submitted.
+     */
+
+    if (
+        !isset($_SESSION['otp_expires']) ||
+        !is_numeric($_SESSION['otp_expires']) ||
+        time() >= (int) $_SESSION['otp_expires']
+    ) {
+
+        unset($_SESSION['otp_hash']);
+        unset($_SESSION['otp_expires']);
+        unset($_SESSION['otp_attempts']);
+        unset($_SESSION['otp_user_id']);
+        unset($_SESSION['otp_username']);
+        unset($_SESSION['otp_remember']);
+
+        header("Location: login.php?error=otp_expired");
+        exit;
+    }
+
 
     $otp = trim($_POST['otp'] ?? '');
 
@@ -74,10 +109,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $otp === '' ||
         !preg_match('/^\d{6}$/', $otp)
     ) {
-
         header("Location: verify_otp.php?error=invalid");
         exit;
-
     }
 
 
@@ -87,10 +120,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
      * ======================================================
      */
 
-    if (
-        isset($_SESSION['otp_attempts']) &&
-        $_SESSION['otp_attempts'] >= 5
-    ) {
+    if ($_SESSION['otp_attempts'] >= 5) {
 
         /*
          * Too many attempts.
@@ -121,7 +151,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $_SESSION['otp_hash']
         )
     ) {
-
 
         /*
          * ==================================================
@@ -191,8 +220,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
          * REMEMBER ME
          * ==================================================
          *
-         * IMPORTANT:
-         *
          * The cookie is created ONLY after successful
          * password AND OTP verification.
          */
@@ -234,7 +261,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'samesite' => 'Lax'
                 ]
             );
-
         }
 
 
@@ -246,7 +272,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         header("Location: index.php");
         exit;
-
     }
 
 
@@ -261,7 +286,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
     /*
-     * Check if this attempt reached the maximum.
+     * ======================================================
+     * CHECK IF THIS ATTEMPT REACHED THE MAXIMUM
+     * ======================================================
      */
 
     if ($_SESSION['otp_attempts'] >= 5) {
@@ -279,7 +306,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 
     /*
-     * Redirect back with an error.
+     * ======================================================
+     * REDIRECT BACK WITH AN ERROR
+     * ======================================================
      */
 
     header("Location: verify_otp.php?error=invalid");
@@ -302,17 +331,16 @@ $email = $_SESSION['otp_username'];
 |--------------------------------------------------------------------------
 */
 
-$remainingSeconds =
-    max(
-        0,
-        $_SESSION['otp_expires'] - time()
-    );
+$remainingSeconds = max(
+    0,
+    (int) $_SESSION['otp_expires'] - time()
+);
 
-$remainingMinutes =
-    floor($remainingSeconds / 60);
+$remainingMinutes = floor(
+    $remainingSeconds / 60
+);
 
-$remainingSecondsOnly =
-    $remainingSeconds % 60;
+$remainingSecondsOnly = $remainingSeconds % 60;
 
 ?>
 <!DOCTYPE html>
@@ -320,477 +348,478 @@ $remainingSecondsOnly =
 
 <head>
 
-<meta charset="UTF-8">
+    <meta charset="UTF-8">
 
-<title>Verify OTP - CMO Information System</title>
+    <title>Verify OTP - CMO Information System</title>
 
-<meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
->
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
 
-<!-- Bootstrap -->
+    <!-- Bootstrap -->
 
-<link
-    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
-    rel="stylesheet"
->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
 
-<!-- Bootstrap Icons -->
+    <!-- Bootstrap Icons -->
 
-<link
-    rel="stylesheet"
-    href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
->
+    <link
+        rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.13.1/font/bootstrap-icons.min.css"
+    >
 
-<!-- Google Font -->
+    <!-- Google Font -->
 
-<link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
-    rel="stylesheet"
->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+        rel="stylesheet"
+    >
 
 
-<style>
+    <style>
 
-/* =========================================
-   GLOBAL
-========================================= */
+        /* =========================================
+           GLOBAL
+        ========================================= */
 
-* {
-    box-sizing: border-box;
-}
+        * {
+            box-sizing: border-box;
+        }
 
 
-body {
+        body {
 
-    margin: 0;
+            margin: 0;
 
-    min-height: 100vh;
+            min-height: 100vh;
 
-    font-family:
-        'Inter',
-        Arial,
-        sans-serif;
+            font-family:
+                'Inter',
+                Arial,
+                sans-serif;
 
-    background:
-        radial-gradient(
-            circle at 20% 20%,
-            rgba(0, 87, 183, 0.10),
-            transparent 30%
-        ),
-        linear-gradient(
-            135deg,
-            #edf4fb,
-            #f7faff
-        );
+            background:
+                radial-gradient(
+                    circle at 20% 20%,
+                    rgba(0, 87, 183, 0.10),
+                    transparent 30%
+                ),
 
-    color: #172b4d;
-}
+                linear-gradient(
+                    135deg,
+                    #edf4fb,
+                    #f7faff
+                );
 
+            color: #172b4d;
+        }
 
-/* =========================================
-   CONTAINER
-========================================= */
 
-.verify-container {
+        /* =========================================
+           CONTAINER
+        ========================================= */
 
-    min-height: 100vh;
+        .verify-container {
 
-    display: flex;
+            min-height: 100vh;
 
-    align-items: center;
+            display: flex;
 
-    justify-content: center;
+            align-items: center;
 
-    padding: 25px;
-}
+            justify-content: center;
 
+            padding: 25px;
+        }
 
-/* =========================================
-   CARD
-========================================= */
 
-.verify-card {
+        /* =========================================
+           CARD
+        ========================================= */
 
-    width: 100%;
+        .verify-card {
 
-    max-width: 500px;
+            width: 100%;
 
-    background: #ffffff;
+            max-width: 500px;
 
-    border-radius: 20px;
+            background: #ffffff;
 
-    padding: 45px;
+            border-radius: 20px;
 
-    box-shadow:
-        0 25px 70px rgba(19, 55, 91, 0.16),
-        0 5px 20px rgba(19, 55, 91, 0.07);
+            padding: 45px;
 
-    border:
-        1px solid rgba(15, 62, 105, 0.08);
+            box-shadow:
+                0 25px 70px rgba(19, 55, 91, 0.16),
+                0 5px 20px rgba(19, 55, 91, 0.07);
 
-    text-align: center;
-}
+            border:
+                1px solid rgba(15, 62, 105, 0.08);
 
+            text-align: center;
+        }
 
-/* =========================================
-   ICON
-========================================= */
 
-.verify-icon {
+        /* =========================================
+           ICON
+        ========================================= */
 
-    width: 65px;
+        .verify-icon {
 
-    height: 65px;
+            width: 65px;
 
-    margin: 0 auto 20px;
+            height: 65px;
 
-    border-radius: 50%;
+            margin: 0 auto 20px;
 
-    display: flex;
+            border-radius: 50%;
 
-    align-items: center;
+            display: flex;
 
-    justify-content: center;
+            align-items: center;
 
-    background: #eef7ff;
+            justify-content: center;
 
-    color: #176bb5;
+            background: #eef7ff;
 
-    font-size: 27px;
-}
+            color: #176bb5;
 
+            font-size: 27px;
+        }
 
-/* =========================================
-   LABEL
-========================================= */
 
-.authorized {
+        /* =========================================
+           LABEL
+        ========================================= */
 
-    margin-bottom: 8px;
+        .authorized {
 
-    color: #1764ae;
+            margin-bottom: 8px;
 
-    font-size: 10px;
+            color: #1764ae;
 
-    font-weight: 700;
+            font-size: 10px;
 
-    letter-spacing: 1.4px;
+            font-weight: 700;
 
-    text-transform: uppercase;
-}
+            letter-spacing: 1.4px;
 
+            text-transform: uppercase;
+        }
 
-/* =========================================
-   TITLE
-========================================= */
 
-.verify-title {
+        /* =========================================
+           TITLE
+        ========================================= */
 
-    margin: 0;
+        .verify-title {
 
-    color: #10233d;
+            margin: 0;
 
-    font-size: 29px;
+            color: #10233d;
 
-    font-weight: 800;
+            font-size: 29px;
 
-    letter-spacing: -0.8px;
-}
+            font-weight: 800;
 
+            letter-spacing: -0.8px;
+        }
 
-/* =========================================
-   DESCRIPTION
-========================================= */
 
-.verify-subtitle {
+        /* =========================================
+           DESCRIPTION
+        ========================================= */
 
-    margin:
-        10px
-        0
-        25px;
+        .verify-subtitle {
 
-    color: #7d8b9b;
+            margin:
+                10px
+                0
+                25px;
 
-    font-size: 12px;
+            color: #7d8b9b;
 
-    line-height: 1.7;
-}
+            font-size: 12px;
 
+            line-height: 1.7;
+        }
 
-/* =========================================
-   EMAIL
-========================================= */
 
-.email-display {
+        /* =========================================
+           EMAIL
+        ========================================= */
 
-    display: inline-block;
+        .email-display {
 
-    margin-bottom: 25px;
+            display: inline-block;
 
-    padding:
-        8px
-        13px;
+            margin-bottom: 25px;
 
-    border-radius: 8px;
+            padding:
+                8px
+                13px;
 
-    background: #f3f7fb;
+            border-radius: 8px;
 
-    color: #1764ae;
+            background: #f3f7fb;
 
-    font-size: 12px;
+            color: #1764ae;
 
-    font-weight: 600;
+            font-size: 12px;
 
-    word-break: break-word;
-}
+            font-weight: 600;
 
+            word-break: break-word;
+        }
 
-/* =========================================
-   OTP INPUT
-========================================= */
 
-.otp-input {
+        /* =========================================
+           OTP INPUT
+        ========================================= */
 
-    width: 100%;
+        .otp-input {
 
-    height: 58px;
+            width: 100%;
 
-    border:
-        1px solid #d6dee7;
+            height: 58px;
 
-    border-radius: 10px;
+            border:
+                1px solid #d6dee7;
 
-    outline: none;
+            border-radius: 10px;
 
-    text-align: center;
+            outline: none;
 
-    letter-spacing: 10px;
+            text-align: center;
 
-    padding-left: 10px;
+            letter-spacing: 10px;
 
-    color: #172b4d;
+            padding-left: 10px;
 
-    font-size: 25px;
+            color: #172b4d;
 
-    font-weight: 700;
+            font-size: 25px;
 
-    background: #ffffff;
+            font-weight: 700;
 
-    transition:
-        border-color 0.2s ease,
-        box-shadow 0.2s ease;
-}
+            background: #ffffff;
 
+            transition:
+                border-color 0.2s ease,
+                box-shadow 0.2s ease;
+        }
 
-.otp-input:focus {
 
-    border-color: #428dd1;
+        .otp-input:focus {
 
-    box-shadow:
-        0 0 0 3px
-        rgba(66,141,209,0.10);
-}
+            border-color: #428dd1;
 
+            box-shadow:
+                0 0 0 3px
+                rgba(66,141,209,0.10);
+        }
 
-.otp-input::placeholder {
 
-    color: #b4bec9;
+        .otp-input::placeholder {
 
-    letter-spacing: 8px;
-}
+            color: #b4bec9;
 
+            letter-spacing: 8px;
+        }
 
-/* =========================================
-   VERIFY BUTTON
-========================================= */
 
-.btn-verify {
+        /* =========================================
+           VERIFY BUTTON
+        ========================================= */
 
-    width: 100%;
+        .btn-verify {
 
-    height: 44px;
+            width: 100%;
 
-    margin-top: 18px;
+            height: 44px;
 
-    border: none;
+            margin-top: 18px;
 
-    border-radius: 9px;
+            border: none;
 
-    background:
-        linear-gradient(
-            90deg,
-            #0c5595,
-            #176bb5
-        );
+            border-radius: 9px;
 
-    color: white;
+            background:
+                linear-gradient(
+                    90deg,
+                    #0c5595,
+                    #176bb5
+                );
 
-    font-size: 12px;
+            color: white;
 
-    font-weight: 600;
+            font-size: 12px;
 
-    box-shadow:
-        0 7px 15px
-        rgba(15, 91, 157, 0.20);
+            font-weight: 600;
 
-    transition: all 0.2s ease;
-}
+            box-shadow:
+                0 7px 15px
+                rgba(15, 91, 157, 0.20);
 
+            transition: all 0.2s ease;
+        }
 
-.btn-verify:hover {
 
-    background:
-        linear-gradient(
-            90deg,
-            #08487f,
-            #0d5da0
-        );
+        .btn-verify:hover {
 
-    transform:
-        translateY(-1px);
-}
+            background:
+                linear-gradient(
+                    90deg,
+                    #08487f,
+                    #0d5da0
+                );
 
+            transform:
+                translateY(-1px);
+        }
 
-/* =========================================
-   ERROR
-========================================= */
 
-.error-message {
+        /* =========================================
+           ERROR
+        ========================================= */
 
-    margin-top: 17px;
+        .error-message {
 
-    padding:
-        10px
-        12px;
+            margin-top: 17px;
 
-    border-radius: 8px;
+            padding:
+                10px
+                12px;
 
-    background: #fff1f1;
+            border-radius: 8px;
 
-    border:
-        1px solid #ffd6d6;
+            background: #fff1f1;
 
-    color: #d63939;
+            border:
+                1px solid #ffd6d6;
 
-    font-size: 11px;
+            color: #d63939;
 
-    text-align: center;
-}
+            font-size: 11px;
 
+            text-align: center;
+        }
 
-/* =========================================
-   TIMER
-========================================= */
 
-.otp-timer {
+        /* =========================================
+           TIMER
+        ========================================= */
 
-    margin-top: 17px;
+        .otp-timer {
 
-    color: #929daa;
+            margin-top: 17px;
 
-    font-size: 10px;
-}
+            color: #929daa;
 
+            font-size: 10px;
+        }
 
-.otp-timer strong {
 
-    color: #1764ae;
+        .otp-timer strong {
 
-    font-weight: 700;
-}
+            color: #1764ae;
 
+            font-weight: 700;
+        }
 
-/* =========================================
-   SECURITY MESSAGE
-========================================= */
 
-.security-message {
+        /* =========================================
+           SECURITY MESSAGE
+        ========================================= */
 
-    display: flex;
+        .security-message {
 
-    justify-content: center;
+            display: flex;
 
-    align-items: center;
+            justify-content: center;
 
-    gap: 6px;
+            align-items: center;
 
-    margin-top: 25px;
+            gap: 6px;
 
-    color: #929daa;
+            margin-top: 25px;
 
-    font-size: 9px;
+            color: #929daa;
 
-    line-height: 1.5;
-}
+            font-size: 9px;
 
+            line-height: 1.5;
+        }
 
-.security-message i {
 
-    color: #8896a5;
-}
+        .security-message i {
 
+            color: #8896a5;
+        }
 
-/* =========================================
-   FOOTER
-========================================= */
 
-.verify-footer {
+        /* =========================================
+           FOOTER
+        ========================================= */
 
-    margin-top: 25px;
+        .verify-footer {
 
-    padding-top: 18px;
+            margin-top: 25px;
 
-    border-top:
-        1px solid #edf0f3;
+            padding-top: 18px;
 
-    color: #8d99a6;
+            border-top:
+                1px solid #edf0f3;
 
-    font-size: 8px;
+            color: #8d99a6;
 
-    line-height: 1.6;
-}
+            font-size: 8px;
 
+            line-height: 1.6;
+        }
 
-/* =========================================
-   MOBILE
-========================================= */
 
-@media (max-width: 500px) {
+        /* =========================================
+           MOBILE
+        ========================================= */
 
-    .verify-container {
+        @media (max-width: 500px) {
 
-        padding: 15px;
-    }
+            .verify-container {
 
+                padding: 15px;
+            }
 
-    .verify-card {
 
-        padding: 35px 25px;
+            .verify-card {
 
-        border-radius: 17px;
-    }
+                padding: 35px 25px;
 
+                border-radius: 17px;
+            }
 
-    .verify-title {
 
-        font-size: 26px;
-    }
+            .verify-title {
 
+                font-size: 26px;
+            }
 
-    .otp-input {
 
-        height: 55px;
+            .otp-input {
 
-        font-size: 22px;
+                height: 55px;
 
-        letter-spacing: 7px;
-    }
+                font-size: 22px;
 
-}
+                letter-spacing: 7px;
+            }
 
-</style>
+        }
+
+    </style>
 
 </head>
 
@@ -848,7 +877,11 @@ body {
 
             <i class="bi bi-envelope"></i>
 
-            <?php echo htmlspecialchars($email); ?>
+            <?php echo htmlspecialchars(
+                $email,
+                ENT_QUOTES,
+                'UTF-8'
+            ); ?>
 
         </div>
 
@@ -860,7 +893,6 @@ body {
             method="POST"
             autocomplete="off"
         >
-
 
             <label
                 for="otp"
@@ -897,7 +929,6 @@ body {
                 <i class="bi bi-arrow-right ms-1"></i>
 
             </button>
-
 
         </form>
 
@@ -1010,6 +1041,26 @@ function updateTimer() {
 
         timer.textContent = "00:00";
 
+        /*
+         * Disable the OTP form once the timer expires.
+         */
+
+        const otpInput =
+            document.getElementById("otp");
+
+        const verifyButton =
+            document.querySelector(".btn-verify");
+
+        if (otpInput) {
+            otpInput.disabled = true;
+        }
+
+        if (verifyButton) {
+            verifyButton.disabled = true;
+            verifyButton.style.opacity = "0.6";
+            verifyButton.style.cursor = "not-allowed";
+        }
+
         return;
     }
 
@@ -1039,8 +1090,16 @@ function updateTimer() {
 updateTimer();
 
 
-setInterval(
-    updateTimer,
+const timerInterval = setInterval(
+    function () {
+
+        updateTimer();
+
+        if (remainingSeconds <= 0) {
+            clearInterval(timerInterval);
+        }
+
+    },
     1000
 );
 
@@ -1055,17 +1114,21 @@ const otpInput =
     document.getElementById("otp");
 
 
-otpInput.addEventListener(
-    "input",
-    function () {
+if (otpInput) {
 
-        this.value =
-            this.value
-                .replace(/\D/g, '')
-                .slice(0, 6);
+    otpInput.addEventListener(
+        "input",
+        function () {
 
-    }
-);
+            this.value =
+                this.value
+                    .replace(/\D/g, '')
+                    .slice(0, 6);
+
+        }
+    );
+
+}
 
 </script>
 
@@ -1073,3 +1136,4 @@ otpInput.addEventListener(
 </body>
 
 </html>
+```
