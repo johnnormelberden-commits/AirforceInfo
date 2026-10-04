@@ -619,11 +619,11 @@ $remainingSecondsOnly =
 
         <!-- IMPORTANT: hyphen, not underscore -->
 
-        <form
-            action="verify-otp.php"
-            method="POST"
-            autocomplete="off"
-        >
+        <<form
+    action="verify-otp.php"
+    method="POST"
+    autocomplete="off"
+>
 
             <label
                 for="otp"

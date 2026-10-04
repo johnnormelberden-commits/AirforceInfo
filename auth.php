@@ -10,6 +10,9 @@ require_once __DIR__ . '/db.php';
 require_once __DIR__ . '/mail_config.php';
 require_once __DIR__ . '/vendor/autoload.php';
 
+use PHPMailer\PHPMailer\Exception;
+use PHPMailer\PHPMailer\PHPMailer;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -428,7 +431,7 @@ try {
     |--------------------------------------------------------------------------
     */
 
-    header('Location: verify-otp.php');
+   header('Location: verify-otp.php');
     exit;
 
 
